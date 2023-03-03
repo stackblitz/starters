@@ -1,0 +1,10 @@
+{
+  "name": "node-starter",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "node run.js"
+  },
+  "dependencies": {
+    "nodemon": "^2.0.12"
+  }
+}
