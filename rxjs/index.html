@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RxJS Playground</title>
+</head>
+
+<body>
+  <header>
+    <img src="https://rxjs.dev/generated/images/marketing/home/Rx_Logo-512-512.png" class="logo"/>
+    <h1>RxJS Playground</h1>
+  </header>
+  <article>
+    <h2>Tips:</h2>
+    <ul>
+      <li>Try using <code>interval</code> or <code>timer</code> to create async streams of values to play with</li>
+      <li>Use <code>fromEvent</code> to create a stream of user events. <code>fromEvent(document, 'click')</code> is
+        useful</li>
+      <li>See what's happening between operators by adding a <code>tap(console.log)</code>. for example:
+        <code>source.pipe(map(fn), <span class="callout">tap(console.log)</span>, filter(fn2))</code>
+      </li>
+    </ul>
+  </article>
+  <article>
+    <h2>Recipes:</h2>
+    <p>Below are a few recipes to try out to play with RxJS</p>
+
+    <section>
+      <h3>Basic Clock</h3>
+      <pre>
+import { map, timer } from 'rxjs';
+
+const output = document.createElement('output');
+document.body.prepend(output);
+
+timer(0, 1000)
+  .pipe(map(() => new Date().toLocaleTimeString()))
+  .subscribe(time => (output.textContent = time));
+      </pre>
+    </section>
+
+    <section>
+      <h3>Movable Element</h3>
+      <pre>
+import { fromEvent, exhaustMap, takeUntil } from 'rxjs';
+
+const target = document.createElement('div');
+target.setAttribute(
+  'style',
+  'position: absolute; top: 0; left: 0; background-color: red; width: 50px; height: 50px;'
+);
+document.body.append(target);
+
+fromEvent(target, 'mousedown')
+  .pipe(
+    exhaustMap(() =>
+      fromEvent(document, 'mousemove').pipe(
+        takeUntil(fromEvent(document, 'mouseup'))
+      )
+    )
+  )
+  .subscribe(({ pageX, pageY }: MouseEvent) => {
+    target.style.transform = `translate3d(${pageX}px, ${pageY}px, 0)`;
+  });
+      </pre>
+    </section>
+
+    <section>
+      <h3>Animated Dot Trail</h3>
+      <pre>
+import {
+  defer,
+  fromEvent,
+  animationFrames,
+  mergeMap,
+  tap,
+  takeWhile,
+  scan,
+  finalize
+} from 'rxjs';
+
+// When the mouse moves, add animated dots to the screen.
+fromEvent(document, 'mousemove')
+  .pipe(mergeMap((e: MouseEvent) => addDot(e.pageX, e.pageY)))
+  .subscribe();
+
+function addDot(x: number, y: number) {
+  return defer(() => {
+    // Create and add the dot element when
+    // the observable is subscribed to
+    const dot = document.createElement('div');
+    dot.setAttribute(
+      'style',
+      `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 10px;
+        height: 10px;
+        background-color: lime;
+        border-radius: 50%;
+        transform: translate3d(${x}px, ${y}px, 0);
+      `
+    );
+    document.body.append(dot);
+
+    const xVelocity = Math.random() * 2 - 1;
+    const yVelocity = Math.random() * 2 - 1;
+
+    return animationFrames().pipe(
+      // Only take animation frames for 1 second.
+      takeWhile(({ elapsed }) => elapsed < 1000),
+
+      // Track and update the current position.
+      scan(
+        ({ x: xCurrent, y: yCurrent }) => ({
+          x: xCurrent + xVelocity,
+          y: yCurrent + yVelocity
+        }),
+        { x, y }
+      ),
+
+      // Set the position on the dot as a side-effect.
+      tap(({ x, y }) => {
+        dot.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      }),
+
+      // When we clean up, remove the element.
+      finalize(() => {
+        dot.remove();
+      })
+    );
+  });
+}
+      
+      </pre>
+    </section>
+  </article>
+</body>
+
+</html>

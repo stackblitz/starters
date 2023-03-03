@@ -1,0 +1,51 @@
+:root {
+  --bg-color: #15181e;
+  --font-base: aliceblue;
+  --code-base: fuchsia;
+  --callout: lime;
+  --pre-base: #303235;
+}
+html,
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 16px;
+  background-color: var(--bg-color);
+  color: var(--font-base);
+}
+
+header {
+  text-align: center;
+}
+
+section {
+  padding: 1.2em 0 0 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0.3em 0 0.2em 0;
+}
+
+.logo {
+  width: 100px;
+  height: 100px;
+}
+
+code {
+  color: var(--code-base);
+}
+
+.callout {
+  color: var(--callout);
+}
+
+pre {
+  background-color: #15181e;
+  padding: 10px;
+  color: var(--code-base);
+}
