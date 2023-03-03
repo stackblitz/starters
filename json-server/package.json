@@ -1,0 +1,15 @@
+{
+  "name": "node-starter",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "frontend": "http-server",
+    "backend": "json-server -w db.json"
+  },
+  "dependencies": {
+    "http-server": "^0.12.3"
+  },
+  "devDependencies": {
+    "json-server": "^0.16.3"
+  }
+}
