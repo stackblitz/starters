@@ -1,0 +1,10 @@
+{
+  "name": "node-starter",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "json-graphql-server db.js"
+  },
+  "dependencies": {
+    "json-graphql-server": "^2.2.3"
+  }
+}
