@@ -540,11 +540,6 @@ header {
   will-change: transform;
 }
 
-a {
-  text-decoration: none;
-  color: var(--green-dark);
-}
-
 /* HEADINGS */
 .header-section {
   padding: 0 15px;
