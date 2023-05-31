@@ -1,0 +1,37 @@
+{
+  "name": "@tresjs/starter",
+  "description": "Quick starter template for TresJS",
+  "author": "Alvaro Saburido <hola@alvarosaburido.dev> (https://github.com/alvarosabu/)",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "vue",
+    "tresjs",
+    "webgl",
+    "vite",
+    "3d",
+    "threejs",
+    "three",
+    "threejs-vue"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tresjs/cientos": "2.1.2",
+    "@tresjs/core": "2.1.2",
+    "three": "^0.152.2",
+    "vue": "^3.3.4"
+  },
+  "devDependencies": {
+    "@types/three": "^0.152.1",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "typescript": "^5.0.4",
+    "vite": "^4.3.9",
+    "vite-plugin-glsl": "^1.1.2",
+    "vue-tsc": "^1.6.5"
+  }
+}
