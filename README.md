@@ -1,5 +1,3 @@
-[readme WIP]
-
 <img width="872" alt="image" src="https://user-images.githubusercontent.com/1511906/223094313-879ff9ca-9825-4335-87f6-b32d94939945.png">
 
 ### About the project
