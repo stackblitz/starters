@@ -2,7 +2,8 @@
   "name": "stackblitz-starters",
   "private": true,
   "scripts": {
-    "format": "prettier --write '**/*'"
+    "format": "prettier --write '**/*'",
+    "format:check": "prettier --check '**/*'"
   },
   "devDependencies": {
     "prettier": "^2.8.8",
