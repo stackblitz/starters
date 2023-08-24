@@ -41,9 +41,7 @@
             "main": "src/main.ts",
             "outputPath": "dist/demo",
             "scripts": [],
-            "styles": [
-              "src/global_styles.css"
-            ],
+            "styles": ["src/global_styles.css"],
             "tsConfig": "src/tsconfig.app.json"
           }
         },
@@ -56,13 +54,8 @@
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
-            "exclude": [
-              "**/node_modules/**"
-            ],
-            "tsConfig": [
-              "src/tsconfig.app.json",
-              "src/tsconfig.spec.json"
-            ]
+            "exclude": ["**/node_modules/**"],
+            "tsConfig": ["src/tsconfig.app.json", "src/tsconfig.spec.json"]
           }
         },
         "serve": {
@@ -80,17 +73,12 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "assets": [
-              "src/favicon.ico",
-              "src/assets"
-            ],
+            "assets": ["src/favicon.ico", "src/assets"],
             "karmaConfig": "src/karma.conf.js",
             "main": "src/test.ts",
             "polyfills": [],
             "scripts": [],
-            "styles": [
-              "styles.css"
-            ],
+            "styles": ["styles.css"],
             "tsConfig": "src/tsconfig.spec.json"
           }
         }
