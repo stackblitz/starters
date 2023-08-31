@@ -7,7 +7,11 @@
 */pnpm-lock.yaml
 */yarn.lock
 
+# Ignore vscode config folder, except in specific templates
+.vscode
+!/gsap-svelte/.vscode
+!/quasar/.vscode
+
 # Ignore everywhere
 ._*
 .DS_Store
-.vscode
