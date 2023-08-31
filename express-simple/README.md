@@ -1,3 +1,7 @@
-# node-dmbz1u
+# Simple express demo
 
-[Edit on StackBlitz ⚡️](https://stackblitz.com/edit/node-dmbz1u)
+> Express: fast, unopinionated, minimalist web framework for Node.js
+
+This project shows a simple express server serving a single HTML page and using `express.static` to serve static files.
+
+Check out the [express documentation](https://expressjs.com/) for more information.
