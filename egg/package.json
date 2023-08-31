@@ -1,17 +1,17 @@
 {
-  "name": "webcontainer-egg",
+  "name": "egg-demo",
   "version": "0.0.0",
   "private": true,
-  "dependencies": {
-    "egg": "^2",
-    "egg-scripts": "^2",
-    "egg-view-nunjucks": "^2"
-  },
-  "devDependencies": {
-    "egg-bin": "^4"
-  },
   "scripts": {
     "start": "node index.js"
+  },
+  "dependencies": {
+    "egg": "^2.37.0",
+    "egg-scripts": "^2.17.0",
+    "egg-view-nunjucks": "^2.3.0"
+  },
+  "devDependencies": {
+    "egg-bin": "^4.20.0"
   },
   "homepage": "https://github.com/atian25/webcontainer-egg"
 }
