@@ -1,19 +1,22 @@
 {
-  "name": "react",
+  "name": "gsap-react-demo",
   "version": "0.0.0",
   "private": true,
-  "dependencies": {
-    "gsap": "^3.11.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
+  "dependencies": {
+    "gsap": "^3.12.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "devDependencies": {
-    "react-scripts": "latest"
-  }
+    "react-scripts": "^5.0.1"
+  },
+  "browserslist": [
+    "defaults"
+  ]
 }
