@@ -1,8 +1,16 @@
-# Ignore repository config
-/*.*
-/LICENSE
+## Ignore specific file formats
+# Generated files
+**/package-lock.json
+# Prettier formatting of HTML is questionable, let's skip it for now
+**/*.html
+# Skipping Markdown as well, as it may contain custom DSLs that Prettier doesn't handle well
+**/*.md
+**/*.mdx
+# Maybe skip formatting templating languages too
+**/*.svelte
+**/*.vue
 
-# Ignore specific templates
+## Ignore specific templates
 /bootstrap-5
 /egg
 /express-simple
@@ -17,19 +25,3 @@
 /slidev
 /sveltekit
 /tres
-
-# Ignore specific file formats
-# Prettier formatting of HTML is questionable, let's skip it for now
-**/*.html
-# Skipping Markdown as well, as it may contain custom DSLs that Prettier doesn't handle well
-**/*.md
-**/*.mdx
-# Maybe skip formatting templating languages too
-**/*.svelte
-**/*.vue
-
-# We maybe don't want to have those files in the first place?
-**/dist/*
-**/build/*
-**/.vscode/*
-**/package-lock.json

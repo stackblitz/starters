@@ -2,8 +2,9 @@
   "name": "stackblitz-starters",
   "private": true,
   "scripts": {
-    "format": "prettier --write '**/*'",
-    "format:check": "prettier --check '**/*'"
+    "format:base": "prettier '**/*.{css,scss,json,js,jsx,mjs,cjs,ts,tsx}' '**/.{prettierrc,stackblitzrc}'",
+    "format:check": "npm run format:base -- --check",
+    "format:write": "npm run format:base -- --write"
   },
   "devDependencies": {
     "prettier": "^2.8.8",

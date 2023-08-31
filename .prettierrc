@@ -7,7 +7,7 @@
   "plugins": ["prettier-plugin-svelte"],
   "overrides": [
     {
-      "files": ["**/.stackblitzrc"],
+      "files": ["**/.prettierrc", "**/.stackblitzrc"],
       "options": { "parser": "json" }
     },
     {
