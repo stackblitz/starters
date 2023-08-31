@@ -1,27 +1,13 @@
-## Ignore specific file formats
 # Generated files
 **/package-lock.json
+
 # Prettier formatting of HTML is questionable, let's skip it for now
 **/*.html
+
 # Skipping Markdown as well, as it may contain custom DSLs that Prettier doesn't handle well
 **/*.md
 **/*.mdx
+
 # Maybe skip formatting templating languages too
 **/*.svelte
 **/*.vue
-
-## Ignore specific templates
-/bootstrap-5
-/egg
-/express-simple
-/graphql
-/gsap-*
-/json-graphql-server
-/json-server
-/koa
-/nextjs
-/nodemon
-/quasar
-/slidev
-/sveltekit
-/tres
