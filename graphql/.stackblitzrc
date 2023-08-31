@@ -1,4 +1,0 @@
-{
-  "installDependencies": true,
-  "startCommand": "npx nodemon server.js"
-}
