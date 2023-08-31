@@ -1,6 +1,6 @@
 {
-  "name": "next-app",
-  "version": "0.1.0",
+  "name": "gsap-next-demo",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,9 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "gsap": "^3.11.4",
-    "next": "^13.0.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "gsap": "^3.12.0",
+    "next": "^13.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }
