@@ -1,11 +1,12 @@
-import * as React from 'react';
+import { FC } from 'react';
+
 import './style.css';
 
-export default function App() {
+export const App: FC<{ name: string }> = ({ name }) => {
   return (
     <div>
-      <h1>Hello StackBlitz!</h1>
+      <h1>Hello {name}!</h1>
       <p>Start editing to see some magic happen :)</p>
     </div>
   );
-}
+};
