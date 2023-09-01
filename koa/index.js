@@ -8,7 +8,7 @@ const app = new Koa();
 
 app.use(logger());
 
-const helloWorld = ctx => {
+const helloWorld = (ctx) => {
   ctx.body = 'Hello World!!!';
 };
 

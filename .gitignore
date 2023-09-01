@@ -6,6 +6,9 @@
 */package-lock.json
 */pnpm-lock.yaml
 */yarn.lock
+*/build/*
+*/dist/*
+*/out-tsc/*
 
 # Ignore vscode config folder, except in specific templates
 .vscode

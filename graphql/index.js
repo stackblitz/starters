@@ -13,7 +13,7 @@ var schema = buildSchema(`
 var root = {
   hello: () => {
     return 'Hello, world!';
-  }
+  },
 };
 
 var app = express();
@@ -22,7 +22,7 @@ app.use(
   graphqlHTTP({
     schema: schema,
     rootValue: root,
-    graphiql: true
+    graphiql: true,
   })
 );
 app.listen(4000);

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Signika+Negative:wght@400;600&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Signika+Negative:wght@400;600&display=swap');
 
 * {
   margin: 0;
@@ -474,7 +474,7 @@ button {
   -moz-border-radius: 4;
   border-radius: 4px;
   padding: 12px 25px;
-  font-family: "Signika Negative", sans-serif;
+  font-family: 'Signika Negative', sans-serif;
   text-transform: uppercase;
   font-weight: 600;
   cursor: pointer;
@@ -497,7 +497,7 @@ body {
   height: 100%;
   -webkit-overflow-scrolling: touch;
   overflow-scrolling: touch;
-  font-family: "Signika Negative", sans-serif, Arial;
+  font-family: 'Signika Negative', sans-serif, Arial;
 }
 
 .panel {
@@ -585,7 +585,7 @@ body {
   height: auto;
   background-color: var(--dark);
   color: var(--light);
-  font-family: "Signika Negative", sans-serif;
+  font-family: 'Signika Negative', sans-serif;
 }
 
 .header {
