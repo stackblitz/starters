@@ -1,7 +1,7 @@
 /**
  * @param {Egg.EggAppInfo} appInfo app info
  */
-module.exports = appInfo => {
+module.exports = (appInfo) => {
   /**
    * built-in config
    * @type {Egg.EggAppConfig}
@@ -15,8 +15,8 @@ module.exports = appInfo => {
     defaultViewEngine: 'nunjucks',
     mapping: {
       '.nj': 'nunjucks',
-      '.tpl': 'nunjucks'
-    }
+      '.tpl': 'nunjucks',
+    },
   };
 
   return config;

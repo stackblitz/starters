@@ -3,6 +3,14 @@
 
 # Ignore patterns for templates
 */node_modules
-#*/package-lock.json
-*/yarn.lock
+*/package-lock.json
 */pnpm-lock.yaml
+*/yarn.lock
+*/build/*
+*/dist/*
+*/out-tsc/*
+
+# Ignore everywhere
+._*
+.DS_Store
+.vscode
