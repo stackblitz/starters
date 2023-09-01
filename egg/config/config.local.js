@@ -1,5 +1,5 @@
 exports.security = {
   xframe: {
-    enable: false
-  }
+    enable: false,
+  },
 };
