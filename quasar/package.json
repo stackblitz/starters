@@ -1,5 +1,5 @@
 {
-  "name": "stackblitz-quasar-v2-vite",
+  "name": "quasar-demo",
   "version": "0.0.1",
   "description": "A Quasar CLI with Vite starter project.",
   "private": true,
