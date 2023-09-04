@@ -3,14 +3,13 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width">
   <title>RxJS Playground</title>
 </head>
 
 <body>
   <header>
-    <img src="https://rxjs.dev/generated/images/marketing/home/Rx_Logo-512-512.png" class="logo"/>
+    <img width="100" height="100" src="https://rxjs.dev/generated/images/marketing/home/Rx_Logo-512-512.png" alt=""/>
     <h1>RxJS Playground</h1>
   </header>
   <article>
@@ -30,22 +29,19 @@
 
     <section>
       <h3>Basic Clock</h3>
-      <pre>
-import { map, timer } from 'rxjs';
+      <pre>import { map, timer } from 'rxjs';
 
 const output = document.createElement('output');
 document.body.prepend(output);
 
 timer(0, 1000)
   .pipe(map(() => new Date().toLocaleTimeString()))
-  .subscribe(time => (output.textContent = time));
-      </pre>
+  .subscribe(time => (output.textContent = time));</pre>
     </section>
 
     <section>
       <h3>Movable Element</h3>
-      <pre>
-import { fromEvent, exhaustMap, takeUntil } from 'rxjs';
+      <pre>import { fromEvent, exhaustMap, takeUntil } from 'rxjs';
 
 const target = document.createElement('div');
 target.setAttribute(
@@ -64,14 +60,12 @@ fromEvent(target, 'mousedown')
   )
   .subscribe(({ pageX, pageY }: MouseEvent) => {
     target.style.transform = `translate3d(${pageX}px, ${pageY}px, 0)`;
-  });
-      </pre>
+  });</pre>
     </section>
 
     <section>
       <h3>Animated Dot Trail</h3>
-      <pre>
-import {
+      <pre>import {
   defer,
   fromEvent,
   animationFrames,
@@ -112,7 +106,7 @@ function addDot(x: number, y: number) {
 
     return animationFrames().pipe(
       // Only take animation frames for 1 second.
-      takeWhile(({ elapsed }) => elapsed < 1000),
+      takeWhile(({ elapsed }) => elapsed &lt; 1000),
 
       // Track and update the current position.
       scan(
@@ -134,9 +128,7 @@ function addDot(x: number, y: number) {
       })
     );
   });
-}
-      
-      </pre>
+}</pre>
     </section>
   </article>
 </body>
