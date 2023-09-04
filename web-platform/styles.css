@@ -38,9 +38,10 @@ nav a[aria-current='page'] {
 
 main {
   padding: 1rem;
+  line-height: 1.5;
 }
 
 h1 {
-  font-weight: bold;
+  font-weight: 800;
   font-size: 1.5rem;
 }
