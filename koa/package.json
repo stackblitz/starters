@@ -1,6 +1,5 @@
 {
   "name": "koa-demo",
-  "version": "0.0.0",
   "private": true,
   "dependencies": {
     "@koa/router": "^10.0.0",

@@ -1,6 +1,5 @@
 {
   "name": "json-graphql-server-demo",
-  "version": "0.0.0",
   "scripts": {
     "start": "json-graphql-server db.js"
   },

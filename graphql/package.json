@@ -1,6 +1,5 @@
 {
   "name": "graphql-demo",
-  "version": "0.0.0",
   "private": true,
   "scripts": {
     "start": "nodemon index.js"
