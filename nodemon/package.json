@@ -1,5 +1,5 @@
 {
-  "name": "nodemon-demo",
+  "name": "nodemon-starter",
   "private": true,
   "scripts": {
     "start": "node run.js"

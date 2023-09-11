@@ -1,5 +1,5 @@
 {
-  "name": "quasar-demo",
+  "name": "quasar-starter",
   "description": "A Quasar CLI with Vite starter project.",
   "private": true,
   "scripts": {

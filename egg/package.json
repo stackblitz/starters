@@ -1,5 +1,5 @@
 {
-  "name": "egg-demo",
+  "name": "egg-starter",
   "private": true,
   "scripts": {
     "start": "node index.js"

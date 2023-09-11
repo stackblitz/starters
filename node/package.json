@@ -1,5 +1,5 @@
 {
-  "name": "node-demo",
+  "name": "node-starter",
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

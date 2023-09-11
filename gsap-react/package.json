@@ -1,5 +1,5 @@
 {
-  "name": "gsap-react-demo",
+  "name": "gsap-react-starter",
   "private": true,
   "scripts": {
     "start": "react-scripts start",

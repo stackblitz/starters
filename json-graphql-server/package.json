@@ -1,5 +1,5 @@
 {
-  "name": "json-graphql-server-demo",
+  "name": "json-graphql-server-starter",
   "scripts": {
     "start": "json-graphql-server db.js"
   },

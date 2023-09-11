@@ -1,5 +1,5 @@
 {
-  "name": "sveltekit-demo",
+  "name": "sveltekit-starter",
   "private": true,
   "scripts": {
     "dev": "vite dev",

@@ -1,5 +1,5 @@
 {
-  "name": "react-demo",
+  "name": "react-starter",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

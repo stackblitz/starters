@@ -1,5 +1,5 @@
 {
-  "name": "bootstrap-5-demo",
+  "name": "bootstrap-5-starter",
   "private": true,
   "scripts": {
     "dev": "vite",

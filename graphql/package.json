@@ -1,5 +1,5 @@
 {
-  "name": "graphql-demo",
+  "name": "graphql-starter",
   "private": true,
   "scripts": {
     "start": "nodemon index.js"

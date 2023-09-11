@@ -1,5 +1,5 @@
 {
-  "name": "express-simple-demo",
+  "name": "express-simple-starter",
   "private": true,
   "scripts": {
     "start": "node index.js"

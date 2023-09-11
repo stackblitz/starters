@@ -1,5 +1,5 @@
 {
-  "name": "nextjs-demo",
+  "name": "nextjs-starter",
   "private": true,
   "scripts": {
     "dev": "next dev",

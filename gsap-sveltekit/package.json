@@ -1,5 +1,5 @@
 {
-	"name": "gsap-sveltekit-demo",
+	"name": "gsap-sveltekit-starter",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",

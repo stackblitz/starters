@@ -1,5 +1,5 @@
 {
-  "name": "gsap-next-demo",
+  "name": "gsap-next-starter",
   "private": true,
   "scripts": {
     "dev": "next dev",

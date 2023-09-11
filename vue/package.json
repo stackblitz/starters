@@ -1,5 +1,5 @@
 {
-  "name": "vue-demo",
+  "name": "vue-starter",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

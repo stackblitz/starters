@@ -1,5 +1,5 @@
 {
-  "name": "gsap-nuxt-demo",
+  "name": "gsap-nuxt-starter",
   "private": true,
   "scripts": {
     "build": "nuxt build",

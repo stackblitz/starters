@@ -1,5 +1,5 @@
 {
-  "name": "react-ts-demo",
+  "name": "react-ts-starter",
   "private": true,
   "scripts": {
     "start": "react-scripts start",

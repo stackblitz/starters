@@ -1,5 +1,5 @@
 {
-  "name": "json-server-demo",
+  "name": "json-server-starter",
   "private": true,
   "scripts": {
     "frontend": "http-server",
