@@ -1,6 +1,5 @@
 {
-  "name": "typescript",
-  "version": "0.0.0",
+  "name": "typescript-starter",
   "private": true,
   "dependencies": {}
 }

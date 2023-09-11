@@ -1,6 +1,5 @@
 {
-  "name": "angular-stackblitz-starter",
-  "version": "0.0.0",
+  "name": "angular-starter",
   "private": true,
   "scripts": {
     "ng": "ng",

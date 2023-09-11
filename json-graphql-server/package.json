@@ -1,6 +1,5 @@
 {
-  "name": "node-starter",
-  "version": "0.0.0",
+  "name": "json-graphql-server-starter",
   "scripts": {
     "start": "json-graphql-server db.js"
   },

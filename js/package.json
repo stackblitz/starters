@@ -1,6 +1,5 @@
 {
-  "name": "js",
-  "version": "0.0.0",
+  "name": "js-starter",
   "private": true,
   "dependencies": {}
 }

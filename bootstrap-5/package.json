@@ -1,19 +1,16 @@
 {
-  "name": "node-starter",
-  "version": "0.0.0",
+  "name": "bootstrap-5-starter",
+  "private": true,
   "scripts": {
-    "start": "webpack serve"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "bootstrap": "^5.2.3",
-    "sass": "^1.58.3"
+    "bootstrap": "^5.3.1"
   },
   "devDependencies": {
-    "css-loader": "^5.2.6",
-    "sass-loader": "^12.1.0",
-    "style-loader": "^3.0.0",
-    "webpack": "^5.40.0",
-    "webpack-cli": "^4.7.2",
-    "webpack-dev-server": "^3.11.2"
+    "sass": "~1.64.2",
+    "vite": "^4.4.9"
   }
 }

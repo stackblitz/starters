@@ -1,6 +1,5 @@
 {
-  "name": "node-starter",
-  "version": "0.0.0",
+  "name": "json-server-starter",
   "private": true,
   "scripts": {
     "frontend": "http-server",

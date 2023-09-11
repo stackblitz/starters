@@ -8,7 +8,7 @@ egg
   })
   .then((app) => {
     app.listen(3000);
-    console.log('listen 3000');
+    console.log('Server started on http://localhost:3000/');
   })
   .catch((err) => {
     console.error(err);

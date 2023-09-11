@@ -4,4 +4,5 @@ export default defineNuxtConfig({
   build: {
     transpile: ['gsap'],
   },
+  telemetry: false,
 });

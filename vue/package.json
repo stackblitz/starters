@@ -1,6 +1,5 @@
 {
-  "name": "sb-vue",
-  "version": "0.1.0",
+  "name": "vue-starter",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -8,7 +7,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "vue": "^3.2.26"
+    "vue": "^3.3.4"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^4.4.0",

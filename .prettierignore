@@ -1,5 +1,11 @@
 # Generated files
 **/package-lock.json
+**/build
+**/dist
+**/.next
+**/.nuxt
+**/.output
+**/.svelte-kit
 
 # Prettier formatting of HTML is questionable, let's skip it for now
 **/*.html

@@ -1,10 +1,10 @@
 {
-  "name": "node-starter",
-  "version": "0.0.0",
+  "name": "nodemon-starter",
+  "private": true,
   "scripts": {
     "start": "node run.js"
   },
   "dependencies": {
-    "nodemon": "^2.0.12"
+    "nodemon": "^2.0.22"
   }
 }

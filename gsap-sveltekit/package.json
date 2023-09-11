@@ -1,6 +1,5 @@
 {
-	"name": "kit-template-default",
-	"version": "0.0.1",
+	"name": "gsap-sveltekit-starter",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
