@@ -14,7 +14,6 @@
 .vscode
 !/gsap-svelte/.vscode
 !/quasar/.vscode
-!/static/.vscode
 
 # Ignore everywhere
 ._*
