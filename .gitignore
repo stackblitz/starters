@@ -9,11 +9,13 @@
 */build/*
 */dist/*
 */out-tsc/*
+!/tutorialkit/package-lock.json
 
 # Ignore vscode config folder, except in specific templates
 .vscode
 !/gsap-svelte/.vscode
 !/quasar/.vscode
+!/tutorialkit/.vscode
 
 # Ignore everywhere
 ._*
