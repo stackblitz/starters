@@ -30,6 +30,7 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "outputPath": "dist/demo",
+            "polyfills": ["zone.js"],
             "scripts": [],
             "styles": ["src/global_styles.css"],
             "tsConfig": "tsconfig.app.json"
