@@ -9,7 +9,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const shouldWrite = process.argv.includes('--write');
 const shouldForceWrite = shouldWrite && process.argv.includes('--force');
 
-await checkNpmVersion('10.8.0');
+// this version should be in sync with the version in WebContainer
+await checkNpmVersion('10.2.3');
 
 const cwd = path.resolve(__dirname, '..');
 
