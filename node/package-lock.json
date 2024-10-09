@@ -1,0 +1,10 @@
+{
+  "name": "node-starter",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "node-starter"
+    }
+  }
+}

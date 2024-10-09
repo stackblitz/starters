@@ -4,9 +4,12 @@
   "scripts": {
     "format:base": "prettier '**/*.{css,scss,json,js,jsx,mjs,cjs,ts,tsx}' '**/.{prettierrc,stackblitzrc}'",
     "format:check": "npm run format:base -- --check",
-    "format:write": "npm run format:base -- --write"
+    "format:write": "npm run format:base -- --write",
+    "package:check": "node _scripts/package-lock-sync.mjs --check",
+    "package:write": "node _scripts/package-lock-sync.mjs --write"
   },
   "devDependencies": {
+    "npm": "10.2.3",
     "prettier": "^2.8.8",
     "prettier-plugin-svelte": "^2.10.1"
   }
