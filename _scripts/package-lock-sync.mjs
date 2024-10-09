@@ -9,10 +9,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const shouldWrite = process.argv.includes('--write');
 const shouldForceWrite = shouldWrite && process.argv.includes('--force');
 
-// this version should be in sync with the version in WebContainer
-await checkNpmVersion('10.2.3');
-
 const cwd = path.resolve(__dirname, '..');
+
+const npmBin = resolveNpmBin(cwd);
 
 const starters = fs.readdirSync(cwd, { withFileTypes: true });
 
@@ -51,16 +50,16 @@ for (const { status, reason } of result) {
 
 process.exit(exitCode);
 
-function checkNpmVersion(expected) {
-  const child = childProcess.spawnSync('npm', ['--version']);
+function resolveNpmBin(cwd) {
+    const binPath = path.join(cwd, 'node_modules', '.bin', 'npm');
 
-  const version = child.stdout.toString().trim();
+    if (!fs.existsSync(binPath)) {
+      console.error('Could not find npm binary.');
 
-  if (version !== expected) {
-    console.error(`Expected npm version ${expected}, but found ${version}.`);
+      process.exit(1);
+    }
 
-    process.exit(1);
-  }
+    return binPath;
 }
 
 function checkPackageLockSync(directory, name) {
@@ -73,7 +72,7 @@ function checkPackageLockSync(directory, name) {
       return;
     }
 
-    const child = childProcess.spawn('npm', ['ci'], {
+    const child = childProcess.spawn(npmBin, ['ci'], {
       stdio: 'ignore',
       cwd: directory,
     });
@@ -102,7 +101,7 @@ function updatePackageLock(directory, name, force) {
     }
 
     const child = childProcess.spawn(
-      'npm',
+      npmBin,
       ['install', '--package-lock-only', '--ignore-scripts'],
       {
         stdio: 'ignore',
