@@ -51,15 +51,15 @@ for (const { status, reason } of result) {
 process.exit(exitCode);
 
 function resolveNpmBin(cwd) {
-    const binPath = path.join(cwd, 'node_modules', '.bin', 'npm');
+  const binPath = path.join(cwd, 'node_modules', '.bin', 'npm');
 
-    if (!fs.existsSync(binPath)) {
-      console.error('Could not find npm binary.');
+  if (!fs.existsSync(binPath)) {
+    console.error('Could not find npm binary.');
 
-      process.exit(1);
-    }
+    process.exit(1);
+  }
 
-    return binPath;
+  return binPath;
 }
 
 function checkPackageLockSync(directory, name) {
