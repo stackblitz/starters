@@ -41,7 +41,7 @@ export const HelloWorld: React.FC<z.infer<typeof myCompSchema>> = ({
   const logoTranslation = interpolate(
     logoTranslationProgress,
     [0, 1],
-    [0, -150],
+    [0, -150]
   );
 
   // fade out the animation at the end
@@ -52,7 +52,7 @@ export const HelloWorld: React.FC<z.infer<typeof myCompSchema>> = ({
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-    },
+    }
   );
 
   // a <AbsoluteFill> is just a absolutely positioned <div>

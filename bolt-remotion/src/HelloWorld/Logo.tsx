@@ -51,7 +51,7 @@ export const Logo: React.FC<z.infer<typeof myCompSchema2>> = ({
   const logoRotation = interpolate(
     frame,
     [0, videoConfig.durationInFrames],
-    [0, 360],
+    [0, 360]
   );
 
   return (
