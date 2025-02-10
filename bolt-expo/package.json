@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "expo start --clear",
+    "build:web": "expo export --platform web",
     "test": "jest --watchAll",
     "lint": "expo lint"
   },
