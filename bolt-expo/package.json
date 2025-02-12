@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "expo start --clear",
+    "dev": "expo start",
     "build:web": "expo export --platform web",
     "lint": "expo lint"
   },
@@ -12,7 +12,7 @@
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
-    "expo": "52.0.30",
+    "expo": "52.0.33",
     "expo-blur": "^14.0.3",
     "expo-constants": "^17.0.5",
     "expo-font": "^13.0.3",
@@ -40,11 +40,5 @@
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
     "typescript": "^5.3.3"
-  },
-  "resolutions": {
-    "@expo/ws-tunnel": "1.0.2"
-  },
-  "overrides": {
-    "@expo/ws-tunnel": "1.0.2"
   }
 }
