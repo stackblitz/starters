@@ -1,17 +1,10 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-
-declare global {
-  interface Window {
-    frameworkReady?: () => void;
-  }
-}
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 export default function RootLayout() {
-  useEffect(() => {
-    window.frameworkReady?.();
-  }, []);
+  useFrameworkReady();
 
   return (
     <>
