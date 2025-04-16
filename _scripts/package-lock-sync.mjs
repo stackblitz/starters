@@ -79,6 +79,7 @@ function checkPackageLockSync(directory, name) {
 
     child.on('exit', (code) => {
       if (code === 0) {
+        console.log(`✔ ${name}`);
         resolve();
       } else {
         reject(
