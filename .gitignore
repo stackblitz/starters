@@ -1,5 +1,6 @@
 # Ignore patterns for repo config
 /node_modules
+/test/__screenshots__
 
 # Ignore patterns for templates
 */node_modules
