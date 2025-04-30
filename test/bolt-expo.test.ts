@@ -1,5 +1,5 @@
 import { test, type TestContext } from '@webcontainer/test';
-import { beforeEach, expect, onTestFinished } from 'vitest';
+import { beforeEach, onTestFinished } from 'vitest';
 
 beforeEach<TestContext>(async ({ setup, webcontainer }) => {
   await setup(async () => {
@@ -8,8 +8,14 @@ beforeEach<TestContext>(async ({ setup, webcontainer }) => {
   });
 });
 
-test('user can build project', async ({ webcontainer }) => {
-  await webcontainer.runCommand('npm', ['run', 'build:web']);
+test('user can build project', async ({ webcontainer, expect }) => {
+  const { waitForText, exit } = webcontainer.runCommand('npm', [
+    'run',
+    'build:web',
+  ]);
+
+  // Expo's build process can get stuck, so wait for expected logs and start asserting content while process attempts to exit
+  await waitForText('Exported: dist', 180_000);
 
   await expect(webcontainer.readdir('dist')).resolves.toMatchInlineSnapshot(`
       [
@@ -20,6 +26,9 @@ test('user can build project', async ({ webcontainer }) => {
         "metadata.json",
       ]
     `);
+
+  // Forcefully exit the process if stuck
+  await exit();
 });
 
 test('user can start project and see changes in preview', async ({
