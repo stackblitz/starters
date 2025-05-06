@@ -7,9 +7,6 @@ export default defineConfig({
   test: {
     reporters: 'verbose',
 
-    // TODO: Enable once Expo works on WebContainer again
-    exclude: ['test/bolt-expo.test.ts'],
-
     browser: {
       enabled: true,
       provider: 'playwright',
