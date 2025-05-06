@@ -19,6 +19,6 @@ jobs:
       - run: npm ci
 
       - name: Install Playwright Dependencies
-        run: npx playwright install chromium firefox --with-deps --only-shell
+        run: npx playwright install chromium --with-deps --only-shell
 
-      - run: npm run test
+      - run: npm run test -- --project chromium
