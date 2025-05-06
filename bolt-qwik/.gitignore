@@ -35,6 +35,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.env
 
 # Yarn
 .yarn/*
