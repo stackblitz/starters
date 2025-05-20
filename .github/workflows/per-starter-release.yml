@@ -1,0 +1,34 @@
+name: Per-Starter Release
+
+on:
+  push:
+    tags:
+      - "*-v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract starter name and version from tag
+        id: extract
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          STARTER_NAME="${TAG_NAME%%-v*}"
+          VERSION="${TAG_NAME#*-v}"
+          echo "starter=$STARTER_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Zip the starter folder
+        run: |
+          mkdir -p dist
+          zip -r "dist/${{ steps.extract.outputs.starter }}-${{ steps.extract.outputs.version }}.zip" "starters/${{ steps.extract.outputs.starter }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "${{ steps.extract.outputs.starter }} Starter v${{ steps.extract.outputs.version }}"
+          files: "dist/*.zip"
