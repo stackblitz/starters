@@ -1,34 +1,39 @@
-name: Per-Starter Release
+# .github/workflows/release-template.yml
+
+name: Release Individual Starter
 
 on:
   push:
     tags:
-      - "*-v*"
+      - '*-v*.*.*' # Triggers on tags like nextjs-v1.0.0
 
 jobs:
   release:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract starter name and version from tag
-        id: extract
+      - name: Parse tag to extract template name and version
+        id: parse
         run: |
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
-          STARTER_NAME="${TAG_NAME%%-v*}"
-          VERSION="${TAG_NAME#*-v}"
-          echo "starter=$STARTER_NAME" >> $GITHUB_OUTPUT
+          TAG="${GITHUB_REF##*/}"          # e.g. nextjs-v1.0.0
+          TEMPLATE="${TAG%%-v*}"           # -> nextjs
+          VERSION="${TAG#*-v}"             # -> 1.0.0
+          echo "template=$TEMPLATE" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Zip the starter folder
+      - name: Zip individual starter template
         run: |
           mkdir -p dist
-          zip -r "dist/${{ steps.extract.outputs.starter }}-${{ steps.extract.outputs.version }}.zip" "${{ steps.extract.outputs.starter }}"
+          cd ${{ steps.parse.outputs.template }}
+          zip -r ../dist/${{ steps.parse.outputs.template }}-${{ steps.parse.outputs.version }}.zip .
+          cd ..
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          name: "${{ steps.extract.outputs.starter }} Starter v${{ steps.extract.outputs.version }}"
-          files: "dist/*.zip"
+          name: "${{ steps.parse.outputs.template }} v${{ steps.parse.outputs.version }}"
+          files: dist/*.zip
