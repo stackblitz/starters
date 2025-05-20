@@ -1,76 +1,37 @@
 # .github/workflows/release-template.yml
 
-name: Release All Starters
+name: Release Individual Starter
 
 on:
-  workflow_dispatch: # Allows manual trigger
   push:
     tags:
-      - 'v*.*.*' # Triggers on tags like v1.0.0
+      - '*-v*.*.*' # Triggers on tags like nextjs-v1.0.0
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        starter:
-          - angular
-          - astro-shadcn
-          - bolt-expo
-          - bolt-qwik
-          - bolt-remotion
-          - bolt-vite-react-ts
-          - bootstrap-5
-          - egg
-          - express-simple
-          - graphql
-          - gsap-next
-          - gsap-nuxt
-          - gsap-react
-          - gsap-svelte
-          - gsap-sveltekit
-          - gsap-vue
-          - hono-nodejs-starter
-          - js
-          - nextjs
-          - nextjs-shadcn
-          - node
-          - nodemon
-          - quasar
-          - react-ts
-          - react
-          - rxjs
-          - slidev
-          - static
-          - sveltekit
-          - tres
-          - tutorialkit
-          - typescript
-          - vite-shadcn
-          - vue
-          - web-platform
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get version from tag
-        id: get_version
+      - name: Parse tag to extract template name and version
+        id: parse
         run: |
-          TAG="${GITHUB_REF##*/}"
-          VERSION="${TAG#v}"
+          TAG="${GITHUB_REF##*/}"          # e.g. nextjs-v1.0.0
+          TEMPLATE="${TAG%%-v*}"           # -> nextjs
+          VERSION="${TAG#*-v}"             # -> 1.0.0
+          echo "template=$TEMPLATE" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Zip starter
+      - name: Zip individual starter template
         run: |
           mkdir -p dist
-          zip -r dist/${{ matrix.starter }}-${{ steps.get_version.outputs.version }}.zip ${{ matrix.starter }} -x "${{ matrix.starter }}/node_modules/*"
+          zip -r dist/${{ steps.parse.outputs.template }}-${{ steps.parse.outputs.version }}.zip ${{ steps.parse.outputs.template }} -x "${{ steps.parse.outputs.template }}/node_modules/*"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          name: "${{ matrix.starter }} v${{ steps.get_version.outputs.version }}"
-          files: dist/${{ matrix.starter }}-${{ steps.get_version.outputs.version }}.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: "${{ steps.parse.outputs.template }} v${{ steps.parse.outputs.version }}"
+          files: dist/*.zip
