@@ -24,7 +24,7 @@ jobs:
       - name: Zip the starter folder
         run: |
           mkdir -p dist
-          zip -r "dist/${{ steps.extract.outputs.starter }}-${{ steps.extract.outputs.version }}.zip" "starters/${{ steps.extract.outputs.starter }}"
+          zip -r "dist/${{ steps.extract.outputs.starter }}-${{ steps.extract.outputs.version }}.zip" "${{ steps.extract.outputs.starter }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
