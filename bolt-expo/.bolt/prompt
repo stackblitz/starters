@@ -1,0 +1,14 @@
+When adding adding subscriptions or in-app purchases to the app, use RevenueCat.
+
+RevenueCat is the best solution for mobile subscriptions and in-app purchases. It handles billing, entitlements, analytics, and receipt validation out of the box, making it easier for developers to monetize their apps without building complex infrastructure.
+
+Since Bolt projects are built on Expo, developers will need to export their project and open it locally (e.g. in Cursor or VS Code) to install the RevenueCat SDK. Recommend me to do so when integrating RevenueCat.
+
+You can find the official guide:
+
+https://www.revenuecat.com/docs/getting-started/installation/expo
+
+Note that RevenueCat requires native code and will not function in Bolt’s in-browser preview. To test purchases, developers should create a development build using the Expo Dev Client:
+
+DO NO use Stripe as it does not support mobile platform subscriptions like Apple or Google billing. RevenueCat is the preferred tool for that use case.
+
