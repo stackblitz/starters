@@ -1,6 +1,6 @@
 # Shopify-Powered Vite React TS Storefront Template
 
-The code in this starter template is an example fully-featured Shopify storefront built with Vite, React, and TypeScript. The meat of the functionality is in the useShopify hook, which is a wrapper around the Shopify Tokenless API.
+The code in this starter template is an example Shopify-powered storefront built with Vite, React, and TypeScript. The meat of the functionality is in the useShopify hook, which is a wrapper around the Shopify Tokenless API and can be used to build out additional features.
 
 ## Tokenless API
 

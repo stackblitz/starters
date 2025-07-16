@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { ShopifyCart, CartLineInput } from '../types/shopify';
-import { shopifyFetch, getCartId, setCartId, removeCartId } from '../utils/shopify';
+import { shopifyFetch, getCartId, setCartId, removeCartId, isShopifyConfigured } from '../utils/shopify';
 import {
   CREATE_CART,
   GET_CART,
@@ -42,6 +42,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
 
+    if (!isShopifyConfigured()) {
+      const errorMessage = 'Shopify store is not configured';
+      setError(errorMessage);
+      setLoading(false);
+      throw new Error(errorMessage);
+    }
+
     try {
       const data = await shopifyFetch<{
         cartCreate: {
@@ -59,12 +66,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       const newCart = data.cartCreate.cart;
       setCart(newCart);
       setCartId(newCart.id);
-      console.log('Cart created successfully:', newCart);
       return newCart;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create cart';
       setError(errorMessage);
-      console.error('Cart creation failed:', errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -78,13 +83,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       const data = await shopifyFetch<{ cart: ShopifyCart }>(GET_CART, { id: cartId });
       setCart(data.cart);
-      console.log('Cart fetched successfully:', data.cart);
       return data.cart;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch cart';
       setError(errorMessage);
-      console.error('Cart fetch failed:', errorMessage);
-      // If cart fetch fails, remove the invalid cart ID
       removeCartId();
       setCart(null);
       throw err;
@@ -102,11 +104,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         try {
           currentCart = await fetchCart(cartId);
         } catch {
-          // If fetching existing cart fails, create a new one
           currentCart = await createCart();
         }
       } else {
-        // No existing cart, create a new one
         currentCart = await createCart();
       }
     }
@@ -131,12 +131,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       const updatedCart = data.cartLinesAdd.cart;
       setCart(updatedCart);
-      console.log('Item added to cart successfully:', updatedCart);
       return updatedCart;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add to cart';
       setError(errorMessage);
-      console.error('Add to cart failed:', errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -166,11 +164,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       const updatedCart = data.cartLinesUpdate.cart;
       setCart(updatedCart);
-      console.log('Cart line updated successfully:', updatedCart);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update cart';
       setError(errorMessage);
-      console.error('Cart update failed:', errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -200,11 +196,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       const updatedCart = data.cartLinesRemove.cart;
       setCart(updatedCart);
-      console.log('Items removed from cart successfully:', updatedCart);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to remove from cart';
       setError(errorMessage);
-      console.error('Remove from cart failed:', errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -217,13 +211,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       try {
         await fetchCart(cartId);
       } catch {
-        // Cart not found or invalid, clear it
         setCart(null);
       }
     }
   };
 
-  // Initialize cart on mount
   useEffect(() => {
     const initializeCart = async () => {
       const cartId = getCartId();
@@ -231,8 +223,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         try {
           await fetchCart(cartId);
         } catch {
-          // Cart not found or invalid, will create new one when needed
-          console.log('No existing cart found, will create new one when needed');
         }
       }
     };

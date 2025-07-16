@@ -39,7 +39,6 @@ const handleCheckout = () => {
 
   return (
     <>
-      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
@@ -47,13 +46,11 @@ const handleCheckout = () => {
         />
       )}
 
-      {/* Cart Drawer */}
       <div
         className={`fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">Shopping Cart</h2>
           <button
@@ -64,7 +61,6 @@ const handleCheckout = () => {
           </button>
         </div>
 
-        {/* Cart Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {!cart || cart.lines.nodes.length === 0 ? (
             <div className="text-center py-12">
@@ -76,7 +72,6 @@ const handleCheckout = () => {
             <div className="space-y-4">
               {cart.lines.nodes.map((line) => (
                 <div key={line.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                  {/* Product Image */}
                   <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-md overflow-hidden">
                     {line.merchandise.product.featuredImage ? (
                       <img
@@ -91,7 +86,6 @@ const handleCheckout = () => {
                     )}
                   </div>
 
-                  {/* Product Info */}
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-gray-900 truncate">
                       {line.merchandise.product.title}
@@ -106,7 +100,6 @@ const handleCheckout = () => {
                     </p>
                   </div>
 
-                  {/* Quantity Controls */}
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={() => handleQuantityChange(line.id, line.quantity - 1)}
@@ -127,7 +120,6 @@ const handleCheckout = () => {
                     </button>
                   </div>
 
-                  {/* Remove Button */}
                   <button
                     onClick={() => removeFromCart([line.id])}
                     disabled={loading}
@@ -141,10 +133,8 @@ const handleCheckout = () => {
           )}
         </div>
 
-        {/* Footer */}
         {cart && cart.lines.nodes.length > 0 && (
           <div className="border-t p-4 space-y-4">
-            {/* Subtotal */}
             <div className="flex justify-between items-center">
               <span className="text-lg font-medium">Subtotal</span>
               <span className="text-lg font-bold">
@@ -152,13 +142,11 @@ const handleCheckout = () => {
               </span>
             </div>
 
-            {/* Total Items */}
             <div className="flex justify-between items-center text-sm text-gray-600">
               <span>Total items</span>
               <span>{cart.totalQuantity}</span>
             </div>
 
-            {/* Checkout Button */}
             <button
               onClick={handleCheckout}
               disabled={loading}

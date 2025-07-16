@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShopifyProduct, ShopifyCart, CartLineInput, ShopifyCollection } from '../types/shopify';
-import { shopifyFetch, getCartId, setCartId, removeCartId } from '../utils/shopify';
+import { shopifyFetch, getCartId, setCartId, removeCartId, isShopifyConfigured } from '../utils/shopify';
 import {
   GET_PRODUCTS,
   GET_PRODUCT_BY_HANDLE,
@@ -23,6 +23,12 @@ export const useProducts = (query?: string) => {
   const fetchProducts = async (reset = false) => {
     setLoading(true);
     setError(null);
+
+    if (!isShopifyConfigured()) {
+      setError('Shopify store is not configured');
+      setLoading(false);
+      return;
+    }
 
     try {
       const data = await shopifyFetch<{
@@ -216,7 +222,6 @@ export const useCart = () => {
       return data.cart;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch cart');
-      // If cart fetch fails, remove the invalid cart ID
       removeCartId();
       throw err;
     } finally {
@@ -261,7 +266,6 @@ export const useCart = () => {
       }
 
       setCart(data.cartLinesAdd.cart);
-      console.log('Cart updated successfully:', data.cartLinesAdd.cart);
       return data.cartLinesAdd.cart;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add to cart');
