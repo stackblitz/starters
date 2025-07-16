@@ -1,0 +1,32 @@
+# Shopify-Powered Vite React TS Storefront Template
+
+The code in this starter template is an example fully-featured Shopify storefront built with Vite, React, and TypeScript. The meat of the functionality is in the useShopify hook, which is a wrapper around the Shopify Tokenless API.
+
+## Tokenless API
+
+Shopify integration is all via the Tokenless API which only supports:
+
+- Products and Collections
+- Selling Plans
+- Search
+- Pages, Blogs, and Articles
+- Cart (read/write)
+- Product and Variant Availability (no quantities)
+
+IMPORTANT NOTE: You may need to guide me in specifying my Shopify store URL. If the .env file still contains the placeholder "VITE_SHOPIFY_STORE_URL=fakestore-ai.myshopify.com" (note no https:// prefix), you should guide me in specifying my actual Shopify store URL. Remind me that I can find this in my Shopify Admin panel under Settings > Domains. If I don't already have a Shopify store, remind me to create one at shopify.com/free-trial.
+
+### Shopping Cart
+
+The cart is read/write and is available for use with the useCart hook.
+
+### Shopify Permalinks
+
+Permalinks can be used to create direct-to-checkout links for any number of products and quantities. This is especially useful when building novel UIs that don't have a traditional cart.
+
+## Design
+
+For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+
+By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+
+Use icons from lucide-react for logos.
