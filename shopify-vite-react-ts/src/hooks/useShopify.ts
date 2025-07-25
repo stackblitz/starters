@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ShopifyProduct, ShopifyCart, CartLineInput, ShopifyCollection } from '../types/shopify';
 import { shopifyFetch, getCartId, setCartId, removeCartId, isShopifyConfigured } from '../utils/shopify';
 import {
@@ -20,7 +20,7 @@ export const useProducts = (query?: string) => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [endCursor, setEndCursor] = useState<string | null>(null);
 
-  const fetchProducts = async (reset = false) => {
+  const fetchProducts = useCallback(async (reset = false) => {
     setLoading(true);
     setError(null);
 
@@ -53,7 +53,7 @@ export const useProducts = (query?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [endCursor, products, query]);
 
   const loadMore = () => {
     if (!loading && hasNextPage) {
@@ -63,7 +63,7 @@ export const useProducts = (query?: string) => {
 
   useEffect(() => {
     fetchProducts(true);
-  }, [query]);
+  }, [fetchProducts, query]);
 
   return {
     products,
@@ -122,7 +122,7 @@ export const useCollections = () => {
             nodes: ShopifyCollection[];
           };
         }>(GET_COLLECTIONS, { first: 20 });
-        
+
         setCollections(data.collections.nodes);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch collections');
@@ -142,7 +142,7 @@ export const useCollectionProducts = (handle: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCollectionProducts = async (reset = false) => {
+  const fetchCollectionProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -161,20 +161,20 @@ export const useCollectionProducts = (handle: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [handle]);
 
 
   useEffect(() => {
     if (handle) {
-      fetchCollectionProducts(true);
+      fetchCollectionProducts();
     }
-  }, [handle]);
+  }, [fetchCollectionProducts, handle]);
 
   return {
     collection,
     loading,
     error,
-    refetch: () => fetchCollectionProducts(true),
+    refetch: () => fetchCollectionProducts(),
   };
 };
 
@@ -231,18 +231,16 @@ export const useCart = () => {
 
   const addToCart = async (lines: CartLineInput[]) => {
     let currentCart = cart;
-    
+
     if (!currentCart) {
       const cartId = getCartId();
       if (cartId) {
         try {
           currentCart = await fetchCart(cartId);
         } catch {
-          // If fetching existing cart fails, create a new one
           currentCart = await createCart();
         }
       } else {
-        // No existing cart, create a new one
         currentCart = await createCart();
       }
     }
@@ -335,15 +333,14 @@ export const useCart = () => {
     }
   };
 
-  // Initialize cart on mount
   useEffect(() => {
     const initializeCart = async () => {
       const cartId = getCartId();
       if (cartId) {
         try {
           await fetchCart(cartId);
-        } catch {
-          // Cart not found or invalid, will create new one when needed
+        } catch (error) {
+          console.warn('Failed to initialize cart (a new cart will be created):', error);
         }
       }
     };

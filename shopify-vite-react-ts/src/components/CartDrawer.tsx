@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Plus, Minus, ShoppingBag } from 'lucide-react';
-import { useCartContext } from '../context/CartContext';
+import { useCartContext } from '../hooks/useCartContext';
 import { formatPrice } from '../utils/shopify';
 
 interface CartDrawerProps {
@@ -21,19 +21,15 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 
 const handleCheckout = () => {
   if (cart?.checkoutUrl) {
-    // Check if we're within an iframe
     const isInIframe = window.self !== window.top;
     
     if (isInIframe) {
-      // Open checkout in a new window/tab when in iframe
       window.open(cart.checkoutUrl, '_blank', 'noopener,noreferrer');
     } else {
-      // Open checkout in the same window when not in iframe
       window.location.href = cart.checkoutUrl;
     }
   } else {
     console.error('No checkout URL available');
-    // Optionally show an error message to the user
   }
 };
 

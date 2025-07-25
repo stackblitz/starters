@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { ShopifyCart, CartLineInput } from '../types/shopify';
-import { shopifyFetch, getCartId, setCartId, removeCartId, isShopifyConfigured } from '../utils/shopify';
+import React, { createContext, useEffect, useState, ReactNode } from 'react';
+import { ShopifyCart, CartLineInput, ShopifyProduct } from '../types/shopify';
+import { shopifyFetch, getCartId, setCartId, removeCartId, isShopifyConfigured, createCheckoutPermalink } from '../utils/shopify';
 import {
   CREATE_CART,
   GET_CART,
@@ -17,17 +17,13 @@ interface CartContextType {
   updateCartLine: (lineId: string, quantity: number) => Promise<void>;
   removeFromCart: (lineIds: string[]) => Promise<void>;
   refreshCart: () => Promise<void>;
+  addProductToCart: (variant: ShopifyProduct['variants']['nodes'][0], quantity: number) => Promise<void>;
+  buyNow: (variant: ShopifyProduct['variants']['nodes'][0], quantity: number) => Promise<void>;
+  addToCartLoading: boolean;
+  buyNowLoading: boolean;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-export const useCartContext = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCartContext must be used within a CartProvider');
-  }
-  return context;
-};
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 interface CartProviderProps {
   children: ReactNode;
@@ -37,6 +33,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<ShopifyCart | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addToCartLoading, setAddToCartLoading] = useState(false);
+  const [buyNowLoading, setBuyNowLoading] = useState(false);
 
   const createCart = async (lines: CartLineInput[] = []) => {
     setLoading(true);
@@ -216,13 +214,53 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   };
 
+  const addProductToCart = async (variant: ShopifyProduct['variants']['nodes'][0], quantity: number) => {
+    if (!variant.availableForSale) return;
+
+    setAddToCartLoading(true);
+    try {
+      await addToCart([
+        {
+          merchandiseId: variant.id,
+          quantity,
+        },
+      ]);
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    } finally {
+      setAddToCartLoading(false);
+    }
+  };
+
+  const buyNow = async (variant: ShopifyProduct['variants']['nodes'][0], quantity: number) => {
+    if (!variant.availableForSale) return;
+
+    setBuyNowLoading(true);
+    try {
+      const checkoutUrl = createCheckoutPermalink(variant.id, quantity);
+      
+      const isInIframe = window.self !== window.top;
+      
+      if (isInIframe) {
+        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        window.location.href = checkoutUrl;
+      }
+    } catch (error) {
+      console.error('Failed to create buy now link:', error);
+    } finally {
+      setBuyNowLoading(false);
+    }
+  };
+
   useEffect(() => {
     const initializeCart = async () => {
       const cartId = getCartId();
       if (cartId) {
         try {
           await fetchCart(cartId);
-        } catch {
+        } catch (error) {
+          console.error('Failed to initialize cart:', error);
         }
       }
     };
@@ -238,6 +276,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     updateCartLine,
     removeFromCart,
     refreshCart,
+    addProductToCart,
+    buyNow,
+    addToCartLoading,
+    buyNowLoading,
   };
 
   return (

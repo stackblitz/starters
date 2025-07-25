@@ -13,7 +13,7 @@ export const SHOPIFY_STOREFRONT_API_URL = SHOPIFY_STORE_URL && SHOPIFY_API_VERSI
 
 export async function shopifyFetch<T>(
   query: string,
-  variables?: Record<string, any>
+  variables?: Record<string, unknown>
 ): Promise<T> {
   if (!isShopifyConfigured()) {
     throw new Error('Shopify store is not configured. Please set up your environment variables.');
