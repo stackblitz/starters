@@ -22,6 +22,10 @@ drawings:
 # use UnoCSS (experimental)
 css: unocss
 wakeLock: "build"
+seoMeta:
+  ogImage: https://bolt.new/static/og_default.png
+  twitterCard: summary_large_image
+  twitterImage: https://bolt.new/static/og_default.png
 ---
 
 # Welcome to Slidev
