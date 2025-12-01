@@ -13,12 +13,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.2",
-    "@vitest/browser": "3.1.1",
-    "@webcontainer/test": "^0.2.0",
+    "@vitest/browser-playwright": "^4.0.14",
+    "@webcontainer/test": "https://pkg.pr.new/@webcontainer/test@20",
     "npm": "10.2.3",
     "playwright": "^1.52.0",
     "prettier": "^2.8.8",
     "prettier-plugin-svelte": "^2.10.1",
-    "vitest": "3.1.1"
+    "vitest": "^4.0.14"
   }
 }
