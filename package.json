@@ -14,7 +14,7 @@
   "devDependencies": {
     "@types/node": "^22.15.2",
     "@vitest/browser-playwright": "^4.0.14",
-    "@webcontainer/test": "https://pkg.pr.new/@webcontainer/test@20",
+    "@webcontainer/test": "^0.3.0",
     "npm": "10.2.3",
     "playwright": "^1.52.0",
     "prettier": "^2.8.8",
