@@ -1,3 +1,4 @@
+import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 import { vitestWebContainers } from '@webcontainer/test/plugin';
 
@@ -9,7 +10,7 @@ export default defineConfig({
 
     browser: {
       enabled: true,
-      provider: 'playwright',
+      provider: playwright(),
       instances: [
         {
           browser: 'chromium',
