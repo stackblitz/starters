@@ -31,7 +31,6 @@ test('user can build project', async ({ webcontainer }) => {
         [
           "index.html",
           "main.js",
-          "polyfills.js",
           "styles.css",
         ]
       `);

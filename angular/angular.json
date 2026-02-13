@@ -17,7 +17,6 @@
               "sourceMap": true
             },
             "production": {
-              "aot": true,
               "extractLicenses": true,
               "namedChunks": false,
               "optimization": true,
@@ -30,7 +29,7 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "outputPath": "dist/demo",
-            "polyfills": ["zone.js"],
+            "polyfills": [],
             "scripts": [],
             "styles": ["src/global_styles.css"],
             "tsConfig": "tsconfig.app.json"
