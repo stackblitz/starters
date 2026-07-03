@@ -7,8 +7,6 @@ import { createContext, useContext } from 'react';
 export type DeckCtxValue = {
   clicks: number;
   isStatic: boolean;
-  auto?: boolean; // auto-play: reveal all builds in a stagger on slide load
-  stagger?: number; // seconds between builds in auto mode
   registerMax?: (at: number) => void;
 };
 

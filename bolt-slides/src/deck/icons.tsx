@@ -54,8 +54,3 @@ export const IconClose = () => (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 );
-export const IconAuto = () => (
-  <svg {...base}>
-    <path d="M8 5.5v13l10-6.5z" />
-  </svg>
-);

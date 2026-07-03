@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import Reveal from '../deck/Reveal';
+import { useDeck } from '../deck/DeckContext';
 
-/* A full-viewport proof slide: responsive auto-fit stat cards. Pass a
-   <CountUp> as a stat `value` so figures animate in. */
+/* A full-viewport proof slide: responsive auto-fit stat cards, each with an
+   accent tick and a staggered rise-in. Pass a <CountUp> as a stat `value`
+   so figures animate in. */
 export type Stat = { value?: ReactNode; label: string; caption?: string };
 
 export default function StatGrid({
@@ -16,6 +19,9 @@ export default function StatGrid({
   nav?: string;
   notes?: string;
 }) {
+  const { isStatic } = useDeck();
+  const reduce = useReducedMotion();
+  const animate = !isStatic && !reduce;
   return (
     <div className="slide">
       <div className="container">
@@ -41,15 +47,28 @@ export default function StatGrid({
             </h2>
           )}
         </Reveal>
-        <Reveal className="stat-grid" y={36}>
+        <div className="stat-grid">
           {stats.map((s, i) => (
-            <div key={i} className="stat-card">
-              <div className="stat-value">{s.value}</div>
-              <div className="stat-label">{s.label}</div>
-              {s.caption && <div className="stat-caption">{s.caption}</div>}
-            </div>
+            <motion.div
+              key={i}
+              className="stat-cell"
+              initial={animate ? { opacity: 0, y: 24 } : false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.55,
+                delay: 0.18 + i * 0.09,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            >
+              <div className="stat-card mat">
+                <span className="tick" />
+                <div className="stat-value">{s.value}</div>
+                <div className="stat-label">{s.label}</div>
+                {s.caption && <div className="stat-caption">{s.caption}</div>}
+              </div>
+            </motion.div>
           ))}
-        </Reveal>
+        </div>
       </div>
     </div>
   );
