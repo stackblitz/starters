@@ -1,30 +1,46 @@
-import { motion } from 'framer-motion';
-import type { CSSProperties } from 'react';
+import { useEffect, useId, useState, type CSSProperties } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useInView } from '../deck/useInView';
+import { useDeck } from '../deck/DeckContext';
 
-/* A small hand-built chart kit — bar, line/area, and donut. Each draws itself in
-   when scrolled into view. All token-driven (one accent), no chart library.
-   <BarChart data={[{label:'Mon',value:44}, …]} />
-   <LineChart points={[12,18,15,26,22,34,30]} />
-   <DonutChart value={72} label="Adoption" /> */
+/* A small hand-built chart kit — bar, line/area, and donut. Each draws itself
+   in when scrolled into view. All token-driven (one accent), no chart library.
+   <BarChart data={[{label:'Mon',value:44}, …]} />       (values label the bars)
+   <LineChart points={[12,18,15,26,22,34,30]} />         (gridlines + live end-dot)
+   <DonutChart value={72} label="Adoption" />            (the number counts up) */
 
 export function BarChart({
   data,
   height = 200,
+  showValues = true,
 }: {
   data: { label: string; value: number }[];
   height?: number;
+  showValues?: boolean;
 }) {
+  const { isStatic } = useDeck();
+  const reduce = useReducedMotion();
   const { ref, inView } = useInView<HTMLDivElement>(0.3);
+  const animate = !isStatic && !reduce;
   const max = Math.max(...data.map((d) => d.value)) || 1;
   return (
     <div className="ch ch-bars" ref={ref} style={{ height }}>
       {data.map((d, i) => (
         <div key={i} className="ch-col">
+          {showValues && (
+            <motion.div
+              className="ch-val"
+              initial={animate ? { opacity: 0, y: 6 } : false}
+              animate={inView ? { opacity: 1, y: 0 } : undefined}
+              transition={{ duration: 0.4, delay: 0.45 + i * 0.06 }}
+            >
+              {d.value.toLocaleString('en-US')}
+            </motion.div>
+          )}
           <div className="ch-bar-track">
             <motion.span
               className="ch-bar"
-              initial={{ height: 0 }}
+              initial={animate ? { height: 0 } : false}
               animate={{ height: inView ? `${(d.value / max) * 100}%` : 0 }}
               transition={{
                 duration: 0.7,
@@ -47,7 +63,11 @@ export function LineChart({
   points: number[];
   height?: number;
 }) {
-  const { ref, inView } = useInView<SVGSVGElement>(0.3);
+  const { isStatic } = useDeck();
+  const reduce = useReducedMotion();
+  const { ref, inView } = useInView<HTMLDivElement>(0.3);
+  const gid = useId();
+  const animate = !isStatic && !reduce;
   const w = 300,
     h = 120;
   const max = Math.max(...points),
@@ -63,39 +83,72 @@ export function LineChart({
     )
     .join(' ');
   const area = `${line} L${w},${h} L0,${h} Z`;
+  const [ex, ey] = coords[coords.length - 1];
   return (
-    <svg
-      ref={ref}
-      className="ch-line"
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      style={{ height }}
-    >
-      <defs>
-        <linearGradient id="ch-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.34" />
-          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <motion.path
-        d={area}
-        fill="url(#ch-fill)"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: inView ? 1 : 0 }}
-        transition={{ duration: 0.6, delay: 0.5 }}
+    <div className="ch-wrap" ref={ref}>
+      <svg
+        className="ch-line"
+        viewBox={`0 0 ${w} ${h}`}
+        preserveAspectRatio="none"
+        style={{ height }}
+      >
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.34" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* horizontal gridlines — crisp regardless of the non-uniform scale */}
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line
+            key={f}
+            x1="0"
+            x2={w}
+            y1={5 + (h - 10) * f}
+            y2={5 + (h - 10) * f}
+            stroke="var(--hair-2)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        <line
+          x1="0"
+          x2={w}
+          y1={h - 0.5}
+          y2={h - 0.5}
+          stroke="var(--hair)"
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
+        />
+        <motion.path
+          d={area}
+          fill={`url(#${gid})`}
+          initial={animate ? { opacity: 0 } : false}
+          animate={{ opacity: inView ? 1 : 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        />
+        {/* no vectorEffect here: non-scaling-stroke breaks the pathLength
+            draw-in under a stretched viewBox (the dash ends before the path
+            does and the stroke stops short of its end-point) */}
+        <motion.path
+          d={line}
+          fill="none"
+          stroke="var(--primary)"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={animate ? { pathLength: 0 } : false}
+          animate={{ pathLength: inView ? 1 : 0 }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </svg>
+      {/* the live end-point — a glowing dot with a radar pulse */}
+      <span
+        className={'ch-dot' + (inView ? ' shown' : '')}
+        style={{ left: `${(ex / w) * 100}%`, top: `${(ey / h) * 100}%` }}
+        aria-hidden
       />
-      <motion.path
-        d={line}
-        fill="none"
-        stroke="var(--primary)"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: inView ? 1 : 0 }}
-        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-      />
-    </svg>
+    </div>
   );
 }
 
@@ -108,9 +161,31 @@ export function DonutChart({
   label?: string;
   size?: number;
 }) {
+  const { isStatic } = useDeck();
+  const reduce = useReducedMotion();
   const { ref, inView } = useInView<SVGSVGElement>(0.4);
+  const [shown, setShown] = useState(isStatic ? value : 0);
   const r = 54;
   const circ = 2 * Math.PI * r;
+
+  useEffect(() => {
+    if (isStatic || !inView) return;
+    if (reduce) {
+      setShown(value);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const dur = 1100;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / dur);
+      setShown(value * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isStatic, inView, value, reduce]);
+
   return (
     <div
       className="ch-donut"
@@ -126,6 +201,7 @@ export function DonutChart({
           strokeWidth={12}
         />
         <motion.circle
+          className="ch-donut-arc"
           cx="70"
           cy="70"
           r={r}
@@ -135,7 +211,7 @@ export function DonutChart({
           strokeLinecap="round"
           strokeDasharray={circ}
           transform="rotate(-90 70 70)"
-          initial={{ strokeDashoffset: circ }}
+          initial={isStatic || reduce ? false : { strokeDashoffset: circ }}
           animate={{
             strokeDashoffset: inView ? circ * (1 - value / 100) : circ,
           }}
@@ -148,7 +224,7 @@ export function DonutChart({
           dominantBaseline="central"
           className="ch-donut-val"
         >
-          {value}%
+          {Math.round(shown)}%
         </text>
       </svg>
       {label && <div className="ch-donut-label">{label}</div>}

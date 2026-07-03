@@ -5,7 +5,15 @@ import { useEffect, useRef, useState } from 'react';
    palette; three sizes; undo + clear. Strokes are stored as data (per slide,
    in `store`) so they PERSIST on the slide they were made on, and undo /
    stroke-erase work cleanly. The bar + drawing are only interactive when
-   `active`; otherwise the canvas just displays the slide's saved annotations. */
+   `active`; otherwise the canvas just displays the slide's saved annotations.
+
+   CONTENT-ANCHORED: when a stroke is committed it is anchored to the block
+   element under its center (stored as a child-index path from the slide
+   stage) with coordinates relative to THAT element's box. Because the slide
+   DOM is identical at every viewport — only CSS reflows it — the same path
+   resolves on any screen, so a circle drawn around a stat on a laptop rings
+   the same stat on a phone, wherever the layout moved it. Strokes over empty
+   background anchor to the stage and scale with the viewport. */
 
 type Tool =
   | 'pen'
@@ -15,8 +23,15 @@ type Tool =
   | 'rect'
   | 'ellipse'
   | 'eraser';
-type Pt = { x: number; y: number };
-export type Stroke = { tool: Tool; color: string; size: number; points: Pt[] };
+type Pt = { x: number; y: number }; // relative to the stroke's anchor box (0..1)
+export type Stroke = {
+  tool: Tool;
+  color: string;
+  size: number;
+  points: Pt[];
+  anchor?: string;
+};
+type Box = { left: number; top: number; width: number; height: number };
 
 const TOOLS: { id: Tool; label: string; path: string }[] = [
   { id: 'pen', label: 'Pen', path: 'M4 20h4L18 10a2 2 0 0 0-3-3L5 17z' },
@@ -68,6 +83,67 @@ const IconTrash = () => (
   </svg>
 );
 
+/* ── content anchoring ─────────────────────────────────────────────── */
+const stage = () => document.querySelector('.slide-stage');
+const viewportBox = (): Box => ({
+  left: 0,
+  top: 0,
+  width: window.innerWidth,
+  height: window.innerHeight,
+});
+
+/* child-index path from the stage root, e.g. "0.2.1" ("" = the stage itself) */
+function pathOf(el: Element): string {
+  const root = stage();
+  const parts: number[] = [];
+  let cur: Element | null = el;
+  while (cur && cur !== root) {
+    const parent: Element | null = cur.parentElement;
+    if (!parent) return '';
+    parts.unshift(Array.prototype.indexOf.call(parent.children, cur));
+    cur = parent;
+  }
+  return cur === root ? parts.join('.') : '';
+}
+function resolveAnchor(path?: string): Box | null {
+  if (path === undefined) return null;
+  const root = stage();
+  if (!root) return null;
+  let cur: Element = root;
+  if (path !== '') {
+    for (const i of path.split('.').map(Number)) {
+      const next = cur.children[i];
+      if (!next) return null;
+      cur = next;
+    }
+  }
+  const r = cur.getBoundingClientRect();
+  return r.width > 4 && r.height > 4 ? r : null;
+}
+/* the block element under a client point (skipping the canvas + chrome) */
+function anchorAt(cx: number, cy: number): string {
+  for (const el of document.elementsFromPoint(cx, cy)) {
+    if (!el.closest('.slide-stage')) continue;
+    let block: Element | null = el;
+    while (
+      block &&
+      block !== stage() &&
+      getComputedStyle(block).display === 'inline'
+    )
+      block = block.parentElement;
+    return block ? pathOf(block) : '';
+  }
+  return '';
+}
+/* a stroke's points mapped to client pixels at the CURRENT layout */
+function clientPts(s: Stroke): Pt[] {
+  const r = resolveAnchor(s.anchor) ?? viewportBox();
+  return s.points.map((p) => ({
+    x: r.left + p.x * r.width,
+    y: r.top + p.y * r.height,
+  }));
+}
+
 function distToSeg(
   px: number,
   py: number,
@@ -83,13 +159,12 @@ function distToSeg(
   t = Math.max(0, Math.min(1, t));
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
-function outline(s: Stroke): Pt[] {
-  if (s.points.length < 2) return s.points;
-  const a = s.points[0],
-    b = s.points[s.points.length - 1];
-  if (s.tool === 'rect')
-    return [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }, a];
-  if (s.tool === 'ellipse') {
+function outline(tool: Tool, pts: Pt[]): Pt[] {
+  if (pts.length < 2) return pts;
+  const a = pts[0],
+    b = pts[pts.length - 1];
+  if (tool === 'rect') return [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }, a];
+  if (tool === 'ellipse') {
     const cx = (a.x + b.x) / 2,
       cy = (a.y + b.y) / 2,
       rx = Math.abs(b.x - a.x) / 2,
@@ -99,10 +174,10 @@ function outline(s: Stroke): Pt[] {
       y: cy + ry * Math.sin((i / 24) * 2 * Math.PI),
     }));
   }
-  return s.points;
+  return pts;
 }
 function hits(s: Stroke, x: number, y: number, r: number) {
-  const pts = outline(s);
+  const pts = outline(s.tool, clientPts(s));
   if (pts.length === 1)
     return Math.hypot(pts[0].x - x, pts[0].y - y) < r + s.size;
   for (let i = 0; i < pts.length - 1; i++)
@@ -126,7 +201,7 @@ export default function Annotator({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   if (!store[slide]) store[slide] = [];
   const strokes = useRef<Stroke[]>(store[slide]);
-  const draft = useRef<Stroke | null>(null);
+  const draft = useRef<Stroke | null>(null); // draft points are raw client px
   const [tool, setTool] = useState<Tool>('pen');
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
@@ -144,8 +219,8 @@ export default function Annotator({
           .trim() || '#4fe5b0'
       : c;
 
-  function paint(ctx: CanvasRenderingContext2D, s: Stroke) {
-    if (!s.points.length) return;
+  function paint(ctx: CanvasRenderingContext2D, s: Stroke, p: Pt[]) {
+    if (!p.length) return;
     ctx.save();
     ctx.strokeStyle = resolve(s.color);
     ctx.lineCap = 'round';
@@ -155,8 +230,7 @@ export default function Annotator({
       ctx.globalAlpha = 0.32;
       ctx.lineWidth = s.size * 3.2;
     }
-    const p = s.points,
-      a = p[0],
+    const a = p[0],
       b = p[p.length - 1];
     ctx.beginPath();
     if (s.tool === 'pen' || s.tool === 'highlighter') {
@@ -212,8 +286,8 @@ export default function Annotator({
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
-    for (const s of strokes.current) paint(ctx, s);
-    if (draft.current) paint(ctx, draft.current);
+    for (const s of strokes.current) paint(ctx, s, clientPts(s));
+    if (draft.current) paint(ctx, draft.current, draft.current.points);
   }
   function commit() {
     store[slide] = strokes.current;
@@ -238,15 +312,32 @@ export default function Annotator({
     };
     fit();
     const onUp = () => {
-      if (draft.current) {
-        strokes.current.push(draft.current);
-        draft.current = null;
-        commit();
-      }
+      const d = draft.current;
+      if (!d) return;
+      draft.current = null;
+      // anchor the stroke to the content under its center, then store its
+      // points relative to that element's box
+      const xs = d.points.map((p) => p.x),
+        ys = d.points.map((p) => p.y);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+      const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+      d.anchor = anchorAt(cx, cy);
+      const r = resolveAnchor(d.anchor) ?? viewportBox();
+      d.points = d.points.map((p) => ({
+        x: (p.x - r.left) / r.width,
+        y: (p.y - r.top) / r.height,
+      }));
+      strokes.current.push(d);
+      commit();
     };
+    // re-render after the slide's entrance motion settles (anchor boxes move)
+    const t1 = window.setTimeout(redraw, 400);
+    const t2 = window.setTimeout(redraw, 1100);
     window.addEventListener('resize', fit);
     window.addEventListener('pointerup', onUp);
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
       window.removeEventListener('resize', fit);
       window.removeEventListener('pointerup', onUp);
     };
@@ -254,31 +345,28 @@ export default function Annotator({
   }, []);
 
   function down(e: React.PointerEvent) {
-    const x = e.clientX,
-      y = e.clientY;
     if (toolRef.current === 'eraser') {
-      erase(x, y);
+      erase(e.clientX, e.clientY);
       return;
     }
     draft.current = {
       tool: toolRef.current,
       color: colorRef.current,
       size: sizeRef.current,
-      points: [{ x, y }],
+      points: [{ x: e.clientX, y: e.clientY }],
     };
     redraw();
   }
   function move(e: React.PointerEvent) {
-    const x = e.clientX,
-      y = e.clientY;
     if (toolRef.current === 'eraser') {
-      if (e.buttons) erase(x, y);
+      if (e.buttons) erase(e.clientX, e.clientY);
       return;
     }
     const d = draft.current;
     if (!d) return;
-    if (d.tool === 'pen' || d.tool === 'highlighter') d.points.push({ x, y });
-    else d.points = [d.points[0], { x, y }];
+    if (d.tool === 'pen' || d.tool === 'highlighter')
+      d.points.push({ x: e.clientX, y: e.clientY });
+    else d.points = [d.points[0], { x: e.clientX, y: e.clientY }];
     redraw();
   }
 

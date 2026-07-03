@@ -17,11 +17,23 @@ import CodeWindow from './components/CodeWindow';
 import BrowserFrame from './components/BrowserFrame';
 import SpotlightCard from './components/SpotlightCard';
 import { BarChart, LineChart, DonutChart } from './components/Charts';
+import Section from './components/Section';
+import Quote from './components/Quote';
+import Pricing from './components/Pricing';
+import Steps from './components/Steps';
+import Agenda from './components/Agenda';
+import Team from './components/Team';
+import Cover from './components/Cover';
+import BigNumber from './components/BigNumber';
+import Contrast from './components/Contrast';
+import Chat from './components/Chat';
+import Table from './components/Table';
+import Globe from './components/Globe';
 
 /* ══════════════════════════════════════════════════════════════════════
    ⚠️  THROWAWAY DEMO showing every component. DELETE these slides and AUTHOR
    THE USER'S DECK. Each child of <Deck> is one slide. Add speaker notes with
-   notes="…" on any slide (shown in presenter mode — press P). (A = auto-play.)
+   notes="…" on any slide (shown in presenter mode — press P).
    ══════════════════════════════════════════════════════════════════════ */
 const panel = (extra = 0.22): React.CSSProperties => ({
   position: 'absolute',
@@ -41,23 +53,14 @@ export default function App() {
   return (
     <Deck>
       {/* Cover */}
-      <Slide
-        center
+      <Cover
         nav="Cover"
         notes="Welcome — introduce yourself, then set up the problem. Hold a beat on this slide."
-      >
-        <Reveal>
-          <div className="kicker" style={{ marginBottom: 14 }}>
-            Helix · Component demo
-          </div>
-          <h1 className="display">
-            <span className="accent-text">Helix</span>
-          </h1>
-          <p className="subhead" style={{ marginTop: 18 }}>
-            A responsive React deck engine. Delete this and build the real one.
-          </p>
-        </Reveal>
-      </Slide>
+        kicker="Bolt Slides · Component demo"
+        title={<span className="accent-text">Bolt Slides</span>}
+        subtitle="A responsive React deck engine. Delete this and build the real one."
+        foot="June 2026 · Component demo"
+      />
 
       {/* Statement + click-build */}
       <Slide
@@ -74,10 +77,50 @@ export default function App() {
         </h2>
         <Build at={1}>
           <p className="subhead" style={{ marginTop: 20 }}>
-            Helix turns raw events into answers — automatically.
+            Bolt Slides turns raw events into answers — automatically.
           </p>
         </Build>
       </Slide>
+
+      {/* Agenda */}
+      <Agenda
+        nav="Agenda"
+        notes="Thirty seconds max — just orient the room, then move."
+        kicker="Agenda"
+        title="What we'll cover."
+        items={[
+          'The problem',
+          'How Bolt Slides works',
+          'Proof it compounds',
+          { title: 'Pricing & the ask', hint: '5 min' },
+        ]}
+      />
+
+      {/* Contrast — the problem */}
+      <Contrast
+        nav="The problem"
+        notes="Let the left panel sting for a second before you talk to the right one."
+        kicker="The shift"
+        title="Stop digging. Start asking."
+        left={{
+          label: 'Before',
+          title: 'Dashboard sprawl',
+          points: [
+            'Forty dashboards, zero answers',
+            'Analysts as human query engines',
+            'Insights arrive a week late',
+          ],
+        }}
+        right={{
+          label: 'With Bolt Slides',
+          title: 'Answers on tap',
+          points: [
+            'Ask in plain English',
+            'Sub-second, source-linked answers',
+            'Alerts before the dashboard knows',
+          ],
+        }}
+      />
 
       {/* Split feature */}
       <Split
@@ -93,7 +136,15 @@ export default function App() {
         media={
           <>
             <div style={panel(0.22)} />
-            <div style={{ position: 'relative', padding: 40 }}>
+            <div
+              style={{
+                position: 'relative',
+                padding: 'clamp(14px,3vw,40px)',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
               <TiltCard>
                 <VisualDashboard />
               </TiltCard>
@@ -133,6 +184,54 @@ export default function App() {
         ]}
       />
 
+      {/* Globe */}
+      <Globe
+        nav="Global"
+        notes="Spin it if you like — the markers are our actual regions. Land on the APAC number."
+        kicker="28 regions"
+        title={
+          <>
+            Everywhere your <span className="accent-text">data lives.</span>
+          </>
+        }
+        body="Ingest close to the source; answer from the nearest edge."
+        markers={[
+          {
+            location: [37.77, -122.41],
+            size: 0.08,
+            label: 'sfo1',
+            value: '221k evt/s',
+          },
+          { location: [40.71, -74.0], size: 0.08 },
+          {
+            location: [51.5, -0.12],
+            size: 0.07,
+            label: 'lhr1',
+            value: '188k evt/s',
+          },
+          { location: [52.52, 13.4], size: 0.05 },
+          {
+            location: [1.35, 103.82],
+            size: 0.07,
+            label: 'sin1',
+            value: '96k evt/s',
+          },
+          { location: [35.68, 139.69], size: 0.06 },
+          { location: [-33.87, 151.2], size: 0.05 },
+          { location: [-23.55, -46.63], size: 0.05 },
+        ]}
+        arcs={[
+          { from: [37.77, -122.41], to: [51.5, -0.12] },
+          { from: [51.5, -0.12], to: [1.35, 103.82] },
+          { from: [37.77, -122.41], to: [-23.55, -46.63] },
+        ]}
+        stats={[
+          { value: '48%', label: 'North America' },
+          { value: '31%', label: 'EMEA' },
+          { value: '21%', label: 'APAC + LATAM' },
+        ]}
+      />
+
       {/* StatGrid — traction */}
       <StatGrid
         nav="Traction"
@@ -154,6 +253,72 @@ export default function App() {
             value: <CountUp to={120} suffix="+" />,
             label: 'Enterprise logos',
             caption: 'across six industries',
+          },
+        ]}
+      />
+
+      {/* BigNumber */}
+      <BigNumber
+        nav="Big number"
+        notes="Let the number breathe. One sentence of context, then move."
+        kicker="Every day"
+        value={<CountUp to={2.4} decimals={1} suffix="B" />}
+        caption="events answered in under a second."
+        foot="Production traffic, trailing 30 days"
+      />
+
+      {/* Section divider */}
+      <Section
+        nav="Part two"
+        notes="Breathe. New chapter."
+        n={2}
+        kicker="Part two"
+        title={
+          <>
+            How it <span className="accent-text">works.</span>
+          </>
+        }
+      />
+
+      {/* Steps */}
+      <Steps
+        nav="How it works"
+        notes="Walk left to right. The point is that step three is where competitors stop."
+        kicker="How it works"
+        title="Three steps to live data."
+        items={[
+          {
+            title: 'Connect',
+            body: 'Point Bolt Slides at your warehouse or event stream. No schema to define.',
+          },
+          {
+            title: 'Model',
+            body: 'It learns your entities and builds the metric graph automatically.',
+          },
+          {
+            title: 'Act',
+            body: 'Ask questions in plain English; alerts fire before dashboards notice.',
+          },
+        ]}
+      />
+
+      {/* Chat */}
+      <Chat
+        nav="Ask anything"
+        notes="Click through the exchange one message at a time — pause after the answer lands."
+        kicker="Ask anything"
+        title="Plain English in. Answers out."
+        name="Bolt Slides"
+        messages={[
+          { from: 'user', text: 'Why did signups dip last week?' },
+          {
+            from: 'ai',
+            text: 'Signups fell 12% after Tuesday’s pricing-page change. The drop is entirely mobile — desktop is flat.',
+          },
+          { from: 'user', text: 'Roll it back for mobile only?' },
+          {
+            from: 'ai',
+            text: 'Done. I’ll alert you when the trend recovers — based on current traffic, roughly 6 hours.',
           },
         ]}
       />
@@ -184,7 +349,7 @@ export default function App() {
         <Reveal>
           <div style={{ maxWidth: 820, marginInline: 'auto' }}>
             <Comparison
-              cols={['', 'Helix', 'Legacy tools']}
+              cols={['', 'Bolt Slides', 'Legacy tools']}
               highlight={0}
               rows={[
                 { label: 'Realtime by default', values: [true, false] },
@@ -231,7 +396,7 @@ export default function App() {
               {
                 label: 'Engineering',
                 content: (
-                  <p className="lead" style={{ margin: 0 }}>
+                  <p className="lead">
                     Trace any request end-to-end, alert on anomalies, ship with
                     confidence.
                   </p>
@@ -257,7 +422,7 @@ export default function App() {
               {
                 label: 'Ops',
                 content: (
-                  <p className="lead" style={{ margin: 0 }}>
+                  <p className="lead">
                     One source of truth for uptime, cost, and capacity — no
                     spreadsheets.
                   </p>
@@ -286,7 +451,7 @@ export default function App() {
               <CodeWindow
                 title="app.ts"
                 highlight={[3]}
-                code={`import { track } from '@helix/sdk'
+                code={`import { track } from '@bolt-slides/sdk'
 
 track('signup', {
   plan: 'pro',
@@ -321,15 +486,13 @@ track('signup', {
         </Reveal>
         <Reveal>
           <div style={{ maxWidth: 800, marginInline: 'auto', width: '100%' }}>
-            <BrowserFrame url="app.helix.io">
+            <BrowserFrame url="app.boltslides.dev">
               <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '180px 1fr',
-                  minHeight: 372,
-                }}
+                className="appmock"
+                style={{ minHeight: 'clamp(280px, 42vh, 372px)' }}
               >
                 <div
+                  className="hide-narrow"
                   style={{
                     borderRight: '1px solid var(--hair-2)',
                     background: 'var(--surface)',
@@ -343,7 +506,7 @@ track('signup', {
                     className="kicker"
                     style={{ marginBottom: 12, paddingLeft: 8 }}
                   >
-                    Helix
+                    Bolt Slides
                   </div>
                   {['Overview', 'Events', 'Funnels', 'Cohorts', 'Settings'].map(
                     (n, i) => (
@@ -381,7 +544,8 @@ track('signup', {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(3,1fr)',
+                      gridTemplateColumns:
+                        'repeat(auto-fit, minmax(min(110px, 100%), 1fr))',
                       gap: 12,
                       marginBottom: 16,
                     }}
@@ -455,14 +619,7 @@ track('signup', {
           </h2>
         </Reveal>
         <Reveal>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1.1fr 1.1fr 0.8fr',
-              gap: 20,
-              alignItems: 'stretch',
-            }}
-          >
+          <div className="cols">
             <div style={card}>
               <div className="kicker" style={{ marginBottom: 14 }}>
                 Weekly active
@@ -502,6 +659,44 @@ track('signup', {
               <DonutChart value={94} label="Net retention" size={150} />
             </div>
           </div>
+        </Reveal>
+      </Slide>
+
+      {/* Data table */}
+      <Slide
+        nav="Unit economics"
+        notes="Walk the growth column top to bottom — APAC is the story."
+      >
+        <Reveal>
+          <div
+            className="kicker"
+            style={{ marginBottom: 12, textAlign: 'center' }}
+          >
+            Unit economics
+          </div>
+          <h2
+            className="headline"
+            style={{
+              textAlign: 'center',
+              marginInline: 'auto',
+              marginBottom: 'clamp(22px,4vh,38px)',
+            }}
+          >
+            Growth, by region.
+          </h2>
+        </Reveal>
+        <Reveal>
+          <Table
+            columns={['Region', 'ARR', 'Growth', 'NRR', 'Payback']}
+            rows={[
+              ['North America', '$2.4M', '+38%', '124%', '11 mo'],
+              ['Europe', '$1.1M', '+52%', '118%', '13 mo'],
+              ['APAC', '$0.7M', '+61%', '109%', '14 mo'],
+              ['LATAM', '$0.2M', '+44%', '104%', '16 mo'],
+            ]}
+            highlightCol={2}
+            caption="Company data, FY25 · NRR = net revenue retention"
+          />
         </Reveal>
       </Slide>
 
@@ -551,6 +746,51 @@ track('signup', {
         </div>
       </Slide>
 
+      {/* Pricing */}
+      <Pricing
+        nav="Pricing"
+        notes="Anchor on Pro. Enterprise exists so Pro looks reasonable — don't oversell it."
+        kicker="Pricing"
+        title="Simple, honest plans."
+        tiers={[
+          {
+            name: 'Starter',
+            price: '$29',
+            period: '/mo',
+            blurb: 'For small teams getting live.',
+            features: [
+              '1M events / month',
+              'Realtime dashboards',
+              'Community support',
+            ],
+          },
+          {
+            name: 'Pro',
+            price: '$79',
+            period: '/mo',
+            blurb: 'Everything growing teams need.',
+            features: [
+              '10M events / month',
+              'AI insights + alerts',
+              'Self-host option',
+              'Priority support',
+            ],
+            highlight: true,
+          },
+          {
+            name: 'Enterprise',
+            price: 'Custom',
+            blurb: 'Scale, compliance, and control.',
+            features: [
+              'Unlimited events',
+              'SSO + audit logs',
+              'On-prem deploy',
+              'Dedicated CSM',
+            ],
+          },
+        ]}
+      />
+
       {/* Spotlight principles */}
       <Slide
         nav="Principles"
@@ -575,13 +815,7 @@ track('signup', {
           </h2>
         </Reveal>
         <Reveal>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3,1fr)',
-              gap: 20,
-            }}
-          >
+          <div className="cols">
             {[
               {
                 k: '01',
@@ -660,7 +894,7 @@ track('signup', {
               items={[
                 {
                   title: 'How long does setup take?',
-                  body: 'Five minutes — point Helix at your warehouse and you are live.',
+                  body: 'Five minutes — point Bolt Slides at your warehouse and you are live.',
                 },
                 {
                   title: 'Can we self-host?',
@@ -675,6 +909,20 @@ track('signup', {
           </div>
         </Reveal>
       </Slide>
+
+      {/* Team */}
+      <Team
+        nav="Team"
+        notes="One line per person. The point is the operator pedigree, not the bios."
+        kicker="The team"
+        title="Built by operators."
+        people={[
+          { name: 'Dana Kim', role: 'CEO · ex-Stripe' },
+          { name: 'Ade Obi', role: 'CTO · ex-Datadog' },
+          { name: 'Mara Silva', role: 'Design · ex-Linear' },
+          { name: 'Jon Park', role: 'GTM · ex-Snowflake' },
+        ]}
+      />
 
       {/* Logos */}
       <Slide
@@ -701,28 +949,13 @@ track('signup', {
       </Slide>
 
       {/* Quote */}
-      <Slide
-        center
+      <Quote
         nav="Quote"
         notes="Read it slowly, then stay silent for a second. Let it land."
-      >
-        <Reveal>
-          <p
-            className="headline"
-            style={{
-              fontSize: 'clamp(28px,4vw,50px)',
-              fontWeight: 500,
-              marginInline: 'auto',
-              maxWidth: '20ch',
-            }}
-          >
-            “We replaced four tools with Helix and never looked back.”
-          </p>
-          <div className="foot" style={{ marginTop: 22 }}>
-            — Dana Kim, VP Engineering
-          </div>
-        </Reveal>
-      </Slide>
+        text="We replaced four tools with Bolt Slides and never looked back."
+        name="Dana Kim"
+        role="VP Engineering, Acme"
+      />
 
       {/* CTA */}
       <Slide
@@ -735,7 +968,7 @@ track('signup', {
             <span className="accent-text">Let's talk.</span>
           </h2>
           <p className="subhead" style={{ marginTop: 16 }}>
-            helix.io · hello@helix.io
+            hello@bolt.new
           </p>
         </Reveal>
       </Slide>

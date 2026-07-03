@@ -1,19 +1,22 @@
-/* A "us vs. them" feature matrix. One value column is highlighted (your column).
+/* A "us vs. them" feature matrix. One value column is highlighted (your
+   column) and reads as a framed accent strip through the table; booleans
+   render as circled check/cross chips; rows cascade in on view.
    <Comparison cols={['', 'Acme', 'Legacy']} highlight={0}
      rows={[{ label: 'Realtime sync', values: [true, false] },
             { label: 'Price', values: ['$29', '$99'] }]} />
    values are booleans (→ ✓/✗) or strings; `highlight` indexes the value columns. */
 import type { CSSProperties } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useInView } from '../deck/useInView';
 
 export type CompRow = { label: string; values: (boolean | string)[] };
 
 const Check = () => (
   <svg
-    className="cmp-ic ok"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2.4}
+    strokeWidth={2.6}
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -22,11 +25,10 @@ const Check = () => (
 );
 const Cross = () => (
   <svg
-    className="cmp-ic no"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2.2}
+    strokeWidth={2.3}
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -43,9 +45,15 @@ export default function Comparison({
   rows: CompRow[];
   highlight?: number;
 }) {
+  const { ref, inView } = useInView<HTMLDivElement>(0.25);
+  const reduce = useReducedMotion();
   const vcols = cols.length - 1;
   return (
-    <div className="cmp" style={{ '--vcols': vcols } as CSSProperties}>
+    <div
+      ref={ref}
+      className="cmp mat"
+      style={{ '--vcols': vcols } as CSSProperties}
+    >
       <div className="cmp-row cmp-head">
         {cols.map((c, i) => (
           <div
@@ -57,7 +65,17 @@ export default function Comparison({
         ))}
       </div>
       {rows.map((r, ri) => (
-        <div key={ri} className="cmp-row">
+        <motion.div
+          key={ri}
+          className="cmp-row"
+          initial={reduce ? false : { opacity: 0, y: 10 }}
+          animate={inView ? { opacity: 1, y: 0 } : undefined}
+          transition={{
+            duration: 0.45,
+            delay: 0.1 + ri * 0.07,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        >
           <div className="cmp-cell cmp-label">{r.label}</div>
           {r.values.map((v, vi) => (
             <div
@@ -65,17 +83,15 @@ export default function Comparison({
               className={'cmp-cell' + (vi === highlight ? ' hl' : '')}
             >
               {typeof v === 'boolean' ? (
-                v ? (
-                  <Check />
-                ) : (
-                  <Cross />
-                )
+                <span className={'cmp-chip ' + (v ? 'ok' : 'no')}>
+                  {v ? <Check /> : <Cross />}
+                </span>
               ) : (
                 <span className="cmp-val">{v}</span>
               )}
             </div>
           ))}
-        </div>
+        </motion.div>
       ))}
     </div>
   );

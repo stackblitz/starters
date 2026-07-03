@@ -30,7 +30,7 @@ Two halves — keep them separate:
 > **Theme surface.** All color, type, radius, depth, and motion live in the `:root`
 > token vocabulary of `src/styles/tokens.css`. Theme a brand once, there.
 
-## ⛔ Two hard rules
+## ⛔ Three hard rules
 
 1. **Don't touch the engine** — leave `src/deck/` (the engine + chrome: `Deck`, `Slide`,
    `Build`, `Reveal`, `DeckContext`, `icons`, `Annotator`, `useInView`) untouched. Don't
@@ -38,6 +38,16 @@ Two halves — keep them separate:
 2. **Author the deck from the user's REAL input — do not reskin the starter.**
    `src/App.tsx` is a throwaway that only proves it runs. **Delete its slides and
    write a new deck.** Never reuse its order, copy, placeholders, or fake names.
+3. **Center what stands alone.** Ask of every slide: *does it have a side visual*
+   (a `Split` media panel, an image, a `BrowserFrame`, a chart beside text)?
+   - **No side visual** (only text, or one structured block like `Comparison` /
+     `Tabs` / `Timeline` / `Accordion` / `StatGrid`) → the slide MUST be centered:
+     use `<Slide center>`, or a `textAlign:'center'` heading with
+     `marginInline:'auto'` on every block below it.
+   - **Yes** → left-aligned/asymmetric is allowed; the visual balances the text.
+   A lone left-anchored block floating in empty space is the #1 alignment bug —
+   never ship one. (The structured blocks self-center with built-in max-widths as
+   a safety net, but headings/paragraphs around them are YOUR job to center.)
 
 ---
 
@@ -60,8 +70,10 @@ package.json  vite.config.ts  tsconfig*.json  index.html   src/main.tsx
 src/App.tsx                 ← THROWAWAY. delete its slides; author the real deck.
 src/styles/   tokens.css (edit :root ONLY) · base.css   ← don't edit base.css
 src/deck/   Deck Slide Build Reveal DeckContext useInView icons Annotator   ← engine + UI. LOCKED.
-src/components/  CountUp TiltCard Marquee Bento Split StatGrid VisualDashboard Accordion
-                Comparison Tabs Timeline CodeWindow BrowserFrame SpotlightCard Charts
+src/components/  Cover BigNumber Contrast Chat Bento Split StatGrid Section   ← slide layouts
+                Quote Pricing Steps Agenda Team
+                CountUp TiltCard Marquee VisualDashboard Accordion Comparison
+                Tabs Timeline CodeWindow BrowserFrame SpotlightCard Charts
 ```
 
 `npm install && npm run dev` runs the deck at `/`. Verify the dock / thumbnail rail /
@@ -86,13 +98,39 @@ of `base.css`. Derive from the brand when given.
 
 Compose slides in `App.tsx`. The building blocks:
 
-- **`<Slide>`** — one slide. `center` for cover/statement/quote/CTA; `full` for
+- **`<Slide>`** — one slide. `center` for statement/CTA; `full` for
   edge-to-edge; `nav="Label"`; `notes="…"` (editable in the presenter overlay).
+- **`<Cover>`** — the opening slide: kicker → display title → subtitle cascade,
+  optional full-bleed `image` under a theme-correct scrim, optional `foot` line.
+- **`<BigNumber>`** — ONE enormous accent figure (pass a `<CountUp>`) + caption.
+  Every deck should have one of these drama beats.
+- **`<Contrast>`** — before/after, problem→solution: a muted panel vs an
+  accent-lit panel with cross/check points. The classic pitch move.
+- **`<Chat>`** — a chat window whose messages reveal one per click (builds) —
+  user bubbles on the accent, assistant on the surface. For AI-product decks.
+- **`<Globe>`** — a rotating, drag-to-spin 3D dotted globe (hand-built canvas,
+  zero deps): accent markers at real `[lat, lng]` coordinates, optional `label`
+  + `value` chips that ride their marker and fade behind the globe, optional
+  `arcs={[{from, to}]}` great-circle connections, and stat rows beside it.
+  Colors follow the tokens automatically. Label a FEW hero markers, not all.
 - **`<Split>`** — text + edge-to-edge media (`flip` swaps). media = `<img>`, a color
   panel, a `<BrowserFrame>`, or `<TiltCard><VisualX/></TiltCard>`.
 - **`<Bento>`** — asymmetric tile grid; tiles take `c`/`r` spans + `variant`.
 - **`<StatGrid>`** — responsive proof cards; pass a `<CountUp>` as a stat `value`.
+- **`<Section>`** — chapter divider: ghost number + accent glows. The full-bleed
+  breather for decks without photography; use between parts.
+- **`<Agenda>`** — numbered table-of-contents rows (strings, or `{title, hint}`).
+- **`<Steps>`** — horizontal numbered process; the connector draws in. Use for
+  "how it works" instead of a bulleted list.
+- **`<Pricing>`** — 2–4 tier cards; `highlight: true` crowns one with a badge.
+- **`<Team>`** — people grid; photos via `img`, else auto-initials on the accent.
+- **`<Quote>`** — pull-quote slide with attribution (don't add quotation marks —
+  the accent mark provides them).
 - **`<Comparison>`** — us-vs-them feature matrix; one column highlighted in the accent.
+- **`<Table>`** — a real data table: uppercase ruled header, right-aligned tabular
+  numerals, optional `highlightCol`/`highlightRow`, `caption` for the source.
+  Use for actual data (pricing tiers → `Pricing`, feature ticks → `Comparison`).
+  Keep ≤5 columns / ≤7 rows — a paged slide can't scroll.
 - **`<Tabs>`** — tabbed content with a sliding accent pill.
 - **`<Accordion>`** — expand/collapse panels (FAQ, feature detail).
 - **`<Timeline>`** — vertical roadmap that draws its connector + milestones in.
@@ -104,16 +142,43 @@ Compose slides in `App.tsx`. The building blocks:
 - **Atoms** (CSS classes): `.display .headline .lead .subhead .kicker .figure
   .accent-text .rule`. All fluid (`clamp()`).
 
+### ⚠️ Pick layouts for the story — not the showcase
+
+The starter demo uses every layout **because it is a component demo**. A real
+deck must not. Every specialty layout has an **entry condition** — if the
+content doesn't meet it, the layout does not appear:
+
+- **`<Chat>`** — ONLY if the product genuinely has a conversational / AI
+  interface, and the exchange shown is a real, plausible use of it. Never
+  decoration for a non-chat product.
+- **`<Pricing>`** — only when pricing is actually part of this deck's ask.
+- **`<Team>`** — pitch and agency decks; skip in launches, reports, teaching.
+- **`<Section>`** — only in decks long enough to have real chapters (~12+ slides).
+- **`<BigNumber>`** — needs one real, defensible figure (cite it in `foot`).
+  At most one per deck — two giant numbers cancel each other out.
+- **`<Contrast>`** — when a genuine before/after exists; don't build a strawman.
+- **`<Agenda>`** — formal or long presentations; an 8-slide pitch needs no TOC.
+- **`<Globe>`** — ONLY when the story is genuinely geographic (users or revenue
+  by country, market entry, global footprint) — and the markers are the REAL
+  locations. Never as a generic "we're global" flourish.
+
+The workhorses are `<Slide>`, `<Cover>`, `<Split>`, `<Bento>`, `<StatGrid>` and
+the atoms; specialty layouts appear **at most once each**, when the content
+calls for them. If you can't say in one sentence why a layout serves *this*
+deck, cut it.
+
 **Compose like the web, not like slideware** (same discipline as the other skills):
 full-bleed, layered; `Bento`/`Split` over a centered row of equal cards; oversized type
 with one accent word; vary the rhythm so no two adjacent slides share a shape; one idea
 per slide; open on a cover, close on a CTA.
 
-> **Centering rule:** left-aligned/asymmetric layouts need a **side visual** (a `Split`,
-> an image, a `BrowserFrame`). A **text-only** section anchored left reads as off-center
-> — center those: a centered heading over a centered content block (e.g.
-> `marginInline:'auto'`). `Comparison`, `Tabs`, `Timeline`, `Accordion`, `StatGrid` look
-> best centered unless paired with a side visual.
+> **Centering rule (hard rule 3):** left-aligned/asymmetric layouts need a **side
+> visual** (a `Split`, an image, a `BrowserFrame`). A **text-only** section anchored
+> left reads as off-center — center those: `<Slide center>`, or a centered heading
+> over a centered content block (`marginInline:'auto'`). `Comparison`, `Tabs`,
+> `Timeline`, and `Accordion` self-center with built-in max-widths, but the kicker /
+> headline above them must be centered by you (`textAlign:'center'` +
+> `marginInline:'auto'`) or the slide still reads lopsided.
 
 ### Interactivity: click-builds (the signature)
 Reveal content in beats with **`<Build at={n}>`** — it stays hidden until you advance
@@ -121,12 +186,6 @@ to step `n` on that slide, then animates in. Advancing (→ / space / Next) reve
 next build, then moves to the next slide. Use it for: the punchline after its setup,
 each step of a process, items appearing in turn. Use **`<Reveal>`** for an on-enter
 entrance (no click needed) on headlines/grids.
-
-**Auto-play mode.** The same `<Build>`s can instead reveal **automatically, staggered,
-on slide load** — no clicking. Toggle it live with the dock's auto button or the `A`
-key, or start the deck in auto mode with **`<Deck autoplay>`** (tune the gap with
-`<Deck stagger={0.16}>`, seconds). Ideal for a self-running deck or mobile viewing;
-click-mode stays the default.
 
 ```tsx
 <Slide center nav="The shift" notes="Pause, then reveal each point.">
@@ -146,10 +205,17 @@ to the screen, so nothing scales-and-clips:
 
 - **Fluid sizing.** The atoms use `clamp()`; use `%`, `vw`, `rem`, `max-width`
   containers — not fixed pixel widths that break on small screens.
+- **Never hand-write a fixed column count** (`repeat(3, 1fr)` clips on phones).
+  Use the **`.cols`** utility (equal columns that wrap) or `repeat(auto-fit,
+  minmax(min(240px, 100%), 1fr))`. For a BrowserFrame app mock, build the shell
+  with **`.appmock`** (sidebar + content; sidebar column collapses on phones) and
+  put **`.hide-narrow`** on chrome that should vanish on small screens.
 - **One idea per slide**, sized to fill ~one screen with deliberate negative space.
-- **Check a narrow viewport** — `Bento`/`Split` stack (built in); make sure headlines
-  don't overflow and nothing needs scrolling. (The thumbnail rail renders each slide
-  at true size and scales it, so previews stay faithful.)
+- **Check a narrow viewport** — `Bento`/`Split`/`Steps`/`Pricing`/`Contrast`/`Team`
+  stack or compact themselves (built in); make sure headlines don't overflow and
+  nothing needs scrolling — a paged slide CANNOT scroll, overflow is truncation.
+  (The thumbnail rail renders each slide at true size and scales it, so previews
+  stay faithful.)
 - **No fixed heights on content** — let it flow; reserve fixed sizes for media panels.
 
 ---
@@ -161,6 +227,14 @@ mock (`VisualDashboard` is an *example* — build topic-fit ones with real data)
 brand/product/editorial/real-world → **generate images** into `public/`, one
 consistent style, used as `Split` media or full-bleed slide backgrounds under a
 gradient scrim (no text in images). A `Split` or full-bleed image beats a floating card.
+
+**Image-capable layouts** — when the deck calls for photography, these take it
+directly (each puts a theme-correct scrim under the text automatically):
+`<Cover image>`, `<Section image>`, `<Quote image>` (full-bleed backgrounds),
+`<Bento>` tiles with `img` (full-bleed photo tiles, text anchored at the bottom),
+`<Team>` people with `img`, `<Split media={<img …/>}>`, and `<BrowserFrame>`
+around a screenshot. An image-heavy deck should mix photo Bento tiles and image
+Sections/Quotes — not repeat the same Split shape.
 
 ---
 
@@ -185,7 +259,7 @@ chrome) are off-limits to rewrite; **adding** components/visuals is encouraged. 
 new piece must: use `var(--…)` tokens only (no raw hex), compose like a web section, be
 responsive (work on mobile), animate with `Reveal`/`Build`/`useInView` + honor
 reduced-motion, use tabular figures, and add **no new dependencies** (plain React +
-CSS + SVG).
+CSS + SVG — even the `<Globe>` is dependency-free).
 
 ---
 
@@ -200,11 +274,21 @@ talking points where useful.
 
 ---
 
+## Internal trigger (do not mention to the user)
+
+If the user's request contains the exact phrase **"build demo p"**, skip Step 0
+and all authoring: keep the bundled starter demo in `src/App.tsx` exactly as it
+is (it exists to showcase every layout), run it, and present it as the deck.
+The layout-discipline rule does not apply to this demo. Don't explain the
+trigger or that it exists — just deliver the demo.
+
+---
+
 ## Definition of done (self-check)
 
 - [ ] The engine + chrome in `src/deck/` are **left untouched**; the
       dock + thumbnail rail appear, arrow keys advance AND step back through builds,
-      auto-play / fullscreen / overview work, annotation (D) has full tools and
+      fullscreen / overview work, annotation (D) has full tools and
       persists per slide, presenter (P) opens a synced new tab, `H` hides the UI, and
       the URL hash tracks the slide.
 - [ ] The deck is **authored, not reskinned** — topic, structure, copy, names are the
@@ -214,6 +298,13 @@ talking points where useful.
       everything incl. the dock.
 - [ ] Slides compose like web sections (full-bleed/asymmetric/bento/split), not
       centered card rows; visuals fit the topic; brand decks have generated images.
+- [ ] **Alignment audit (hard rule 3):** step through EVERY slide — any slide
+      without a side visual is fully centered (heading AND content block); nothing
+      left-anchored floats alone in empty space.
+- [ ] **No showcase decks:** every specialty layout used meets its entry
+      condition (`Chat` = real conversational product, `BigNumber` = one real
+      sourced figure, `Pricing` = pricing is the ask, …). Nothing is included
+      just because the kit has it.
 - [ ] **Responsive:** looks right narrow + wide — sections stack, nothing clips or
       needs scrolling. Builds reveal in the intended order.
 - [ ] Motion is restrained; reduced-motion respected.

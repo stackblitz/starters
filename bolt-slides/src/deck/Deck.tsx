@@ -19,7 +19,6 @@ import {
   IconShrink,
   IconPresent,
   IconClose,
-  IconAuto,
 } from './icons';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock + rail).
@@ -27,8 +26,7 @@ import {
      → / ↓ / Space   next (reveals the next <Build>, then the next slide)
      ← / ↑           previous            O overview    F fullscreen
      Home / End      first / last        D draw        P presenter (new tab)
-     A  auto-play    H  hide/show the UI
-   <Deck autoplay>   starts in auto mode; <Deck stagger={0.16}> tunes the gap.
+     H  hide/show the UI
    Copy verbatim; theme only via the :root tokens. ───────────────────────── */
 
 const fmt = (s: number) =>
@@ -76,15 +74,7 @@ function Thumb({ children }: { children: ReactNode }) {
   );
 }
 
-export default function Deck({
-  children,
-  autoplay = false,
-  stagger = 0.16,
-}: {
-  children: ReactNode;
-  autoplay?: boolean;
-  stagger?: number;
-}) {
+export default function Deck({ children }: { children: ReactNode }) {
   const slides = useMemo(
     () => Children.toArray(children) as ReactElement[],
     [children]
@@ -101,7 +91,6 @@ export default function Deck({
   });
   const [clicks, setClicks] = useState(0);
   const [curMax, setCurMax] = useState(0);
-  const [auto, setAuto] = useState(autoplay);
   const [railOpen, setRailOpen] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -142,7 +131,7 @@ export default function Deck({
     [total]
   );
   const next = useCallback(() => {
-    if (!auto && clicks < curMax) {
+    if (clicks < curMax) {
       setClicks(clicks + 1);
       return;
     }
@@ -152,26 +141,25 @@ export default function Deck({
       setClicks(0);
       setCurMax(maxMap.current[n] || 0);
     }
-  }, [auto, clicks, curMax, slide, total]);
+  }, [clicks, curMax, slide, total]);
   const prev = useCallback(() => {
-    if (!auto && clicks > 0) {
+    if (clicks > 0) {
       setClicks(clicks - 1);
       return;
     }
     if (slide > 0) {
       const n = slide - 1;
-      const m = auto ? 0 : maxMap.current[n] || 0;
+      const m = maxMap.current[n] || 0;
       setSlide(n);
       setClicks(m);
       setCurMax(m);
     }
-  }, [auto, clicks, slide]);
+  }, [clicks, slide]);
 
   const toggleFs = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.();
   }, []);
-  const toggleAuto = useCallback(() => setAuto((v) => !v), []);
   const setNote = useCallback((text: string) => {
     setNoteOverrides((prev) => {
       const nextO = { ...prev, [slideRef.current]: text };
@@ -240,10 +228,6 @@ export default function Deck({
         case 'P':
           openPresenter();
           break;
-        case 'a':
-        case 'A':
-          toggleAuto();
-          break;
         case 'h':
         case 'H':
           setUiHidden((v) => !v);
@@ -257,7 +241,7 @@ export default function Deck({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev, go, total, toggleFs, toggleAuto, openPresenter]);
+  }, [next, prev, go, total, toggleFs, openPresenter]);
 
   // URL hash sync (initial slide comes from the hash via useState above)
   useEffect(() => {
@@ -285,7 +269,6 @@ export default function Deck({
         applyingRemote.current = true;
         setSlide(e.data.slide);
         setClicks(e.data.clicks);
-        setAuto(e.data.auto);
       }
     };
     return () => c.close();
@@ -295,8 +278,8 @@ export default function Deck({
       applyingRemote.current = false;
       return;
     }
-    chan.current?.postMessage({ type: 'state', slide, clicks, auto });
-  }, [slide, clicks, auto]);
+    chan.current?.postMessage({ type: 'state', slide, clicks });
+  }, [slide, clicks]);
 
   // fullscreen flag, presenter timer, idle auto-hide
   useEffect(() => {
@@ -328,13 +311,11 @@ export default function Deck({
   }, []);
 
   const liveCtx = useMemo(
-    () => ({ clicks, isStatic: false, auto, stagger, registerMax }),
-    [clicks, auto, stagger, registerMax]
+    () => ({ clicks, isStatic: false, registerMax }),
+    [clicks, registerMax]
   );
-  const hasPrev = auto ? slide > 0 : slide > 0 || clicks > 0;
-  const hasNext = auto
-    ? slide < total - 1
-    : slide < total - 1 || clicks < curMax;
+  const hasPrev = slide > 0 || clicks > 0;
+  const hasNext = slide < total - 1 || clicks < curMax;
   const notes = (slides[slide]?.props as { notes?: string } | undefined)?.notes;
   const noteText = noteOverrides[slide] ?? notes ?? '';
   const nextSlide = slides[slide + 1];
@@ -446,13 +427,6 @@ export default function Deck({
               <IconRight />
             </button>
             <span className="noir-sep" />
-            <button
-              className={'noir-icon-btn' + (auto ? ' on' : '')}
-              data-tip="Auto-play (A)"
-              onClick={toggleAuto}
-            >
-              <IconAuto />
-            </button>
             <button
               className={'noir-icon-btn noir-optional' + (drawing ? ' on' : '')}
               data-tip="Annotate (D)"
