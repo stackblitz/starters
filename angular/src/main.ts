@@ -1,4 +1,4 @@
-import { Component, signal, ChangeDetectionStrategy, provideZonelessChangeDetection } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
 @Component({
@@ -12,13 +12,10 @@ import { bootstrapApplication } from '@angular/platform-browser';
     <button (click)="counter.update(value => value - 1)">--</button>
     <span> Counter: {{ counter() }} </span>
     <button (click)="counter.update(value => value + 1)">++</button>
-  `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  `
 })
 export class App {
   protected readonly counter = signal(0);
 }
 
-bootstrapApplication(App, {
-  providers: [provideZonelessChangeDetection()],
-});
+bootstrapApplication(App);
