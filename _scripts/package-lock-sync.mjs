@@ -16,7 +16,7 @@ const npmBin = resolveNpmBin(cwd);
 const starters = fs.readdirSync(cwd, { withFileTypes: true });
 
 // iterate over all starters and check if the `package-lock.json` is in sync with the `package.json`
-const promises = [];
+let exitCode = 0;
 
 for (const starter of starters) {
   const dir = path.join(cwd, starter.name);
@@ -29,22 +29,16 @@ for (const starter of starters) {
     continue;
   }
 
-  if (shouldWrite) {
-    promises.push(updatePackageLock(dir, starter.name, shouldForceWrite));
-  } else {
-    promises.push(checkPackageLockSync(dir, starter.name));
-  }
-}
-
-const result = await Promise.allSettled(promises);
-
-let exitCode = 0;
-
-for (const { status, reason } of result) {
-  if (status === 'rejected') {
+  try {
+    if (shouldWrite) {
+      await updatePackageLock(dir, starter.name, shouldForceWrite);
+    } else {
+      await checkPackageLockSync(dir, starter.name);
+    }
+  } catch (error) {
     exitCode = 1;
 
-    console.error(reason.message);
+    console.error(error.message);
   }
 }
 
@@ -73,7 +67,6 @@ function checkPackageLockSync(directory, name) {
     }
 
     const child = childProcess.spawn(npmBin, ['ci'], {
-      stdio: 'ignore',
       cwd: directory,
     });
 
