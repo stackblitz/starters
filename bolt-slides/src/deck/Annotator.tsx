@@ -370,6 +370,39 @@ export default function Annotator({
     redraw();
   }
 
+  // drag-to-scroll for the bar when it overflows (phones scroll natively by
+  // touch; this covers mouse users). A 4px threshold keeps clicks working,
+  // and a capture-phase click handler swallows the click after a real drag.
+  const barRef = useRef<HTMLDivElement>(null);
+  const barDrag = useRef({ down: false, moved: false, x: 0, left: 0 });
+  function barDown(e: React.PointerEvent) {
+    if (e.pointerType !== 'mouse' || !barRef.current) return;
+    barDrag.current = {
+      down: true,
+      moved: false,
+      x: e.clientX,
+      left: barRef.current.scrollLeft,
+    };
+  }
+  function barMove(e: React.PointerEvent) {
+    const d = barDrag.current;
+    if (!d.down || !barRef.current) return;
+    const dx = e.clientX - d.x;
+    if (!d.moved && Math.abs(dx) < 4) return;
+    d.moved = true;
+    barRef.current.scrollLeft = d.left - dx;
+  }
+  function barUp() {
+    barDrag.current.down = false;
+  }
+  function barClickCapture(e: React.MouseEvent) {
+    if (barDrag.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      barDrag.current.moved = false;
+    }
+  }
+
   return (
     <>
       <canvas
@@ -383,7 +416,15 @@ export default function Annotator({
         onPointerMove={move}
       />
       {active && (
-        <div className="ann-bar">
+        <div
+          className="ann-bar"
+          ref={barRef}
+          onPointerDown={barDown}
+          onPointerMove={barMove}
+          onPointerUp={barUp}
+          onPointerLeave={barUp}
+          onClickCapture={barClickCapture}
+        >
           {TOOLS.map((t) => (
             <button
               key={t.id}

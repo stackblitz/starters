@@ -2103,6 +2103,15 @@ strong {
   font-size: 13px;
   color: #8e8e93;
 }
+/* nav cluster: inline in the pill on desktop; its own pill above on phones */
+.noir-nav-bar {
+  display: none;
+}
+.noir-nav-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 /* Left thumbnail rail */
 .noir-rail {
@@ -2194,6 +2203,43 @@ strong {
 }
 .noir-rail {
   scrollbar-width: none;
+}
+
+/* Full-screen grid view (G) — every slide as a thumbnail. Sits under the
+   dock (z 90) so the grid button stays clickable to toggle it off. */
+.noir-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+  padding: 18px 22px 96px;
+  overflow-y: auto;
+  background: rgba(18, 18, 20, 0.92);
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  font-family: var(--font-body);
+}
+.noir-grid-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 16px;
+}
+.noir-grid-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px 16px;
+  align-content: start;
+}
+/* grid thumbs reuse the rail's .noir-thumb, stacked with the number below */
+.noir-grid .noir-thumb {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+}
+.noir-grid .noir-thumb-no {
+  order: 2;
+  width: auto;
+  padding-left: 2px;
 }
 
 /* Presenter overlay (notes + next + timer) */
@@ -2658,9 +2704,10 @@ strong {
   }
 }
 
-/* ── Responsive controls — declutter the dock on touch / small screens ─
+/* ── Responsive controls — restack the dock on touch / small screens ─
    On touch there's no hover, so keep the dock fully visible; on phones,
-   shrink it and drop the presenter-only tools (draw + presenter overlay). */
+   prev / counter / next float bare above the pill, and the pill keeps
+   all the tools. */
 @media (hover: none) {
   .noir-dock {
     opacity: 1;
@@ -2670,6 +2717,24 @@ strong {
   .noir-dock {
     opacity: 1;
     bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .noir-bar.noir-nav-bar {
+    display: flex;
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.5));
+  }
+  .noir-nav-inline,
+  .noir-bar > .noir-sep {
+    display: none;
   }
   .noir-bar {
     gap: 2px;
@@ -2690,14 +2755,36 @@ strong {
   .noir-counter-now {
     font-size: 15px;
   }
-  .noir-sep {
-    margin: 0 2px;
-  }
-  .noir-optional {
-    display: none;
-  }
   .noir-rail {
     width: min(248px, 84vw);
+  }
+  .noir-grid {
+    padding: 14px 14px 132px;
+  }
+  .noir-grid-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px 12px;
+  }
+  /* annotation toolbar: one swipeable row on phones (wrapping made the
+     999px-radius pill collapse into a pinched oval); clears the taller dock */
+  .ann-bar {
+    bottom: 104px;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ann-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .ann-bar > * {
+    flex: none;
+  }
+  /* the scroll container clips anything outside it — drop hover tooltips
+     here (touch has no hover anyway) instead of showing them cut off */
+  .ann-bar [data-tip]::after {
+    display: none;
   }
 }
 

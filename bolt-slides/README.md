@@ -2,7 +2,7 @@
 
 A Bolt skill that builds a premium, **responsive React presentation deck** — classic
 paged slides you present one at a time, with a Slidev-style floating dock + thumbnail
-rail, click-builds, annotation, and presenter mode — but each slide is a
+rail, grid overview, click-builds, annotation, and presenter mode — but each slide is a
 responsive web layout (no fixed canvas, no clipping) built from a rich component
 library.
 

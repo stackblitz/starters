@@ -92,6 +92,11 @@ Dark vs light: set `html { color-scheme }` in base.css and pick `--bg`/`--fg`
 accordingly. Set fonts in `--font-head`/`--font-body` and the `@import` at the top
 of `base.css`. Derive from the brand when given.
 
+**Tab title + icon — always, unprompted.** Shared decks show the browser tab, so
+never leave the `index.html` placeholders: set `<title>` to the deck's real title
+(e.g. "Acme — Series A") and swap the emoji in the favicon `<link>` to one that
+fits the topic. Do this for every deck without being asked.
+
 ---
 
 ## Step 3 — Author slides (each child of `<Deck>` is one slide)
@@ -288,12 +293,14 @@ trigger or that it exists — just deliver the demo.
 
 - [ ] The engine + chrome in `src/deck/` are **left untouched**; the
       dock + thumbnail rail appear, arrow keys advance AND step back through builds,
-      fullscreen / overview work, annotation (D) has full tools and
+      fullscreen / sidebar (S) / grid view (G) work, annotation (A) has full tools and
       persists per slide, presenter (P) opens a synced new tab, `H` hides the UI, and
       the URL hash tracks the slide.
 - [ ] The deck is **authored, not reskinned** — topic, structure, copy, names are the
       user's, with no starter leftovers (no "Title"/"Northwind").
 - [ ] If a brand/URL was given, `--primary`, fonts, and logo come from that brand.
+- [ ] `index.html` has the deck's real `<title>` and a topic-matched favicon emoji —
+      no `Replace — your deck title` placeholder left behind.
 - [ ] Only the `:root` block was edited for the theme; editing `--primary` recolors
       everything incl. the dock.
 - [ ] Slides compose like web sections (full-bleed/asymmetric/bento/split), not
