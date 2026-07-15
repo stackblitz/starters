@@ -2,6 +2,7 @@ import {
   Children,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,6 +12,7 @@ import { MotionConfig } from 'framer-motion';
 import { DeckCtx } from './DeckContext';
 import Annotator, { type Stroke } from './Annotator';
 import {
+  IconSidebar,
   IconGrid,
   IconLeft,
   IconRight,
@@ -24,9 +26,9 @@ import {
 /* ── The paged presentation engine + the Slidev-style chrome (dock + rail).
    Wrap your <Slide>/<Bento>/… in <Deck>. Each top-level child is one slide.
      → / ↓ / Space   next (reveals the next <Build>, then the next slide)
-     ← / ↑           previous            O overview    F fullscreen
-     Home / End      first / last        D draw        P presenter (new tab)
-     H  hide/show the UI
+     ← / ↑           previous            S sidebar     G grid view
+     Home / End      first / last        A annotate    P presenter (new tab)
+     F fullscreen    H hide/show the UI
    Copy verbatim; theme only via the :root tokens. ───────────────────────── */
 
 const fmt = (s: number) =>
@@ -38,7 +40,10 @@ const fmt = (s: number) =>
 function Thumb({ children }: { children: ReactNode }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [d, setD] = useState({ vw: 1280, vh: 720, scale: 0.15 });
-  useEffect(() => {
+  // measure before paint — with useEffect the first frame renders at the
+  // default scale and visibly snaps (worst in the grid view, which has no
+  // slide-in transition to mask it).
+  useLayoutEffect(() => {
     const el = frameRef.current;
     if (!el) return;
     const update = () =>
@@ -92,6 +97,7 @@ export default function Deck({ children }: { children: ReactNode }) {
   const [clicks, setClicks] = useState(0);
   const [curMax, setCurMax] = useState(0);
   const [railOpen, setRailOpen] = useState(false);
+  const [gridOpen, setGridOpen] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [fs, setFs] = useState(false);
@@ -160,6 +166,15 @@ export default function Deck({ children }: { children: ReactNode }) {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.();
   }, []);
+  // sidebar and grid view are mutually exclusive — opening one closes the other
+  const toggleRail = useCallback(() => {
+    setRailOpen((v) => !v);
+    setGridOpen(false);
+  }, []);
+  const toggleGrid = useCallback(() => {
+    setGridOpen((v) => !v);
+    setRailOpen(false);
+  }, []);
   const setNote = useCallback((text: string) => {
     setNoteOverrides((prev) => {
       const nextO = { ...prev, [slideRef.current]: text };
@@ -212,16 +227,20 @@ export default function Deck({ children }: { children: ReactNode }) {
           e.preventDefault();
           go(total - 1);
           break;
-        case 'o':
-        case 'O':
-          setRailOpen((v) => !v);
+        case 's':
+        case 'S':
+          toggleRail();
+          break;
+        case 'g':
+        case 'G':
+          toggleGrid();
           break;
         case 'f':
         case 'F':
           toggleFs();
           break;
-        case 'd':
-        case 'D':
+        case 'a':
+        case 'A':
           setDrawing((v) => !v);
           break;
         case 'p':
@@ -234,6 +253,7 @@ export default function Deck({ children }: { children: ReactNode }) {
           break;
         case 'Escape':
           setRailOpen(false);
+          setGridOpen(false);
           setDrawing(false);
           setUiHidden(false);
           break;
@@ -241,7 +261,18 @@ export default function Deck({ children }: { children: ReactNode }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev, go, total, toggleFs, openPresenter]);
+  }, [next, prev, go, total, toggleRail, toggleGrid, toggleFs, openPresenter]);
+
+  // safety net: if the authored deck kept the placeholder tab title, derive
+  // one from the current slide's heading so shared links look right.
+  useEffect(() => {
+    if (!document.title.startsWith('Replace')) return;
+    const h = document.querySelector<HTMLElement>(
+      '.slide-stage h1, .slide-stage h2'
+    );
+    const t = h?.innerText.replace(/\s+/g, ' ').trim();
+    if (t) document.title = t;
+  }, []);
 
   // URL hash sync (initial slide comes from the hash via useState above)
   useEffect(() => {
@@ -323,6 +354,33 @@ export default function Deck({ children }: { children: ReactNode }) {
   const cursorHidden = fs && cursorIdle && !drawing;
   const showAnnotator = drawing || (annStore.current[slide]?.length ?? 0) > 0;
 
+  // prev / counter / next — rendered inside the pill on desktop, in its own
+  // pill above the tools on phones (only one is visible at a time).
+  const navCluster = (
+    <>
+      <button
+        className="noir-icon-btn"
+        data-tip="Previous"
+        disabled={!hasPrev}
+        onClick={prev}
+      >
+        <IconLeft />
+      </button>
+      <div className="noir-counter">
+        <span className="noir-counter-now">{slide + 1}</span>
+        <span className="noir-counter-tot">/ {total}</span>
+      </div>
+      <button
+        className="noir-icon-btn"
+        data-tip="Next"
+        disabled={!hasNext}
+        onClick={next}
+      >
+        <IconRight />
+      </button>
+    </>
+  );
+
   return (
     <MotionConfig reducedMotion="user">
       <div className={'deck' + (cursorHidden ? ' nocursor' : '')}>
@@ -370,6 +428,36 @@ export default function Deck({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
+        {gridOpen && (
+          <div className="noir-grid">
+            <div className="noir-grid-head">
+              <span className="noir-rail-title">All slides</span>
+              <button
+                className="noir-icon-btn sm"
+                data-tip="Close"
+                onClick={() => setGridOpen(false)}
+              >
+                <IconClose />
+              </button>
+            </div>
+            <div className="noir-grid-list">
+              {slides.map((s, i) => (
+                <button
+                  key={i}
+                  className={'noir-thumb' + (i === slide ? ' active' : '')}
+                  onClick={() => {
+                    go(i);
+                    setGridOpen(false);
+                  }}
+                >
+                  <span className="noir-thumb-no">{i + 1}</span>
+                  <Thumb>{s}</Thumb>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isPresenter && (
           <div className="noir-presenter">
             <div className="noir-presenter-row">
@@ -397,39 +485,29 @@ export default function Deck({ children }: { children: ReactNode }) {
         )}
 
         <div className={'noir-dock' + (hideUI ? ' hidden' : '')}>
+          {/* phones: nav floats bare above the tools pill (see base.css) */}
+          <div className="noir-bar noir-nav-bar">{navCluster}</div>
           <div className="noir-bar">
             <button
               className={'noir-icon-btn' + (railOpen ? ' on' : '')}
-              data-tip="Overview (O)"
-              onClick={() => setRailOpen((v) => !v)}
+              data-tip="Sidebar (S)"
+              onClick={toggleRail}
+            >
+              <IconSidebar />
+            </button>
+            <button
+              className={'noir-icon-btn' + (gridOpen ? ' on' : '')}
+              data-tip="Grid view (G)"
+              onClick={toggleGrid}
             >
               <IconGrid />
             </button>
             <span className="noir-sep" />
-            <button
-              className="noir-icon-btn"
-              data-tip="Previous"
-              disabled={!hasPrev}
-              onClick={prev}
-            >
-              <IconLeft />
-            </button>
-            <div className="noir-counter">
-              <span className="noir-counter-now">{slide + 1}</span>
-              <span className="noir-counter-tot">/ {total}</span>
-            </div>
-            <button
-              className="noir-icon-btn"
-              data-tip="Next"
-              disabled={!hasNext}
-              onClick={next}
-            >
-              <IconRight />
-            </button>
+            <div className="noir-nav-inline">{navCluster}</div>
             <span className="noir-sep" />
             <button
-              className={'noir-icon-btn noir-optional' + (drawing ? ' on' : '')}
-              data-tip="Annotate (D)"
+              className={'noir-icon-btn' + (drawing ? ' on' : '')}
+              data-tip="Annotate (A)"
               onClick={() => setDrawing((v) => !v)}
             >
               <IconPencil />
@@ -442,7 +520,7 @@ export default function Deck({ children }: { children: ReactNode }) {
               {fs ? <IconShrink /> : <IconExpand />}
             </button>
             <button
-              className="noir-icon-btn noir-optional"
+              className="noir-icon-btn"
               data-tip="Presenter — new tab (P)"
               onClick={openPresenter}
             >
