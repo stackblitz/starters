@@ -4,4 +4,4 @@ By default, this template supports JSX syntax with Tailwind CSS classes, React h
 
 Use icons from lucide-react for logos.
 
-Import project modules with the `@/` path alias (`@/components/Foo`, maps to `src/`) instead of deep relative paths like `../../components/Foo`.
+Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/components/Foo` == `src/components/Foo`), instead of deep relative paths like `../../components/Foo`.
