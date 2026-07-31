@@ -4,4 +4,6 @@ By default, this template supports JSX syntax with Tailwind CSS classes, React h
 
 Use icons from lucide-react for logos.
 
+This template uses Tailwind CSS v4, which is configured in CSS instead of JavaScript. There is no `tailwind.config.js` and no PostCSS config. Tailwind is loaded by the `@tailwindcss/vite` plugin and imported in `src/index.css` with `@import 'tailwindcss'`. Customize the theme by declaring CSS variables in a `@theme` block in `src/index.css` rather than by creating a config file.
+
 Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/components/Foo` == `src/components/Foo`), instead of deep relative paths like `../../components/Foo`.
