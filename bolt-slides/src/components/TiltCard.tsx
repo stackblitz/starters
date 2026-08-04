@@ -4,7 +4,7 @@ import {
   useMotionValue,
   useSpring,
   useReducedMotion,
-} from 'framer-motion';
+} from 'motion/react';
 import { useDeck } from '../deck/DeckContext';
 
 /* Mouse-tracked 3D tilt + glare, smoothed with springs. The pointer is

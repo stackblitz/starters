@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
 /* An expand/collapse accordion. Data-driven like Bento/StatGrid. Mono index,
    a +/× morph affordance, and an accent-lit open state. Self-centers when it

@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 import type { ReactElement, ReactNode } from 'react';
-import { MotionConfig } from 'framer-motion';
+import { MotionConfig } from 'motion/react';
 import { DeckCtx } from './DeckContext';
 import Annotator, { type Stroke } from './Annotator';
 import {
