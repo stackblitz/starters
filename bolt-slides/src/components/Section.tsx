@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Reveal from '../deck/Reveal';
+import Reveal from '@/deck/Reveal';
 
 /* A chapter divider slide — a full-bleed breather between parts of the deck.
    An enormous outlined "ghost" number sits behind a centered kicker + display

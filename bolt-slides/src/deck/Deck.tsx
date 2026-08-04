@@ -9,8 +9,8 @@ import {
 } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { MotionConfig } from 'motion/react';
-import { DeckCtx } from './DeckContext';
-import Annotator, { type Stroke } from './Annotator';
+import { DeckCtx } from '@/deck/DeckContext';
+import Annotator, { type Stroke } from '@/deck/Annotator';
 import {
   IconSidebar,
   IconGrid,
@@ -21,7 +21,7 @@ import {
   IconShrink,
   IconPresent,
   IconClose,
-} from './icons';
+} from '@/deck/icons';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock + rail).
    Wrap your <Slide>/<Bento>/… in <Deck>. Each top-level child is one slide.

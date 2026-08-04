@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import Reveal from '../deck/Reveal';
-import { useDeck } from '../deck/DeckContext';
+import Reveal from '@/deck/Reveal';
+import { useDeck } from '@/deck/DeckContext';
 
 /* The before/after (problem → solution) slide: a muted panel against an
    accent-lit panel. Left points get faint crosses, right points get accent

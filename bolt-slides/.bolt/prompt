@@ -1,0 +1,3 @@
+Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/components/Foo` == `src/components/Foo`), instead of deep relative paths like `../../components/Foo`.
+
+This template uses Vite 8. `resolve.tsconfigPaths: true` is a valid built-in Vite option. Preserve it for the `@/` alias; do not claim it is invalid or add the `vite-tsconfig-paths` plugin.
