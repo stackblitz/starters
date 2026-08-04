@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Reveal from '../deck/Reveal';
+import Reveal from '@/deck/Reveal';
 
 /* The standardized opening slide: kicker → display title → subtitle cascade,
    an optional full-bleed background image under a theme-correct scrim, and an

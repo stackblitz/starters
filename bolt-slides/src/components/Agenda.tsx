@@ -1,6 +1,6 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import Reveal from '../deck/Reveal';
-import { useDeck } from '../deck/DeckContext';
+import { motion, useReducedMotion } from 'motion/react';
+import Reveal from '@/deck/Reveal';
+import { useDeck } from '@/deck/DeckContext';
 
 /* A table-of-contents slide: hairline-ruled rows with mono accent numbers.
    Pass strings, or { title, hint } for a right-aligned hint (a time, a slide

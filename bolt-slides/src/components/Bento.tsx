@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import Reveal from '../deck/Reveal';
-import { useDeck } from '../deck/DeckContext';
+import { motion, useReducedMotion } from 'motion/react';
+import Reveal from '@/deck/Reveal';
+import { useDeck } from '@/deck/DeckContext';
 
 /* A full-viewport slide laid out as an asymmetric bento grid. Spans via c
    (columns of 12) and r (rows). Tiles rise in one after another; metric tiles

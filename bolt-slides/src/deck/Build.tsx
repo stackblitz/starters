@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useEffect } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { useDeck } from './DeckContext';
+import { useDeck } from '@/deck/DeckContext';
 
 /* Click-build (the Slidev "v-click"): this element stays hidden until the
    presenter advances to step `at` (1-based) on the current slide, then it

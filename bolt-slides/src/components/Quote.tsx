@@ -1,4 +1,4 @@
-import Reveal from '../deck/Reveal';
+import Reveal from '@/deck/Reveal';
 
 /* A pull-quote slide: an accent quotation mark, the quote at display scale,
    and an attribution row with a photo or auto-initials avatar (`img`). Pass

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import Reveal from '../deck/Reveal';
-import { useDeck } from '../deck/DeckContext';
+import { motion, useReducedMotion } from 'motion/react';
+import Reveal from '@/deck/Reveal';
+import { useDeck } from '@/deck/DeckContext';
 
 /* A full-viewport proof slide: responsive auto-fit stat cards, each with an
    accent tick and a staggered rise-in. Pass a <CountUp> as a stat `value`

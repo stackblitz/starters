@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Reveal from '../deck/Reveal';
+import Reveal from '@/deck/Reveal';
 
 /* The giant-figure drama slide — one enormous accent number, a caption, and
    an optional source line. Pass a <CountUp> as the value so it animates in.

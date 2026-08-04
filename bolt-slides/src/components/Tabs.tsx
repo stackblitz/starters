@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
-/* Tabbed content with a sliding accent pill (framer layoutId, scoped per
+/* Tabbed content with a sliding accent pill (layoutId, scoped per
    instance so multiple Tabs coexist) and a cross-fade between panels. The bar
    is keyboard-navigable (←/→) and the block self-centers when standalone.
    <Tabs tabs={[{ label: 'Overview', content: <…/> }, …]} /> */
