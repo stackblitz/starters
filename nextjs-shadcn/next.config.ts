@@ -1,9 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: import.meta.dirname,
-  },
+  devIndicators: false,
 };
 
 export default nextConfig;
