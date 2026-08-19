@@ -28,6 +28,49 @@ async function api<T = any>(path: string, method = 'GET', body?: unknown): Promi
   return res.json()
 }
 
+/* A published build is static: there is no /api. The deck is baked into the
+   bundle at build time (server/snapshot.mjs) and loaded from there instead.
+
+   Detecting "no API" is fiddlier than it looks, because hosts disagree about
+   paths that do not exist. Netlify rewrites everything to index.html with a
+   200, so /api/state answers with HTML; a plain file server 404s. Both mean
+   the same thing. A 401/403 does NOT — that is the API answering, and falling
+   back there would hand a gated deck to someone the API just refused. */
+const SNAPSHOT_URL = `${import.meta.env.BASE_URL}deck-snapshot.json`
+
+async function fetchLiveState(): Promise<AppState | null> {
+  let res: Response
+  try {
+    res = await fetch('/api/state', { headers: shareHeaders() })
+  } catch {
+    return null
+  }
+
+  if (res.status === 401 || res.status === 403) {
+    const why = await res.json().catch(() => ({}))
+    if (why.error === 'share-required' || why.error === 'password-required') {
+      useStore.setState({ denied: why.error, canEdit: false })
+    }
+    throw new Error(`GET /state → ${res.status}`)
+  }
+
+  if (!res.ok) return null
+  if (!res.headers.get('Content-Type')?.includes('application/json')) return null
+
+  return res.json()
+}
+
+async function fetchSnapshot(): Promise<AppState | null> {
+  try {
+    const res = await fetch(SNAPSHOT_URL)
+    if (!res.ok) return null
+    const snap = await res.json()
+    return { ...snap, profiles: [], comments: [] }
+  } catch {
+    return null
+  }
+}
+
 /* set a deep value in a plain-JSON object via "items.0.title" paths */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function setPath(obj: any, path: string, value: unknown): any {
@@ -73,6 +116,8 @@ interface Store extends AppState {
   denied: Denial
   /** false for share links that may not write (present / presenter) */
   canEdit: boolean
+  /** true when served from the build-time snapshot, i.e. a published deck */
+  snapshot: boolean
   /** what kind of visitor this browser is */
   mode: ShareMode
   current: number
@@ -127,13 +172,24 @@ export const useStore = create<Store>((set, getState) => ({
 
   denied: null,
   canEdit: true,
+  snapshot: false,
   mode: 'edit',
 
   async load() {
     // a visitor arriving on a link is only allowed what that link grants
     const link = shareToken ? await shareInfo().catch(() => null) : null
     const mode: ShareMode = link?.mode ?? 'edit'
-    const s = await api<AppState>('/state')
+    const s = await fetchLiveState()
+
+    /* No API: published build. Present the baked-in deck read-only —
+       'present' also makes EditorApp send / to /present on its own. */
+    if (!s) {
+      const snap = await fetchSnapshot()
+      if (!snap) throw new Error('no deck API and no snapshot to fall back to')
+      set({ ...snap, loaded: true, denied: null, mode: 'present', canEdit: false, snapshot: true, me: null })
+      return
+    }
+
     const me = localStorage.getItem('slides:me')
     set({
       ...s,
