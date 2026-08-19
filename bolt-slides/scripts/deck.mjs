@@ -9,35 +9,62 @@
      node scripts/deck.mjs status               one line per slide (layout, title, status)
 
    The JSON format is documented in .bolt/skills/slides/SKILL.md. */
-import fs from 'node:fs'
-import { openDb, exportDeck, importDeck, getState, persistNow, DB_FILE } from '../server/db.mjs'
+import fs from 'node:fs';
+import {
+  openDb,
+  exportDeck,
+  importDeck,
+  getState,
+  persistNow,
+  DB_FILE,
+} from '../server/db.mjs';
 
-const [cmd, arg] = process.argv.slice(2)
+const [cmd, arg] = process.argv.slice(2);
 
-await openDb()
+await openDb();
 
 if (cmd === 'export') {
-  const json = JSON.stringify(exportDeck(), null, 2)
-  if (arg) { fs.writeFileSync(arg, json); console.log(`wrote ${arg}`) }
-  else console.log(json)
+  const json = JSON.stringify(exportDeck(), null, 2);
+  if (arg) {
+    fs.writeFileSync(arg, json);
+    console.log(`wrote ${arg}`);
+  } else console.log(json);
 } else if (cmd === 'import') {
-  if (!arg) { console.error('usage: deck.mjs import <file.json>'); process.exit(1) }
-  importDeck(JSON.parse(fs.readFileSync(arg, 'utf8')))
-  persistNow()
-  console.log(`imported ${arg} → ${DB_FILE} (${getState().slides.length} slides)`)
+  if (!arg) {
+    console.error('usage: deck.mjs import <file.json>');
+    process.exit(1);
+  }
+  importDeck(JSON.parse(fs.readFileSync(arg, 'utf8')));
+  persistNow();
+  console.log(
+    `imported ${arg} → ${DB_FILE} (${getState().slides.length} slides)`
+  );
 } else if (cmd === 'reset') {
-  importDeck(JSON.parse(fs.readFileSync(new URL('../data/deck.seed.json', import.meta.url), 'utf8')))
-  persistNow()
-  console.log(`reset from data/deck.seed.json (${getState().slides.length} slides)`)
-} else if (cmd === 'status') {
-  const { slides } = getState()
-  for (const s of slides) {
-    const title = s.props.title ?? s.props.text ?? s.nav ?? ''
-    console.log(
-      `${String(s.position + 1).padStart(2)} ${s.layout.padEnd(11)} ${s.status.padEnd(12)} ${String(title).slice(0, 60)}`,
+  importDeck(
+    JSON.parse(
+      fs.readFileSync(
+        new URL('../data/deck.seed.json', import.meta.url),
+        'utf8'
+      )
     )
+  );
+  persistNow();
+  console.log(
+    `reset from data/deck.seed.json (${getState().slides.length} slides)`
+  );
+} else if (cmd === 'status') {
+  const { slides } = getState();
+  for (const s of slides) {
+    const title = s.props.title ?? s.props.text ?? s.nav ?? '';
+    console.log(
+      `${String(s.position + 1).padStart(2)} ${s.layout.padEnd(
+        11
+      )} ${s.status.padEnd(12)} ${String(title).slice(0, 60)}`
+    );
   }
 } else {
-  console.log('usage: node scripts/deck.mjs <export [file] | import <file> | reset | status>')
+  console.log(
+    'usage: node scripts/deck.mjs <export [file] | import <file> | reset | status>'
+  );
 }
-process.exit(0)
+process.exit(0);

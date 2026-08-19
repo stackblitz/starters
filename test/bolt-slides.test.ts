@@ -28,7 +28,11 @@ beforeEach<TestContext>(async ({ setup, webcontainer }) => {
    breaks silently — the page just never finishes loading. */
 test('user can build project', async ({ webcontainer }) => {
   await webcontainer.writeFile('deck.json', JSON.stringify(DECK));
-  await webcontainer.runCommand('node', ['scripts/deck.mjs', 'import', 'deck.json']);
+  await webcontainer.runCommand('node', [
+    'scripts/deck.mjs',
+    'import',
+    'deck.json',
+  ]);
   await webcontainer.runCommand('npm', ['run', 'build']);
 
   await expect(webcontainer.readdir('dist')).resolves.toMatchInlineSnapshot(`
@@ -39,7 +43,9 @@ test('user can build project', async ({ webcontainer }) => {
     ]
   `);
 
-  const snapshot = JSON.parse(await webcontainer.readFile('dist/deck-snapshot.json'));
+  const snapshot = JSON.parse(
+    await webcontainer.readFile('dist/deck-snapshot.json')
+  );
 
   expect(snapshot.deck.title).toBe('Quarterly Review');
   expect(snapshot.slides.map((s: { layout: string }) => s.layout)).toEqual([
@@ -61,7 +67,11 @@ test('user can start project and see the deck in the editor', async ({
   webcontainer,
 }) => {
   await webcontainer.writeFile('deck.json', JSON.stringify(DECK));
-  await webcontainer.runCommand('node', ['scripts/deck.mjs', 'import', 'deck.json']);
+  await webcontainer.runCommand('node', [
+    'scripts/deck.mjs',
+    'import',
+    'deck.json',
+  ]);
 
   const { exit } = webcontainer.runCommand('npm', ['run', 'dev']);
   onTestFinished(exit);

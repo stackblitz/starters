@@ -14,20 +14,23 @@
    Speaker notes ARE included, so presenter view works on a published deck.
    They are therefore public. Share links and passwords need a real backend
    to enforce — see docs/cloud-setup.md. */
-import fs from 'node:fs'
-import path from 'node:path'
-import url from 'node:url'
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 
-const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..')
-const DB_FILE = path.join(ROOT, 'data', 'deck.json')
-const SEED_FILE = path.join(ROOT, 'data', 'deck.seed.json')
+const ROOT = path.resolve(
+  path.dirname(url.fileURLToPath(import.meta.url)),
+  '..'
+);
+const DB_FILE = path.join(ROOT, 'data', 'deck.json');
+const SEED_FILE = path.join(ROOT, 'data', 'deck.seed.json');
 
 const deckMeta = (d = {}) => ({
   title: d.title ?? 'Untitled deck',
   transition: d.transition ?? 'fade',
   font: d.font ?? 'inter',
   accent: d.accent ?? null,
-})
+});
 
 const slide = (sl, i) => ({
   id: sl.id ?? `s${i}`,
@@ -39,27 +42,29 @@ const slide = (sl, i) => ({
   transition: sl.transition ?? null,
   nav: sl.nav ?? null,
   notes: sl.notes ?? '',
-})
+});
 
 const readJson = (file) => {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'))
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch {
-    return null
+    return null;
   }
-}
+};
 
 /* data/deck.json is the live database shape; data/deck.seed.json is the
    portable format the CLI and the skill author. Accept either. */
 export function readDeckSnapshot() {
-  const db = fs.existsSync(DB_FILE) ? readJson(DB_FILE) : null
+  const db = fs.existsSync(DB_FILE) ? readJson(DB_FILE) : null;
   if (db) {
     return {
       deck: deckMeta(db.deck),
-      slides: [...(db.slides ?? [])].sort((a, b) => a.position - b.position).map(slide),
-    }
+      slides: [...(db.slides ?? [])]
+        .sort((a, b) => a.position - b.position)
+        .map(slide),
+    };
   }
 
-  const seed = readJson(SEED_FILE) ?? {}
-  return { deck: deckMeta(seed), slides: (seed.slides ?? []).map(slide) }
+  const seed = readJson(SEED_FILE) ?? {};
+  return { deck: deckMeta(seed), slides: (seed.slides ?? []).map(slide) };
 }

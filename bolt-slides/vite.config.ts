@@ -1,5 +1,5 @@
-import { defineConfig, type Plugin } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig, type Plugin } from 'vite';
+import react from '@vitejs/plugin-react';
 
 /* The API (server/api.mjs) + JSON persistence (server/db.mjs → data/deck.json)
    ride on the Vite dev server, so `npm run dev` runs the whole stack.
@@ -11,10 +11,10 @@ function deckApi(): Plugin {
   return {
     name: 'deck-api',
     async configureServer(server) {
-      const { apiMiddleware } = await import('./server/api.mjs')
-      server.middlewares.use(apiMiddleware(server.config.root))
+      const { apiMiddleware } = await import('./server/api.mjs');
+      server.middlewares.use(apiMiddleware(server.config.root));
     },
-  }
+  };
 }
 
 /* Bakes the deck into the bundle so a published build has something to render
@@ -24,14 +24,14 @@ function deckSnapshot(): Plugin {
     name: 'deck-snapshot',
     apply: 'build',
     async generateBundle() {
-      const { readDeckSnapshot } = await import('./server/snapshot.mjs')
+      const { readDeckSnapshot } = await import('./server/snapshot.mjs');
       this.emitFile({
         type: 'asset',
         fileName: 'deck-snapshot.json',
         source: JSON.stringify(readDeckSnapshot()),
-      })
+      });
     },
-  }
+  };
 }
 
 export default defineConfig({
@@ -39,4 +39,4 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-})
+});
