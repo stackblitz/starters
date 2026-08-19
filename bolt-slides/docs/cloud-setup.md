@@ -118,8 +118,9 @@ everywhere and lets you preview what a visitor sees.
 1. Port storage to the cloud backend before the first publish **if the
    published deck must be live**. A read-only deck does not need this — the
    build snapshot already covers it.
-2. `npm run build` — use the npm script, not `npx vite build`; the script is
-   what the deploy runs, and it typechecks first.
+2. Build with `npx vite build` — that is what Bolt's deploy runs for this
+   template, so it is what you want to reproduce locally. `npm run typecheck`
+   is separate and does not gate the build.
 4. Copying an existing deck across? `slides.position` is **1-based**. Data
    copied as 0-based renders off by one; renumber once after the import.
 5. Never test permissions against the live deck. A `PUT /slides/:id` with
