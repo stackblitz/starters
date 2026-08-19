@@ -51,11 +51,24 @@ export const lastWriteAt = () => lastWrite;
 const fileMtime = () =>
   fs.existsSync(DB_FILE) ? fs.statSync(DB_FILE).mtimeMs : 0;
 
+const rewrittenByAnotherProcess = () => fileMtime() > loadedMtime + 1;
+
+/* Drop what we are holding, pending write included. Called when another process
+   has replaced the deck: an import is an explicit "replace the deck" action, so
+   it outranks our cached copy. That can cost an edit made in the last 250ms,
+   which is the right trade — the alternative is silently throwing away the whole
+   imported deck, and the client re-fetches on the change anyway. */
+function discard() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  dirty = false;
+  db = null;
+}
+
 /* Open (or create) the file. Another process — the deck CLI, the skill — may
-   have rewritten it since we last read, so reload when the file is newer and
-   we have nothing unsaved of our own. */
+   have rewritten it since we last read, so reload when the file is newer. */
 export async function openDb() {
-  if (db && !dirty && fileMtime() > loadedMtime + 1) db = null;
+  if (db && rewrittenByAnotherProcess()) discard();
   if (db) return db;
 
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -89,6 +102,15 @@ export function persistNow() {
   if (!db || !dirty) return;
   clearTimeout(saveTimer);
   saveTimer = null;
+
+  /* An import landed while this write was still queued. Writing now would
+     restore the deck the import just replaced, and the CLI would already have
+     reported success — so the deck silently reverts. Drop ours instead. */
+  if (rewrittenByAnotherProcess()) {
+    discard();
+    return;
+  }
+
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
   loadedMtime = fileMtime();
   lastWrite = Date.now();
