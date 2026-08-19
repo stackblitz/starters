@@ -12,7 +12,33 @@ function deckApi(): Plugin {
     name: 'deck-api',
     async configureServer(server) {
       const { apiMiddleware } = await import('./server/api.mjs');
+      const { DB_FILE, lastWriteAt } = await import('./server/db.mjs');
       server.middlewares.use(apiMiddleware(server.config.root));
+
+      /* Nothing in the bundle imports data/deck.json, so an import from the deck
+         CLI changes the deck with no HMR and the browser keeps showing the old
+         slides until someone reloads by hand.
+
+         Only outside rewrites are announced. The editor saves optimistically —
+         local state first, request after — so re-fetching on its own writes
+         would race the user and overwrite what they are still typing. A write
+         this process just made is therefore ignored. */
+      let pending: ReturnType<typeof setTimeout> | undefined;
+
+      const announce = (file: string) => {
+        if (file !== DB_FILE || Date.now() - lastWriteAt() < 1000) return;
+
+        // creating the file emits add + change; coalesce into one re-fetch
+        clearTimeout(pending);
+        pending = setTimeout(
+          () => server.hot.send({ type: 'custom', event: 'deck:changed' }),
+          50
+        );
+      };
+
+      server.watcher.add(DB_FILE);
+      server.watcher.on('add', announce);
+      server.watcher.on('change', announce);
     },
   };
 }

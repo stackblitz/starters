@@ -41,6 +41,12 @@ let db = null;
 let saveTimer = null;
 let loadedMtime = 0;
 let dirty = false;
+let lastWrite = 0;
+
+/* When this process last wrote the file. The deck CLI runs as its own process,
+   so its writes leave this untouched — that is how the dev server tells an
+   outside rewrite from one of its own API saves (see vite.config.ts). */
+export const lastWriteAt = () => lastWrite;
 
 const fileMtime = () =>
   fs.existsSync(DB_FILE) ? fs.statSync(DB_FILE).mtimeMs : 0;
@@ -85,6 +91,7 @@ export function persistNow() {
   saveTimer = null;
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
   loadedMtime = fileMtime();
+  lastWrite = Date.now();
   dirty = false;
 }
 for (const sig of ['SIGINT', 'SIGTERM', 'exit']) process.on(sig, persistNow);

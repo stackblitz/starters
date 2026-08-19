@@ -93,7 +93,8 @@ node scripts/deck.mjs import deck.json    # 4 · load it (replaces the deck)
 node scripts/deck.mjs status              # 5 · verify slide list
 ```
 
-The dev server picks up external imports automatically — refresh the browser.
+An import reaches the open browser on its own — the dev server watches the deck
+file and the app re-fetches. Do not tell the user to reload the page.
 Other CLI verbs: `export [file]` (read the current deck back — do this before
 editing an existing deck so you keep the user's changes), `reset` (re-seed).
 

@@ -57,8 +57,10 @@ node scripts/deck.mjs status             # slide list: layout · status · owner
 node scripts/deck.mjs reset              # back to empty (data/deck.seed.json)
 ```
 
-The dev server auto-reloads when the DB file changes externally, so the skill
-(or you) can import while the editor is open.
+Importing while the editor is open is fine: the dev server watches
+`data/deck.json` and tells the app to re-fetch, so an import from the skill (or
+from your own terminal) shows up without a page reload. Saves the editor makes
+itself are excluded, so a re-fetch never lands on top of what you are typing.
 
 ## The skill
 

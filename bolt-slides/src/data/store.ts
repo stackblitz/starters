@@ -363,3 +363,12 @@ export const useStore = create<Store>((set, getState) => ({
     set({ ...s, current: 0 });
   },
 }));
+
+/* The dev server pings when data/deck.json is rewritten from outside the app —
+   `node scripts/deck.mjs import`, which is how the agent authors a deck. Re-fetch
+   rather than reload the page so the slide you are on survives the update. */
+if (import.meta.hot) {
+  import.meta.hot.on('deck:changed', () => {
+    void useStore.getState().load();
+  });
+}
