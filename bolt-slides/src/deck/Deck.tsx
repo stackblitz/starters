@@ -1,6 +1,6 @@
 import { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import { AnimatePresence, MotionConfig, motion, type Variants } from 'framer-motion'
+import { AnimatePresence, MotionConfig, motion, type Variants } from 'motion/react'
 import { DeckCtx } from './DeckContext'
 import Annotator, { loadAnnotations, type Stroke } from './Annotator'
 import Thumb from './Thumb'

@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react'
-import { motion, useMotionValue, useSpring, useReducedMotion } from 'framer-motion'
+import { motion, useMotionValue, useSpring, useReducedMotion } from 'motion/react'
 import { useDeck } from '../deck/DeckContext'
 
 /* Mouse-tracked 3D tilt + glare, smoothed with springs. The pointer is

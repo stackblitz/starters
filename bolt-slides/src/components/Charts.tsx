@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, type CSSProperties } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'motion/react'
 import { useInView } from '../deck/useInView'
 import { useDeck } from '../deck/DeckContext'
 

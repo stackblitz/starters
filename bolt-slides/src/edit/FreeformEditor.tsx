@@ -9,7 +9,7 @@
    layering, duplicate, delete, image URL and chart data. */
 import { useEffect, useRef, useState, type PointerEvent as RPE, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import type { SlideData } from '../data/types'
 import { useDeck } from '../deck/DeckContext'
 import { useEdit } from './EditContext'

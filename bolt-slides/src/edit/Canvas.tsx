@@ -3,7 +3,7 @@
    slide's animation mode all play, like in present mode). The bottom bar
    pages the deck and carries the deck actions (Export PDF · Play · Share). */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { useStore } from '../data/store'
 import { DeckCtx } from '../deck/DeckContext'
 import SlideView from '../slide/SlideView'

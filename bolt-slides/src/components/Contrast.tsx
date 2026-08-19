@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'motion/react'
 import Reveal from '../deck/Reveal'
 import { useDeck } from '../deck/DeckContext'
 

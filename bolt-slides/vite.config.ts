@@ -19,4 +19,7 @@ function deckApi() {
 
 export default defineConfig({
   plugins: [react(), deckApi()],
+  resolve: {
+    tsconfigPaths: true,
+  },
 })

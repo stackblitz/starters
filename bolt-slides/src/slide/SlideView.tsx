@@ -3,7 +3,7 @@
    present mode (live) and PDF/OG export (static). Applies the slide's
    background and its chosen entrance-animation mode around the layout. */
 import { Component, type ReactNode as RN } from 'react'
-import { motion, type Variants } from 'framer-motion'
+import { motion, type Variants } from 'motion/react'
 import type { ReactNode } from 'react'
 import type { Background, SlideData } from '../data/types'
 import { DeckCtx, useDeck } from '../deck/DeckContext'

@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 
 /* Tabbed content with a sliding accent pill (framer layoutId, scoped per
    instance so multiple Tabs coexist) and a cross-fade between panels. The bar
