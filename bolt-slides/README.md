@@ -51,11 +51,15 @@ accordion, q&a, pricing, team, logos, poster, story, speaker, persona, bento, st
 and the editor can edit them without either touching React code.
 
 ```bash
-node scripts/deck.mjs export deck.json   # deck → JSON
-node scripts/deck.mjs import deck.json   # JSON → deck (data/deck.json)
-node scripts/deck.mjs status             # slide list: layout · status · owner
-node scripts/deck.mjs reset              # back to empty (data/deck.seed.json)
+node scripts/deck.mjs export deck.draft.json   # deck → JSON
+node scripts/deck.mjs import deck.draft.json   # JSON → deck (data/deck.json)
+node scripts/deck.mjs status                   # slide list: layout · status · owner
+node scripts/deck.mjs reset                    # re-seed from data/deck.seed.json
 ```
+
+Two files, one name: `deck.draft.json` is the portable deck you hand to the CLI,
+`data/deck.json` is the live database it writes. The second is generated and
+gitignored — edit the deck in the app or re-import, never by hand.
 
 Importing while the editor is open is fine: the dev server watches
 `data/deck.json` and tells the app to re-fetch, so an import from the skill (or

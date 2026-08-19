@@ -146,7 +146,7 @@ instead:
 ```bash
 curl -X POST "$DECK_API/import" \
   -H "Content-Type: application/json" \
-  --data-binary @deck.json
+  --data-binary @deck.draft.json
 ```
 
 The JSON format is identical in both modes and is documented in

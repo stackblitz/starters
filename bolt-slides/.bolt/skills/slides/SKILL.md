@@ -22,7 +22,8 @@ This repo is a complete slide **studio**, already built and running:
   and grid overview (G), click-builds, presenter view (P), annotator (D),
   fullscreen (F).
 - **One file of truth** — everything persists to `data/deck.json` (or to the
-  project's cloud backend). Copy that file and the whole deck travels.
+  project's cloud backend). Copy that file and the whole deck travels. It is
+  written by the app and the CLI, never by you — see rule 2.
 
 **Your job is to author CONTENT, not code.** A deck is data: you write a JSON
 file and import it. You never write JSX slides.
@@ -43,11 +44,18 @@ file and import it. You never write JSX slides.
    `src/styles/tokens.css` (`:root` values, to theme the deck), your deck JSON,
    and `data/` via the CLI. If the user genuinely wants an app change, say so
    and let them ask for it outside this skill.
-2. **Author from the user's REAL input.** Their topic, brand, facts, numbers.
+2. **Never write `data/deck.json` yourself.** Two different files are involved
+   and only one of them is yours. `deck.draft.json` (project root) is the deck
+   you author and pass to the CLI. `data/deck.json` is the live database the app
+   reads — generated, gitignored, and reached only through
+   `node scripts/deck.mjs`. Do not open it, edit it, or "keep it in sync" with
+   your draft: hand-edits skip the row fields the app depends on, and the next
+   import overwrites them anyway.
+3. **Author from the user's REAL input.** Their topic, brand, facts, numbers.
    Never reskin the seed deck; never invent a placeholder company for a real
    subject. Brand given → derive theme colors/fonts from it (fetch the site or
    use its known palette) and say what you used.
-3. **The accent is ONE SOLID color.** `--accent` must be a solid hex — never a
+4. **The accent is ONE SOLID color.** `--accent` must be a solid hex — never a
    gradient. Keep restraint: one accent, used sparingly.
 
 ## Step 0 · which storage is this project on?
@@ -88,10 +96,15 @@ outside this skill: say so and let the user decide.
 ```bash
 npm install && npm run dev        # 1 · the studio runs at :5173
 # 2 · theme: edit ONLY the :root values in src/styles/tokens.css
-# 3 · author the deck: write deck.json (format below)
-node scripts/deck.mjs import deck.json    # 4 · load it (replaces the deck)
-node scripts/deck.mjs status              # 5 · verify slide list
+# 3 · author the deck: write deck.draft.json (format below)
+node scripts/deck.mjs import deck.draft.json   # 4 · load it (replaces the deck)
+node scripts/deck.mjs status                   # 5 · verify slide list
 ```
+
+**Step 4 is what changes the deck.** `deck.draft.json` is your input — a file you
+author and hand to the CLI. Writing it does nothing on its own: until the import
+runs, the deck is exactly what it was and the user sees no new slides. Never
+report slides as added before the import has run.
 
 An import reaches the open browser on its own — the dev server watches the deck
 file and the app re-fetches. Do not tell the user to reload the page.
