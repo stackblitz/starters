@@ -69,12 +69,30 @@ and refine what lands in the editor.
 
 ## Publishing
 
-The deck lives in `data/deck.json`, served by an API that only exists inside the
-Vite dev server — so a published build has no backend and sits on a loading
-screen. Move storage to a cloud backend before the first publish:
+Publish and the deck presents — read-only.
+
+The API lives in the Vite dev server, so a published build has no backend to
+talk to. `npm run build` therefore bakes the current deck into the bundle as
+`deck-snapshot.json`, and the app falls back to it when no API answers. A
+published link gets every layout, animation, transition, present mode and
+presenter view. It cannot write: no editing, no comments, and `/` redirects
+to `/present`.
+
+Two things worth knowing:
+
+- **The snapshot is taken at build time** — re-publish to push later edits.
+- **Speaker notes are baked in and public.** Anyone with the link can open
+  presenter view and read them. Per-slide status, comments, profiles and share
+  links are stripped from the snapshot and never leave your machine.
+
+Editing a published deck — plus comments, share links and passwords, which all
+need a server to enforce — means moving storage to a real backend:
 **[docs/cloud-setup.md](docs/cloud-setup.md)** has the route contract, the
 table layout, the permission rules, the owner question (the bare published URL
 is a credential — decide that deliberately) and a publish checklist.
+
+`npm run preview` deliberately serves the build *without* the API, so it shows
+you what visitors get.
 
 ## Architecture
 
@@ -82,6 +100,7 @@ is a credential — decide that deliberately) and a publish checklist.
 data/deck.json          ← the single source of truth (gitignored; seed JSON is committed)
 server/db.mjs           ← JSON file persistence + cross-process reload
 server/api.mjs          ← REST API, mounted on the Vite dev server (vite.config.ts)
+server/snapshot.mjs     ← bakes the deck into the build so published decks render
 scripts/deck.mjs        ← import/export/reset/status CLI
 src/data/               ← types + zustand store (optimistic writes)
 src/layouts/            ← the layout registry: props schema + renderer per layout

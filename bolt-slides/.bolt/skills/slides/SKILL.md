@@ -64,13 +64,24 @@ curl -s localhost:5173/api/state >/dev/null && echo LOCAL || echo CLOUD-OR-DOWN
 - **LOCAL** — import with the CLI (below). Right for authoring on this machine.
 - **CLOUD** — the CLI is inert; POST the same JSON to `$DECK_API/import`.
 
-**If the user wants to publish or share a link, the deck must be on a cloud
-backend first.** Local file mode cannot survive a deploy: the published page
-waits forever for an API that only exists in the dev server, and the editor
-falls back to view-only. That port is app work, not deck work — it is outside
-this skill. Say so, point at `docs/cloud-setup.md` (it carries the schema, the
-route contract, the permission rules and the publish checklist), and let the
-user decide before you spend a turn authoring into storage that will not last.
+**Publishing works, read-only.** The build bakes the current deck into the
+bundle, so a published link presents the deck: all layouts, animations,
+transitions, present mode and presenter view. What it cannot do is write —
+there is no API on a published site, so visitors cannot edit or comment, and
+the editor sends them to `/present`.
+
+Two things to tell the user before they publish:
+
+- **Publish after authoring.** The snapshot is taken at build time, so
+  re-publish to push later edits.
+- **Speaker notes ship with the deck and are public.** Anyone with the link
+  can open presenter view and read them. Move anything private out of `notes`
+  before publishing.
+
+Editing a published deck, comments, share links and passwords all need a real
+backend — that is `docs/cloud-setup.md` (schema, route contract, permission
+rules, publish checklist). That port is app work, not deck work, and is
+outside this skill: say so and let the user decide.
 
 ## Workflow
 

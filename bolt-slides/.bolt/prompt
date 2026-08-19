@@ -1,0 +1,7 @@
+This project is a slide studio, not a blank app. A deck is DATA: JSON rows rendered by a layout registry. Author decks by writing deck JSON and importing it with `node scripts/deck.mjs import <file>` — never by writing JSX slides, and never by rebuilding the editor, the presentation engine, or the layouts. Follow the `slides` skill in `.bolt/skills/slides/`.
+
+Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/components/Foo` == `src/components/Foo`), instead of deep relative paths like `../../components/Foo`.
+
+This template uses Vite 8. `resolve.tsconfigPaths: true` is a valid built-in Vite option. Preserve it for the `@/` alias; do not claim it is invalid or add the `vite-tsconfig-paths` plugin.
+
+The deck API in `server/` is Vite dev-server middleware, so it does not exist in a published build. `vite.config.ts` bakes the deck into the bundle at build time and the client falls back to that snapshot, which is what makes a published deck presentable. Preserve both; do not "fix" the missing API by deleting the fallback.
