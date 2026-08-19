@@ -1,6 +1,49 @@
 {
-  "title": "Untitled deck",
+  "title": "Bolt Slides",
   "transition": "fade",
   "font": "inter",
-  "slides": []
+  "slides": [
+    {
+      "layout": "cover",
+      "props": {
+        "kicker": "Bolt Slides",
+        "title": "Your deck ==starts here==.",
+        "subtitle": "Ask Bolt for a presentation and these three slides are replaced by yours.",
+        "foot": "Editing at / · presenting at /present"
+      },
+      "animation": "cascade",
+      "notes": "Placeholder deck. Ask for a real one and this is overwritten."
+    },
+    {
+      "layout": "steps",
+      "props": {
+        "kicker": "How it works",
+        "title": "A deck is data, not code.",
+        "items": [
+          {
+            "title": "Describe the deck",
+            "body": "Topic, audience, brand. Real numbers beat placeholders."
+          },
+          {
+            "title": "Bolt writes and imports it",
+            "body": "Slides are JSON rows rendered by 31 layouts — no JSX per slide."
+          },
+          {
+            "title": "You take it from there",
+            "body": "Edit any text in place, reorder, comment, present, export a PDF."
+          }
+        ]
+      },
+      "animation": "cascade"
+    },
+    {
+      "layout": "statement",
+      "props": {
+        "kicker": "Try it",
+        "title": "\"Make me a ==Series A deck== for a robotics company.\"",
+        "body": "Or open /present to see how this one behaves first."
+      },
+      "animation": "fade"
+    }
+  ]
 }
