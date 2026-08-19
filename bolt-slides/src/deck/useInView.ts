@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useDeck } from './DeckContext'
+import { useDeck } from '@/deck/DeckContext'
 
 /* Returns a ref + `inView` that flips true when the element scrolls into view —
    the trigger for draw-in animations. In thumbnails (isStatic) it's true

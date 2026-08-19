@@ -4,12 +4,12 @@
    highlight re-renders live from the draft on every keystroke. The window
    title edits via T. Commit on blur. */
 import { useLayoutEffect, useRef, useState } from 'react'
-import { useStore } from '../data/store'
-import { useEdit } from './EditContext'
-import type { SlideData } from '../data/types'
-import CodeWindow from '../components/CodeWindow'
-import T from './EditableText'
-import { offsetTo } from './measure'
+import { useStore } from '@/data/store'
+import { useEdit } from '@/edit/EditContext'
+import type { SlideData } from '@/data/types'
+import CodeWindow from '@/components/CodeWindow'
+import T from '@/edit/EditableText'
+import { offsetTo } from '@/edit/measure'
 
 export default function CodeEditor({ slide }: { slide: SlideData }) {
   const { slideId } = useEdit()

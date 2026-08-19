@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore } from './store'
-import { unlockShare, shareToken } from './share'
+import { useStore } from '@/data/store'
+import { unlockShare, shareToken } from '@/data/share'
 
 const fmtWait = (s: number) => {
   if (s >= 90) return `${Math.ceil(s / 60)} minutes`

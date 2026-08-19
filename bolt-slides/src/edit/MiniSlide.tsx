@@ -1,8 +1,8 @@
 /* A live thumbnail — renders the real slide at presentation size, scaled
    down (same trick as the engine's overview rail), fully static. */
 import { useEffect, useRef, useState } from 'react'
-import type { SlideData } from '../data/types'
-import SlideView from '../slide/SlideView'
+import type { SlideData } from '@/data/types'
+import SlideView from '@/slide/SlideView'
 
 export default function MiniSlide({ slide }: { slide: SlideData }) {
   const frameRef = useRef<HTMLDivElement>(null)

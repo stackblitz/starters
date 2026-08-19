@@ -8,9 +8,9 @@
      visible the whole time the list is being edited (focus anywhere in it) */
 import { useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { useStore, getPath } from '../data/store'
-import { useEdit } from './EditContext'
-import ContextMenu from './ContextMenu'
+import { useStore, getPath } from '@/data/store'
+import { useEdit } from '@/edit/EditContext'
+import ContextMenu from '@/edit/ContextMenu'
 
 export default function LiCtl({ path, index, blank, children }: {
   /** dot path of the ARRAY in the slide props, e.g. "items" or "left.points" */

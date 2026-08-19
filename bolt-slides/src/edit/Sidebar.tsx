@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useStore } from '../data/store'
-import { type SlideData } from '../data/types'
-import MiniSlide from './MiniSlide'
-import ContextMenu, { type MenuItem } from './ContextMenu'
-import AddSlide from './AddSlide'
+import { useStore } from '@/data/store'
+import { type SlideData } from '@/data/types'
+import MiniSlide from '@/edit/MiniSlide'
+import ContextMenu, { type MenuItem } from '@/edit/ContextMenu'
+import AddSlide from '@/edit/AddSlide'
 
 function Row({ slide, index, active, onSelect, onMenu }: {
   slide: SlideData; index: number; active: boolean

@@ -2,9 +2,9 @@
    All real logic lives in src/edit/FreeformEditor.tsx; items are percent-
    positioned so editor / present / thumbnails / PDF render identically.
    No inspector field schema: items are edited directly on the canvas. */
-import Slide from '../deck/Slide'
-import FreeformCanvas from '../edit/FreeformEditor'
-import { type LayoutDef } from './shared'
+import Slide from '@/deck/Slide'
+import FreeformCanvas from '@/edit/FreeformEditor'
+import { type LayoutDef } from '@/layouts/shared'
 
 export const freeformLayouts: LayoutDef[] = [
   {

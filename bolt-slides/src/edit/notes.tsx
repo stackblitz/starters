@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { renderRich, richToHtml } from './rich'
+import { renderRich, richToHtml } from '@/edit/rich'
 
 /* Speaker notes — one shared surface for the editor's Notes tab and the
    presenter console.

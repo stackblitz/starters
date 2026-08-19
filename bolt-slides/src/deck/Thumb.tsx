@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { DeckCtx, type DeckCtxValue } from './DeckContext'
+import { DeckCtx, type DeckCtxValue } from '@/deck/DeckContext'
 
 /* A slide rendered at true viewport size, then scaled into whatever box it is
    given — so responsive vw/vh units stay faithful instead of reflowing into a

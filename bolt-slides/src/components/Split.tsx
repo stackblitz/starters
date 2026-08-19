@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import Reveal from '../deck/Reveal'
+import Reveal from '@/deck/Reveal'
 
 /* A full-bleed feature slide: text one side, edge-to-edge media the other,
    separated by a hairline. The text cascades in (kicker → title → body);

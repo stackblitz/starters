@@ -7,9 +7,9 @@
    store and the skill both speak. */
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { useStore, getPath } from '../data/store'
-import { useEdit } from './EditContext'
-import { renderRich, richToHtml, balanceLines, clampEm, colorValue, COLOR_RE, ALIGNS } from './rich'
+import { useStore, getPath } from '@/data/store'
+import { useEdit } from '@/edit/EditContext'
+import { renderRich, richToHtml, balanceLines, clampEm, colorValue, COLOR_RE, ALIGNS } from '@/edit/rich'
 
 interface Bar {
   x: number

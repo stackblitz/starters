@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type CSSProperties } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useInView } from '../deck/useInView'
-import { useDeck } from '../deck/DeckContext'
+import { useInView } from '@/deck/useInView'
+import { useDeck } from '@/deck/DeckContext'
 
 /* A small hand-built chart kit — bar, line/area, and donut. Each draws itself
    in when scrolled into view. All token-driven (one accent), no chart library.

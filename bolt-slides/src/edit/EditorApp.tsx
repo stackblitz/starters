@@ -2,12 +2,12 @@
    editing; the canvas's bottom bar carries the deck actions
    (Export PDF / Play / Share). */
 import { useEffect } from 'react'
-import { useStore } from '../data/store'
-import { applyFont, applyAccent } from '../data/fonts'
-import Gate from '../data/Gate'
-import { withShare } from '../data/share'
-import Sidebar from './Sidebar'
-import Canvas from './Canvas'
+import { useStore } from '@/data/store'
+import { applyFont, applyAccent } from '@/data/fonts'
+import Gate from '@/data/Gate'
+import { withShare } from '@/data/share'
+import Sidebar from '@/edit/Sidebar'
+import Canvas from '@/edit/Canvas'
 
 export default function EditorApp() {
   const loaded = useStore((s) => s.loaded)

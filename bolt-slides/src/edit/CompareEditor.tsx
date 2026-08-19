@@ -10,12 +10,12 @@
    [{ label, values: (boolean|string)[] }], highlight indexes value columns. */
 import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useStore } from '../data/store'
-import { useEdit } from './EditContext'
-import type { SlideData } from '../data/types'
-import T from './EditableText'
-import ContextMenu, { type MenuItem } from './ContextMenu'
-import { offsetTo } from './measure'
+import { useStore } from '@/data/store'
+import { useEdit } from '@/edit/EditContext'
+import type { SlideData } from '@/data/types'
+import T from '@/edit/EditableText'
+import ContextMenu, { type MenuItem } from '@/edit/ContextMenu'
+import { offsetTo } from '@/edit/measure'
 
 type Val = boolean | string
 export interface CmpData { cols: string[]; rows: { label: string; values: Val[] }[] }

@@ -5,10 +5,10 @@
 import { Component, type ReactNode as RN } from 'react'
 import { motion, type Variants } from 'motion/react'
 import type { ReactNode } from 'react'
-import type { Background, SlideData } from '../data/types'
-import { DeckCtx, useDeck } from '../deck/DeckContext'
-import { EditCtx } from '../edit/EditContext'
-import { RenderLayout } from '../layouts/registry'
+import type { Background, SlideData } from '@/data/types'
+import { DeckCtx, useDeck } from '@/deck/DeckContext'
+import { EditCtx } from '@/edit/EditContext'
+import { RenderLayout } from '@/layouts/registry'
 
 function BackgroundLayer({ bg }: { bg: Background | undefined }) {
   if (!bg || bg.type === 'none') return null

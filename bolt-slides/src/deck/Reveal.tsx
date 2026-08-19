@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import type { CSSProperties, ReactNode } from 'react'
-import { useDeck } from './DeckContext'
+import { useDeck } from '@/deck/DeckContext'
 
 /* Entrance animation: content rises + fades in when its slide becomes active
    (on mount). Wrap a headline, a grid, a card. Static in thumbnails. */

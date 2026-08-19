@@ -4,7 +4,7 @@
    contentEditable. `slide` is the row being rendered — T falls back to it
    when the id isn't in the store (e.g. add-slide previews). */
 import { createContext, useContext } from 'react'
-import type { SlideData } from '../data/types'
+import type { SlideData } from '@/data/types'
 
 export interface EditCtxValue {
   editable: boolean

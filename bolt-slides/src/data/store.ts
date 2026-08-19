@@ -2,8 +2,8 @@
    Mutations are optimistic: state updates instantly, the API call persists to
    the deck file in the background (text edits are debounced per slide). */
 import { create } from 'zustand'
-import type { AppState, Background, CommentData, DeckMeta, Profile, SlideData } from './types'
-import { shareHeaders, shareInfo, shareToken, type ShareMode } from './share'
+import type { AppState, Background, CommentData, DeckMeta, Profile, SlideData } from '@/data/types'
+import { shareHeaders, shareInfo, shareToken, type ShareMode } from '@/data/share'
 
 /* Why a request was refused, when it was: the app shows a password gate for
    'password-required' and a "ask for a link" screen for 'share-required'. */

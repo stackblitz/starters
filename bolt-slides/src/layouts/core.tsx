@@ -1,12 +1,12 @@
 /* Core layouts: cover, section, statement, big number, quote. */
-import Slide from '../deck/Slide'
-import Reveal from '../deck/Reveal'
-import Cover from '../components/Cover'
-import Section from '../components/Section'
-import Quote from '../components/Quote'
-import BigNumber from '../components/BigNumber'
-import T from '../edit/EditableText'
-import { type LayoutDef, headerFields, textField, useShow, Num } from './shared'
+import Slide from '@/deck/Slide'
+import Reveal from '@/deck/Reveal'
+import Cover from '@/components/Cover'
+import Section from '@/components/Section'
+import Quote from '@/components/Quote'
+import BigNumber from '@/components/BigNumber'
+import T from '@/edit/EditableText'
+import { type LayoutDef, headerFields, textField, useShow, Num } from '@/layouts/shared'
 
 const CoverDef: LayoutDef = {
   type: 'cover',

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
-import Thumb from './Thumb'
-import type { DeckCtxValue } from './DeckContext'
-import { NotesEditor, NotesView } from '../edit/notes'
-import { IconLeft, IconRight, IconClose } from './icons'
+import Thumb from '@/deck/Thumb'
+import type { DeckCtxValue } from '@/deck/DeckContext'
+import { NotesEditor, NotesView } from '@/edit/notes'
+import { IconLeft, IconRight, IconClose } from '@/deck/icons'
 
 /* The presenter console (/present?presenter=1) — a second-screen cockpit, not
    a copy of the slide: what the audience sees right now (live, mid-build),

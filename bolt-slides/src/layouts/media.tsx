@@ -1,14 +1,14 @@
 /* Media layouts: chart (bars are drag-to-resize in the editor). */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import Slide from '../deck/Slide'
-import { BarChart, LineChart, DonutChart, GroupedBarChart } from '../components/Charts'
-import T from '../edit/EditableText'
-import LiCtl from '../edit/LiCtl'
-import { useEdit } from '../edit/EditContext'
-import { useStore } from '../data/store'
-import { offsetTo } from '../edit/measure'
-import type { SlideData } from '../data/types'
-import { type LayoutDef, type FieldSpec, headerFields, textField, useShow, Heading, pipe } from './shared'
+import Slide from '@/deck/Slide'
+import { BarChart, LineChart, DonutChart, GroupedBarChart } from '@/components/Charts'
+import T from '@/edit/EditableText'
+import LiCtl from '@/edit/LiCtl'
+import { useEdit } from '@/edit/EditContext'
+import { useStore } from '@/data/store'
+import { offsetTo } from '@/edit/measure'
+import type { SlideData } from '@/data/types'
+import { type LayoutDef, type FieldSpec, headerFields, textField, useShow, Heading, pipe } from '@/layouts/shared'
 
 const e = (node: ReactNode) => node as unknown as string
 const listField = (path: string, label: string, item: FieldSpec[], blank: unknown): FieldSpec =>

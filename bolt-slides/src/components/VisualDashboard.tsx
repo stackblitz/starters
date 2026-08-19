@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import CountUp from './CountUp'
-import { useDeck } from '../deck/DeckContext'
+import CountUp from '@/components/CountUp'
+import { useDeck } from '@/deck/DeckContext'
 
 /* Example analytics visual (a self-drawing dashboard mock): KPI cards with
    live sparklines, a gridded area chart, and a weekly bar row. ONLY use it

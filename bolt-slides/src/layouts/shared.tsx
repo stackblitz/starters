@@ -1,11 +1,11 @@
 /* Shared bits for layout renderers + the inspector's field schema. */
 import type { ReactNode } from 'react'
-import type { SlideData } from '../data/types'
-import { useEdit } from '../edit/EditContext'
-import { renderRich } from '../edit/rich'
-import T from '../edit/EditableText'
-import CountUp from '../components/CountUp'
-import Reveal from '../deck/Reveal'
+import type { SlideData } from '@/data/types'
+import { useEdit } from '@/edit/EditContext'
+import { renderRich } from '@/edit/rich'
+import T from '@/edit/EditableText'
+import CountUp from '@/components/CountUp'
+import Reveal from '@/deck/Reveal'
 
 /* ── inspector schema ──────────────────────────────────────────────── */
 export interface FieldSpec {

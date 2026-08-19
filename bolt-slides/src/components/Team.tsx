@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react'
-import Reveal from '../deck/Reveal'
-import { useDeck } from '../deck/DeckContext'
+import Reveal from '@/deck/Reveal'
+import { useDeck } from '@/deck/DeckContext'
 
 /* A people-grid slide: photo avatars (or auto-initials on the accent) with
    name + role. Cards rise in staggered; the grid wraps responsively.

@@ -1,15 +1,15 @@
 /* "New slide" picker — every layout in the registry, each card showing a live
    preview rendered from the layout's default content. */
 import { useState } from 'react'
-import { useStore } from '../data/store'
-import { LAYOUT_LIST, LAYOUT_GROUPS, LAYOUTS } from '../layouts/registry'
-import type { LayoutDef } from '../layouts/registry'
-import type { SlideData } from '../data/types'
-import MiniSlide from './MiniSlide'
+import { useStore } from '@/data/store'
+import { LAYOUT_LIST, LAYOUT_GROUPS, LAYOUTS } from '@/layouts/registry'
+import type { LayoutDef } from '@/layouts/registry'
+import type { SlideData } from '@/data/types'
+import MiniSlide from '@/edit/MiniSlide'
 
 /* varied blue/black backgrounds cycle through the preview cards so the grid
    reads dynamic — all within the theme's family */
-import type { Background } from '../data/types'
+import type { Background } from '@/data/types'
 const PREVIEW_BGS: Background[] = [
   { type: 'none' },
   { type: 'gradient', from: '#0d1b3d', to: '#1688fc', angle: 150 },

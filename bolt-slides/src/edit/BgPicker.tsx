@@ -1,7 +1,7 @@
 /* BgPicker — reusable background control: none / color / gradient (+ image
    where allowed). Drives the slide background in the Design tab and per-card
    backgrounds inside layout fields. */
-import type { Background } from '../data/types'
+import type { Background } from '@/data/types'
 
 export const GRADIENTS: { from: string; to: string }[] = [
   { from: '#0a0f1e', to: '#12325e' }, { from: '#0b1026', to: '#3b2f8f' },

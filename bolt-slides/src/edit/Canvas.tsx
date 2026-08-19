@@ -4,14 +4,14 @@
    pages the deck and carries the deck actions (Export PDF · Play · Share). */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useStore } from '../data/store'
-import { DeckCtx } from '../deck/DeckContext'
-import SlideView from '../slide/SlideView'
-import ContextMenu from './ContextMenu'
-import LayoutDataSheet, { hasDataSheet } from './LayoutDataSheet'
-import ShareModal from './ShareModal'
-import { NotesEditor } from './notes'
-import { exportPdf } from '../export/exporter'
+import { useStore } from '@/data/store'
+import { DeckCtx } from '@/deck/DeckContext'
+import SlideView from '@/slide/SlideView'
+import ContextMenu from '@/edit/ContextMenu'
+import LayoutDataSheet, { hasDataSheet } from '@/edit/LayoutDataSheet'
+import ShareModal from '@/edit/ShareModal'
+import { NotesEditor } from '@/edit/notes'
+import { exportPdf } from '@/export/exporter'
 
 export default function Canvas() {
   const slides = useStore((s) => s.slides)

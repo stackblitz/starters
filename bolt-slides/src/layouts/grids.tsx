@@ -2,19 +2,19 @@
    Every visible string renders through T (inline-editable); each repeatable
    item's primary text is wrapped in LiCtl (on-canvas drag-reorder / add / remove). */
 import type { ReactNode } from 'react'
-import Slide from '../deck/Slide'
-import Bento from '../components/Bento'
-import StatGrid from '../components/StatGrid'
-import Contrast from '../components/Contrast'
-import Agenda from '../components/Agenda'
-import Steps from '../components/Steps'
-import Pricing from '../components/Pricing'
-import Team from '../components/Team'
-import Marquee from '../components/Marquee'
-import T from '../edit/EditableText'
-import LiCtl from '../edit/LiCtl'
-import { type LayoutDef, type FieldSpec, headerFields, textField, useShow, Num, Heading, pipe } from './shared'
-import { bgCss } from '../edit/BgPicker'
+import Slide from '@/deck/Slide'
+import Bento from '@/components/Bento'
+import StatGrid from '@/components/StatGrid'
+import Contrast from '@/components/Contrast'
+import Agenda from '@/components/Agenda'
+import Steps from '@/components/Steps'
+import Pricing from '@/components/Pricing'
+import Team from '@/components/Team'
+import Marquee from '@/components/Marquee'
+import T from '@/edit/EditableText'
+import LiCtl from '@/edit/LiCtl'
+import { type LayoutDef, type FieldSpec, headerFields, textField, useShow, Num, Heading, pipe } from '@/layouts/shared'
+import { bgCss } from '@/edit/BgPicker'
 
 /* layout components type text props as string but only ever render them —
    this lets us hand them editable <T> elements instead */

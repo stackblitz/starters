@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ShareLink, ShareMode } from '../data/share'
+import type { ShareLink, ShareMode } from '@/data/share'
 
 /* Share links, one per mode. Each row makes a link, optionally behind a
    password, and copies it. Turning a link off kills it everywhere at once.

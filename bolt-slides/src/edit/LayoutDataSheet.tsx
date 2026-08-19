@@ -3,10 +3,10 @@
    freeform drawer (shared .cnv-data styles): spreadsheet-like grid docked
    to the bottom of the window, editing slide props live. */
 import { createPortal } from 'react-dom'
-import type { SlideData } from '../data/types'
-import { useStore } from '../data/store'
-import CmpCell from './CmpCell'
-import { TrashIcon } from './icons'
+import type { SlideData } from '@/data/types'
+import { useStore } from '@/data/store'
+import CmpCell from '@/edit/CmpCell'
+import { TrashIcon } from '@/edit/icons'
 
 const SWATCHES = ['var(--accent)', '#ffffff', '#94a3b8', '#475569', '#0b1026', '#ff6b6b', '#ffd166', '#34d399', '#a78bfa']
 

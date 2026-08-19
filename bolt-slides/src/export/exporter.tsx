@@ -4,8 +4,8 @@
 import { createRoot } from 'react-dom/client'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
-import type { SlideData } from '../data/types'
-import SlideView from '../slide/SlideView'
+import type { SlideData } from '@/data/types'
+import SlideView from '@/slide/SlideView'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 

@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
-import { useInView } from '../deck/useInView'
+import { useInView } from '@/deck/useInView'
 
 /* A vertical timeline / roadmap. The connector draws in, milestones are
    glowing rings with accent cores, and time labels are mono chips. Reveals

@@ -1,11 +1,11 @@
 import { Children, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import { AnimatePresence, MotionConfig, motion, type Variants } from 'motion/react'
-import { DeckCtx } from './DeckContext'
-import Annotator, { loadAnnotations, type Stroke } from './Annotator'
-import Thumb from './Thumb'
-import Presenter from './Presenter'
-import { IconGrid, IconSidebar, IconLeft, IconRight, IconPencil, IconExpand, IconShrink, IconPresent, IconClose } from './icons'
+import { DeckCtx } from '@/deck/DeckContext'
+import Annotator, { loadAnnotations, type Stroke } from '@/deck/Annotator'
+import Thumb from '@/deck/Thumb'
+import Presenter from '@/deck/Presenter'
+import { IconGrid, IconSidebar, IconLeft, IconRight, IconPencil, IconExpand, IconShrink, IconPresent, IconClose } from '@/deck/icons'
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
    panel, grid overview).

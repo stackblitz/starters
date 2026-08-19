@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import Reveal from '../deck/Reveal'
-import { useDeck } from '../deck/DeckContext'
+import Reveal from '@/deck/Reveal'
+import { useDeck } from '@/deck/DeckContext'
 
 /* A pricing slide: 2–4 tier cards, one highlighted with an accent badge.
    Feature lists get accent checks; cards rise in staggered.

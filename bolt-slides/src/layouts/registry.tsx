@@ -2,15 +2,15 @@
    Each entry: defaults (used by "add slide" and the skill), an inspector
    field schema, and a Render component that maps props → the premium
    section components with editable text (T) wired in. */
-import type { SlideData } from '../data/types'
-import { type LayoutDef } from './shared'
-import { coreLayouts } from './core'
-import { gridLayouts } from './grids'
-import { blockLayouts } from './blocks'
-import { mediaLayouts } from './media'
-import { freeformLayouts } from './freeform'
+import type { SlideData } from '@/data/types'
+import { type LayoutDef } from '@/layouts/shared'
+import { coreLayouts } from '@/layouts/core'
+import { gridLayouts } from '@/layouts/grids'
+import { blockLayouts } from '@/layouts/blocks'
+import { mediaLayouts } from '@/layouts/media'
+import { freeformLayouts } from '@/layouts/freeform'
 
-export type { LayoutDef, FieldSpec } from './shared'
+export type { LayoutDef, FieldSpec } from '@/layouts/shared'
 
 export const LAYOUTS: Record<string, LayoutDef> = Object.fromEntries(
   [...coreLayouts, ...gridLayouts, ...mediaLayouts, ...blockLayouts, ...freeformLayouts].map((l) => [l.type, l]),

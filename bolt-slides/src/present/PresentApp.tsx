@@ -1,13 +1,13 @@
 /* Present mode (/present) — the untouched premium engine (dock, thumbnail
    rail, click-builds, presenter view, annotator), fed from the database. */
 import { useEffect } from 'react'
-import Deck from '../deck/Deck'
-import SlideView from '../slide/SlideView'
-import { useStore } from '../data/store'
-import Gate from '../data/Gate'
-import { applyFont, applyAccent } from '../data/fonts'
-import { stripRich } from '../edit/rich'
-import { LAYOUTS } from '../layouts/registry'
+import Deck from '@/deck/Deck'
+import SlideView from '@/slide/SlideView'
+import { useStore } from '@/data/store'
+import Gate from '@/data/Gate'
+import { applyFont, applyAccent } from '@/data/fonts'
+import { stripRich } from '@/edit/rich'
+import { LAYOUTS } from '@/layouts/registry'
 
 export default function PresentApp() {
   const loaded = useStore((s) => s.loaded)

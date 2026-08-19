@@ -7,7 +7,7 @@
    values are booleans (→ ✓/✗) or strings; `highlight` indexes the value columns. */
 import type { CSSProperties } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useInView } from '../deck/useInView'
+import { useInView } from '@/deck/useInView'
 
 export type CompRow = { label: string; values: (boolean | string)[] }
 

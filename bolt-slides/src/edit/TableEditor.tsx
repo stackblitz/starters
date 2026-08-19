@@ -9,13 +9,13 @@
    overlay dimension multiplies by --inv to stay at true screen size. */
 import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useStore } from '../data/store'
-import { useEdit } from './EditContext'
-import type { SlideData } from '../data/types'
-import { normTable } from '../layouts/shared'
-import T from './EditableText'
-import ContextMenu, { type MenuItem } from './ContextMenu'
-import { offsetTo } from './measure'
+import { useStore } from '@/data/store'
+import { useEdit } from '@/edit/EditContext'
+import type { SlideData } from '@/data/types'
+import { normTable } from '@/layouts/shared'
+import T from '@/edit/EditableText'
+import ContextMenu, { type MenuItem } from '@/edit/ContextMenu'
+import { offsetTo } from '@/edit/measure'
 
 interface Rects { left: number; top: number; width: number; height: number; cols: number[]; rows: number[] }
 
