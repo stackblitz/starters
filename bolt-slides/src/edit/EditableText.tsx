@@ -7,6 +7,7 @@
    store and the skill both speak. */
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -407,6 +408,14 @@ export default function T({
   // slides not in the store (add-slide previews) resolve from the context row
   const value: string =
     storeValue ?? String(getPath(ctxSlide?.props ?? {}, path) ?? '');
+  /* The field's content is handed to React as an object, and React re-applies
+     it whenever that object is not the one it saw last — by identity, not by
+     comparing the HTML inside it. A fresh object each render would therefore
+     rewrite the field on every render, and typing renders (the caret moves, the
+     format bar follows it), so each keystroke would be undone a millisecond
+     after the browser inserted it. Holding the object still until the value
+     really changes is what lets the browser own the field while it is edited. */
+  const html = useMemo(() => ({ __html: richToHtml(value) }), [value]);
   const [focused, setFocused] = useState(false);
   const [bar, setBar] = useState<Bar | null>(null);
   // emptiness must track the LIVE DOM while typing (the store value lags
@@ -777,7 +786,7 @@ export default function T({
           );
           setDomEmpty(!ref.current?.textContent);
         }}
-        dangerouslySetInnerHTML={{ __html: richToHtml(value) }}
+        dangerouslySetInnerHTML={html}
       />
       {focused && bar && (
         <FormatMenu
