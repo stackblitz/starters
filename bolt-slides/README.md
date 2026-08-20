@@ -53,6 +53,7 @@ and the editor can edit them without either touching React code.
 ```bash
 node scripts/deck.mjs export deck.draft.json   # deck → JSON
 node scripts/deck.mjs import deck.draft.json   # JSON → deck (data/deck.json)
+node scripts/deck.mjs apply                    # import the draft if it changed
 node scripts/deck.mjs status                   # slide list: layout · status · owner
 node scripts/deck.mjs reset                    # re-seed from data/deck.seed.json
 ```
@@ -65,6 +66,18 @@ Importing while the editor is open is fine: the dev server watches
 `data/deck.json` and tells the app to re-fetch, so an import from the skill (or
 from your own terminal) shows up without a page reload. Saves the editor makes
 itself are excluded, so a re-fetch never lands on top of what you are typing.
+
+A `deck.draft.json` left unimported is applied on its own — by `predev` if it is
+there before the server boots, by the watcher if it appears after. The deck
+records which draft content it already reflects, so a draft applies once and a
+restart never re-applies it. Editing in the app does not change the draft, so
+your work is what survives; a draft with new content in it is what replaces the
+deck.
+
+Round trips are lossless: `export` carries slide ids and `import` keeps them, so
+exporting a deck, editing the JSON and importing it back leaves the slides —
+and the comments attached to them — intact. Slides written without an `id` are
+new, and a comment whose slide is gone goes with it.
 
 ## The skill
 
@@ -107,7 +120,8 @@ data/deck.json          ← the single source of truth (gitignored; seed JSON is
 server/db.mjs           ← JSON file persistence + cross-process reload
 server/api.mjs          ← REST API, mounted on the Vite dev server (vite.config.ts)
 server/snapshot.mjs     ← bakes the deck into the build so published decks render
-scripts/deck.mjs        ← import/export/reset/status CLI
+server/draft.mjs        ← applies an unimported deck.draft.json (predev + watcher)
+scripts/deck.mjs        ← import/export/apply/reset/status CLI
 src/data/               ← types + zustand store (optimistic writes)
 src/layouts/            ← the layout registry: props schema + renderer per layout
 src/components/         ← the premium section components (locked design system)

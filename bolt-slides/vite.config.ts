@@ -13,6 +13,7 @@ function deckApi(): Plugin {
     async configureServer(server) {
       const { apiMiddleware } = await import('./server/api.mjs');
       const { DB_FILE, lastWriteAt } = await import('./server/db.mjs');
+      const { applyDraft, DRAFT_FILE } = await import('./server/draft.mjs');
       server.middlewares.use(apiMiddleware(server.config.root));
 
       /* Nothing in the bundle imports data/deck.json, so an import from the deck
@@ -39,6 +40,27 @@ function deckApi(): Plugin {
       server.watcher.add(DB_FILE);
       server.watcher.on('add', announce);
       server.watcher.on('change', announce);
+
+      /* `npm run predev` applies a draft that already exists at boot; this
+         covers one written afterwards. Applying writes the deck through this
+         process, so the watcher above treats it as our own and stays quiet —
+         announce it here instead. A draft caught mid-write reads as unreadable
+         and is left for the change event that completes it. */
+      let applying: ReturnType<typeof setTimeout> | undefined;
+
+      const apply = (file: string) => {
+        if (file !== DRAFT_FILE) return;
+
+        clearTimeout(applying);
+        applying = setTimeout(async () => {
+          if ((await applyDraft()) !== 'imported') return;
+          server.hot.send({ type: 'custom', event: 'deck:changed' });
+        }, 150);
+      };
+
+      server.watcher.add(DRAFT_FILE);
+      server.watcher.on('add', apply);
+      server.watcher.on('change', apply);
     },
   };
 }

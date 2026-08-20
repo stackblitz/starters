@@ -101,15 +101,17 @@ node scripts/deck.mjs import deck.draft.json   # 4 · load it (replaces the deck
 node scripts/deck.mjs status                   # 5 · verify slide list
 ```
 
-**Step 4 is what changes the deck.** `deck.draft.json` is your input — a file you
-author and hand to the CLI. Writing it does nothing on its own: until the import
-runs, the deck is exactly what it was and the user sees no new slides. Never
-report slides as added before the import has run.
+**Always run step 4.** `deck.draft.json` is your input — a file you author and
+hand to the CLI. The import is what confirms the deck parsed and tells you how
+many slides landed, so never report slides as added before it has. (The dev
+server applies a changed draft by itself as a backstop, so a missed import is not
+fatal; it is not a substitute for running it, and it tells you nothing.)
 
 An import reaches the open browser on its own — the dev server watches the deck
 file and the app re-fetches. Do not tell the user to reload the page.
 Other CLI verbs: `export [file]` (read the current deck back — do this before
-editing an existing deck so you keep the user's changes), `reset` (re-seed).
+editing an existing deck so you keep the user's changes, and so slide ids come
+with it), `reset` (re-seed).
 
 **Never test against the user's live deck.** A slide PUT replaces `props`
 wholesale and an empty `notes` erases what was there. Duplicate a slide and
@@ -125,6 +127,10 @@ work on the copy, or export first so you can put it back.
   "accent": "#1688FC",             // optional — deck-wide accent (solid hex); omit for the tokens.css default
   "slides": [
     {
+      "id": "a1b2c3d4",            // only on slides you exported — keep it, and the
+                                   // slide keeps its comments; drop it and the
+                                   // slide is replaced by a new one. Omit for
+                                   // slides you are writing for the first time.
       "layout": "cover",           // one of the layouts below
       "props": { ... },            // layout-specific (see catalog); every layout
                                    // also accepts "scale": "lg" | "xl" (+15/+30%

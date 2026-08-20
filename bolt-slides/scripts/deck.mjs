@@ -5,6 +5,8 @@
 
      node scripts/deck.mjs export [file.json]   print (or write) the deck as JSON
      node scripts/deck.mjs import <file.json>   replace the deck from JSON
+     node scripts/deck.mjs apply                import deck.draft.json if the deck
+                                                does not already reflect it (predev)
      node scripts/deck.mjs reset                re-seed from data/deck.seed.json
      node scripts/deck.mjs status               one line per slide (layout, title, status)
 
@@ -18,6 +20,7 @@ import {
   persistNow,
   DB_FILE,
 } from '../server/db.mjs';
+import { applyDraft, noteDraft, DRAFT_FILE } from '../server/draft.mjs';
 
 const [cmd, arg] = process.argv.slice(2);
 
@@ -27,6 +30,9 @@ if (cmd === 'export') {
   const json = JSON.stringify(exportDeck(), null, 2);
   if (arg) {
     fs.writeFileSync(arg, json);
+    // exporting over the draft makes the two agree; do not re-apply it later
+    noteDraft(arg);
+    persistNow();
     console.log(`wrote ${arg}`);
   } else console.log(json);
 } else if (cmd === 'import') {
@@ -35,10 +41,21 @@ if (cmd === 'export') {
     process.exit(1);
   }
   importDeck(JSON.parse(fs.readFileSync(arg, 'utf8')));
+  noteDraft();
   persistNow();
   console.log(
     `imported ${arg} → ${DB_FILE} (${getState().slides.length} slides)`
   );
+} else if (cmd === 'apply') {
+  const outcome = await applyDraft();
+  const said = {
+    imported: () =>
+      `applied ${DRAFT_FILE} → ${DB_FILE} (${getState().slides.length} slides)`,
+    'no-draft': () => `no draft at ${DRAFT_FILE}, leaving the deck as it is`,
+    unchanged: () => `deck already reflects ${DRAFT_FILE}`,
+    unreadable: () => `could not read ${DRAFT_FILE}, leaving the deck as it is`,
+  };
+  console.log(said[outcome]?.() ?? outcome);
 } else if (cmd === 'reset') {
   importDeck(
     JSON.parse(
@@ -48,6 +65,8 @@ if (cmd === 'export') {
       )
     )
   );
+  // a reset is a choice against the draft; do not undo it on the next start
+  noteDraft();
   persistNow();
   console.log(
     `reset from data/deck.seed.json (${getState().slides.length} slides)`
@@ -64,7 +83,7 @@ if (cmd === 'export') {
   }
 } else {
   console.log(
-    'usage: node scripts/deck.mjs <export [file] | import <file> | reset | status>'
+    'usage: node scripts/deck.mjs <export [file] | import <file> | apply | reset | status>'
   );
 }
 process.exit(0);

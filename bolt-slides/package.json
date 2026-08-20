@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/deck.mjs apply",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",

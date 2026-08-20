@@ -64,7 +64,9 @@ POST   /share/unlock              { token, password } → { key }
 ```
 
 **Tables**: `deck` (single row), `slides`, `profiles`, `comments`, `shares`,
-`share_grants`, and a throttle table for unlock attempts. Enable row-level
+`share_grants`, and a throttle table for unlock attempts. `adopted_draft` does
+not travel: it records which `deck.draft.json` the local deck already reflects,
+and drafts are a local authoring concern. Enable row-level
 security with **no policies at all**: the browser must never read these
 directly, because `shares` holds password hashes and `slides` holds speaker
 notes that the audience link is not allowed to see. The function talks to the

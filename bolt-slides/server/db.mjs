@@ -11,7 +11,7 @@ import path from 'node:path';
 import url from 'node:url';
 import crypto from 'node:crypto';
 
-const ROOT = path.resolve(
+export const ROOT = path.resolve(
   path.dirname(url.fileURLToPath(import.meta.url)),
   '..'
 );
@@ -32,6 +32,10 @@ const EMPTY = () => ({
   comments: [],
   shares: [],
   grants: [],
+  /* Which deck.draft.json content the deck already reflects — see
+     server/draft.mjs. Bookkeeping, not deck content: it stays out of
+     exportDeck() so it never travels in a portable deck. */
+  adopted_draft: null,
 });
 
 export const uid = () => crypto.randomUUID().slice(0, 8);
@@ -90,6 +94,13 @@ export async function openDb() {
 }
 
 export const state = () => db ?? EMPTY();
+
+export const adoptedDraft = () => state().adopted_draft;
+
+export function setAdoptedDraft(hash) {
+  state().adopted_draft = hash;
+  persist();
+}
 
 export function persist() {
   dirty = true;
@@ -165,6 +176,10 @@ export const blankSlide = (over = {}) => ({
 });
 
 /* ── portable JSON deck format (what the CLI + skill author) ───────── */
+/* `id` is carried so a deck survives the round trip: re-importing an exported
+   deck keeps the same slides rather than replacing them with copies, which is
+   what lets comments stay attached (see importDeck). Position is implied by
+   order, and the timestamps belong to the row, not to the authored deck. */
 export function exportDeck() {
   const s = state();
   return {
@@ -174,14 +189,19 @@ export function exportDeck() {
     accent: s.deck.accent ?? undefined,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     slides: sortedSlides().map(
-      ({ id, position, created_at, updated_at, ...rest }) => rest
+      ({ position, created_at, updated_at, ...rest }) => rest
     ),
   };
 }
 
-export function importDeck(deckJson, { keepCollab = false } = {}) {
+/* Replaces the deck. Slides authored without an `id` are new, so they get one;
+   slides that carry one keep their identity, and anything pointing at them
+   survives. Comments left without a slide are dropped — the slide they were
+   written on is gone. */
+export function importDeck(deckJson) {
   const s = db ?? (db = EMPTY());
-  if (!keepCollab) s.comments = [];
+  const previous = new Map(s.slides.map((sl) => [sl.id, sl]));
+
   s.deck = {
     title: deckJson.title ?? 'Untitled deck',
     transition: deckJson.transition ?? 'fade',
@@ -191,6 +211,8 @@ export function importDeck(deckJson, { keepCollab = false } = {}) {
   };
   s.slides = (deckJson.slides ?? []).map((sl, i) =>
     blankSlide({
+      id: sl.id ?? uid(),
+      created_at: previous.get(sl.id)?.created_at ?? now(),
       position: i,
       layout: sl.layout,
       props: sl.props ?? {},
@@ -203,5 +225,9 @@ export function importDeck(deckJson, { keepCollab = false } = {}) {
       assignee: sl.assignee ?? null,
     })
   );
+
+  const kept = new Set(s.slides.map((sl) => sl.id));
+  s.comments = s.comments.filter((c) => kept.has(c.slide_id));
+
   persist();
 }

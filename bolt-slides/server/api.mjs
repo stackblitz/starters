@@ -44,6 +44,7 @@ import {
   importDeck,
   uid,
 } from './db.mjs';
+import { noteDraft } from './draft.mjs';
 import {
   access,
   may,
@@ -339,6 +340,8 @@ export function apiMiddleware(rootDir) {
       if (m === 'POST' && seg[0] === 'import') {
         if (!writable('write')) return deny();
         importDeck(await readBody(req));
+        // an explicit replacement; a restart must not put the draft back
+        noteDraft();
         return send(res, 200, visible(getState()));
       }
 
