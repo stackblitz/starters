@@ -16,6 +16,9 @@
   1. `deck` — one row, forever. `id` is a boolean checked to be true, so a second
      row cannot exist.
      - `title`, `transition`, `font`, `accent` — how the deck presents
+     - `visibility` — `public` (the default: anyone who opens the published
+       address sees the slides, never the speaker notes) or `link` (the published
+       address shows nothing without a share link)
      - `publish_url` — where this project is deployed, recorded by the deck
        function the first time the published site calls it. Share links are built
        on this, because the address the editor runs on opens for nobody else
@@ -72,6 +75,11 @@ CREATE TABLE IF NOT EXISTS deck (
     CHECK (transition IN ('fade', 'slide', 'rise', 'zoom', 'none')),
   font text NOT NULL DEFAULT 'inter',
   accent text,
+  /* Publishing a deck makes it readable by default, because that is what the
+     person publishing it meant. `link` takes that back: the published address
+     then shows nothing to anyone not holding a share link. */
+  visibility text NOT NULL DEFAULT 'public'
+    CHECK (visibility IN ('public', 'link')),
   publish_url text,
   /* 244 bits of randomness from two v4 UUIDs, which needs no extension —
      pgcrypto's gen_random_bytes is not guaranteed to be installed. */
