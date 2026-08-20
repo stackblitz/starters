@@ -86,8 +86,23 @@ Two things to tell the user before they publish:
   can open presenter view and read them. Move anything private out of `notes`
   before publishing.
 
-Editing a published deck, comments, share links and passwords all need a real
-backend — that is `docs/cloud-setup.md` (schema, route contract, permission
+**After every publish, record the URL the project was published to.** The
+editor's Share button is dead until you do, because a link built from the
+address the dev server runs on is reachable by nobody but the person looking at
+it — a preview URL belongs to one browser tab, and localhost belongs to one
+machine.
+
+```bash
+node scripts/deck.mjs published https://their-deck.bolthost.dev
+```
+
+Run it again whenever that address changes — a renamed subdomain, a custom
+domain — and `published none` if the project is unpublished. Take the URL from
+the publish result, not from a guess; the user can also set it in the Share
+dialog.
+
+Editing a published deck, comments, per-audience links and passwords all need a
+real backend — that is `docs/cloud-setup.md` (schema, route contract, permission
 rules, publish checklist). That port is app work, not deck work, and is
 outside this skill: say so and let the user decide.
 

@@ -1,221 +1,114 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ShareLink, ShareMode } from '@/data/share';
+import { useEffect, useRef, useState } from 'react';
+import { useStore } from '@/data/store';
 
-/* Share links, one per mode. Each row makes a link, optionally behind a
-   password, and copies it. Turning a link off kills it everywhere at once.
+/* Sharing means sharing the published deck.
 
-   The dialog is a focus trap with Escape to close, every control labelled,
-   and every result announced in a live region. */
+   The address this editor is running on cannot be opened by anyone else — in a
+   preview it is a container URL bound to this one tab, and on a laptop it is
+   localhost — so a link built from it is a link to nothing. The published site
+   is the only address worth copying, which is why the deck records it and why
+   Share stays closed until it does.
 
-const MODES: {
-  id: ShareMode;
+   What a published deck can enforce is nothing: it is a static build of the
+   slides with no server behind it (server/snapshot.mjs). So there is one kind
+   of link here — public, read only — rather than the per-mode links and
+   passwords a backend could check. Those come back with docs/cloud-setup.md.
+
+   The dialog is a focus trap with Escape to close, every control labelled, and
+   every result announced in a live region. */
+
+const LINKS: {
+  id: string;
   title: string;
   body: string;
-  path: (t: string) => string;
+  path: string;
+  warn?: string;
 }[] = [
   {
     id: 'present',
     title: 'Presentation',
-    body: 'The deck, full screen. Read only: no editing, no notes.',
-    path: (t) => `/present?k=${t}`,
+    body: 'The deck, full screen. Nobody can edit it.',
+    path: '/present',
   },
   {
     id: 'presenter',
     title: 'Presenter console',
-    body: 'Current and next slide, notes, timer. Can edit speaker notes, nothing else.',
-    path: (t) => `/present?presenter=1&k=${t}`,
-  },
-  {
-    id: 'edit',
-    title: 'Editor',
-    body: 'The full editor. Anyone with this link can change the deck.',
-    path: (t) => `/?k=${t}`,
+    body: 'Current and next slide, speaker notes, timer.',
+    path: '/present?presenter=1',
+    warn: 'Speaker notes are built into the published deck, so anyone who has this link can read them — including anyone who has the presentation link and edits it to match.',
   },
 ];
 
-const MIN_PASSWORD = 8;
-
-const api = async (path: string, method = 'GET', body?: unknown) => {
-  const res = await fetch('/api' + path, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
-};
+/* The stored form: an origin and nothing else. Same rule the server applies, so
+   a URL accepted here is not rejected on save. */
+function siteOrigin(value: string): string | null {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' || url.protocol === 'http:'
+      ? url.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 function Row({
   spec,
-  link,
-  onSave,
-  onStop,
+  site,
   announce,
 }: {
-  spec: (typeof MODES)[number];
-  link?: ShareLink;
-  onSave: (
-    mode: ShareMode,
-    patch: { password?: string | null; rotate?: boolean }
-  ) => Promise<void>;
-  onStop: (mode: ShareMode) => Promise<void>;
+  spec: (typeof LINKS)[number];
+  site: string;
   announce: (msg: string) => void;
 }) {
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-  const on = !!link;
-  const url = link ? window.location.origin + spec.path(link.token) : '';
-  const passId = `share-pass-${spec.id}`;
-
-  const run = async (fn: () => Promise<void>, done: string) => {
-    setBusy(true);
-    try {
-      await fn();
-      announce(done);
-    } catch {
-      announce('That did not work. Try again.');
-    } finally {
-      setBusy(false);
-    }
-  };
+  const url = site + spec.path;
 
   return (
     <li className="share-row">
       <div className="share-row-head">
         <div>
-          <h3 className="share-row-title">
-            {spec.title}
-            {link?.hasPassword && <span className="share-lock">Password</span>}
-          </h3>
+          <h3 className="share-row-title">{spec.title}</h3>
           <p className="share-row-body">{spec.body}</p>
         </div>
-        <button
-          className={'share-toggle' + (on ? ' on' : '')}
-          role="switch"
-          aria-checked={on}
-          aria-label={`Share the ${spec.title.toLowerCase()}`}
-          disabled={busy}
-          onClick={() =>
-            on
-              ? run(() => onStop(spec.id), `${spec.title} link turned off`)
-              : run(() => onSave(spec.id, {}), `${spec.title} link created`)
-          }
-        >
-          <span className="share-toggle-knob" />
-        </button>
       </div>
-
-      {on && (
-        <div className="share-row-body-open">
-          <div className="share-link">
-            <input
-              className="share-url"
-              readOnly
-              value={url}
-              aria-label={`${spec.title} link`}
-              onFocus={(e) => e.currentTarget.select()}
-            />
-            <button
-              className="ghost-btn xs"
-              onClick={() =>
-                navigator.clipboard.writeText(url).then(
-                  () => announce('Link copied'),
-                  () =>
-                    announce(
-                      'Copy failed. Select the link and copy it manually.'
-                    )
-                )
-              }
-            >
-              Copy
-            </button>
-          </div>
-
-          <div className="share-pass">
-            <label className="share-pass-label" htmlFor={passId}>
-              {link?.hasPassword ? 'Change password' : 'Add a password'}
-            </label>
-            <div className="share-pass-row">
-              <input
-                id={passId}
-                className={
-                  'share-input' + (link?.hasPassword ? ' is-dots' : '')
-                }
-                type="password"
-                autoComplete="new-password"
-                /* a set password reads as dots, so "protected" is visible
-                   without pretending we could show the password itself */
-                placeholder={link?.hasPassword ? '••••••••' : 'No password'}
-                value={password}
-                disabled={busy}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                className="ghost-btn xs"
-                disabled={busy || password.length < MIN_PASSWORD}
-                onClick={() =>
-                  run(async () => {
-                    await onSave(spec.id, { password });
-                    setPassword('');
-                  }, 'Password set. Anyone already in has been signed out')
-                }
-              >
-                Set
-              </button>
-              {link?.hasPassword && (
-                <button
-                  className="ghost-btn xs"
-                  disabled={busy}
-                  onClick={() =>
-                    run(
-                      () => onSave(spec.id, { password: null }),
-                      'Password removed. The link is open again'
-                    )
-                  }
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <p className="share-hint">
-              {password && password.length < MIN_PASSWORD
-                ? `At least ${MIN_PASSWORD} characters. A short password is guessable even with the rate limit.`
-                : link?.hasPassword
-                ? 'Protected. Visitors are asked once, then remembered on that device for 30 days.'
-                : 'Open. Anyone with the link gets in.'}
-            </p>
-          </div>
-
+      <div className="share-row-body-open">
+        <div className="share-link">
+          <input
+            className="share-url"
+            readOnly
+            value={url}
+            aria-label={`${spec.title} link`}
+            onFocus={(e) => e.currentTarget.select()}
+          />
           <button
-            className="ghost-btn xs share-rotate"
-            disabled={busy}
+            className="ghost-btn xs"
             onClick={() =>
-              run(
-                () => onSave(spec.id, { rotate: true }),
-                'New link generated. The old one no longer works'
+              navigator.clipboard.writeText(url).then(
+                () => announce('Link copied'),
+                () =>
+                  announce('Copy failed. Select the link and copy it manually.')
               )
             }
           >
-            Generate a new link
+            Copy
           </button>
         </div>
-      )}
+        {spec.warn && <p className="share-hint">{spec.warn}</p>}
+      </div>
     </li>
   );
 }
 
 export default function ShareModal({ onClose }: { onClose: () => void }) {
-  const [links, setLinks] = useState<ShareLink[] | null>(null);
+  const site = useStore((s) => s.deck.publish_url) ?? '';
+  const updateDeck = useStore((s) => s.updateDeck);
+
+  const [draft, setDraft] = useState(site);
   const [message, setMessage] = useState('');
   const ref = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(
     typeof document !== 'undefined' ? document.activeElement : null
   );
-
-  const refresh = useCallback(async () => setLinks(await api('/shares')), []);
-  useEffect(() => {
-    refresh().catch(() => setLinks([]));
-  }, [refresh]);
 
   // focus trap + Escape, and focus returns to the button that opened this
   useEffect(() => {
@@ -249,16 +142,15 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
     };
   }, [onClose]);
 
-  const onSave = async (
-    mode: ShareMode,
-    patch: { password?: string | null; rotate?: boolean }
-  ) => {
-    await api('/shares/' + mode, 'PUT', patch);
-    await refresh();
-  };
-  const onStop = async (mode: ShareMode) => {
-    await api('/shares/' + mode, 'DELETE');
-    await refresh();
+  const save = () => {
+    const next = siteOrigin(draft);
+    if (!next) {
+      setMessage('That is not a site address. It should look like https://…');
+      return;
+    }
+    updateDeck({ publish_url: next });
+    setDraft(next);
+    setMessage(`Links now point at ${next}`);
   };
 
   return (
@@ -288,26 +180,66 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="share-intro">
-          Links work wherever this deck is reachable: your network, or a tunnel
-          you expose. You always have full access from this machine.
+          These links point at the published deck, so they keep working for
+          whoever you send them to. They show the deck as it was last published
+          — publish again after editing.
         </p>
 
-        {links === null ? (
-          <p className="share-intro">Loading links…</p>
-        ) : (
+        <div className="share-row">
+          <label className="share-row-title" htmlFor="share-site">
+            Published at
+          </label>
+          <div className="share-row-body-open">
+            <div className="share-link">
+              <input
+                id="share-site"
+                className="share-input"
+                type="url"
+                inputMode="url"
+                placeholder="https://your-deck.bolthost.dev"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') save();
+                }}
+              />
+              <button
+                className="ghost-btn xs"
+                disabled={!draft.trim() || draft.trim() === site}
+                onClick={save}
+              >
+                Save
+              </button>
+            </div>
+            <p className="share-hint">
+              Filled in when the project is published. Change it here if the
+              project moves — a renamed subdomain, a domain of your own.
+            </p>
+          </div>
+        </div>
+
+        {site ? (
           <ul className="share-list">
-            {MODES.map((spec) => (
+            {LINKS.map((spec) => (
               <Row
                 key={spec.id}
                 spec={spec}
-                link={links.find((l) => l.mode === spec.id)}
-                onSave={onSave}
-                onStop={onStop}
+                site={site}
                 announce={setMessage}
               />
             ))}
           </ul>
+        ) : (
+          <p className="share-intro">
+            Publish the project to get a link worth sending.
+          </p>
         )}
+
+        <p className="share-foot">
+          A published deck is a static build with no server behind it, so a link
+          cannot be made private, password protected, or editable. Moving the
+          deck onto a backend (docs/cloud-setup.md) is what buys access control.
+        </p>
 
         <p className="share-live" role="status" aria-live="polite">
           {message}

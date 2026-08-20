@@ -4,4 +4,6 @@ Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/c
 
 This template uses Vite 8. `resolve.tsconfigPaths: true` is a valid built-in Vite option. Preserve it for the `@/` alias; do not claim it is invalid or add the `vite-tsconfig-paths` plugin.
 
+After publishing the project, record where it landed with `node scripts/deck.mjs published <url>`, and again whenever that URL changes. Sharing a deck means sharing the published site: until the deck knows that address the editor's Share button stays disabled, since a link built from the dev server's own address opens for nobody else.
+
 The deck API in `server/` is Vite dev-server middleware, so it does not exist in a published build. `vite.config.ts` bakes the deck into the bundle at build time and the client falls back to that snapshot, which is what makes a published deck presentable. Preserve both; do not "fix" the missing API by deleting the fallback.

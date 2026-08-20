@@ -7,7 +7,7 @@
    re-implementing exactly these (docs/cloud-setup.md). Routes:
 
      GET    /api/state                     full app state (deck, slides, profiles, comments)
-     PUT    /api/deck                      { title?, transition? }
+     PUT    /api/deck                      { title?, transition?, font?, accent?, publish_url? }
      POST   /api/slides                    { layout, props?, position?, ... } → slide
      PUT    /api/slides/:id                partial slide patch
      POST   /api/slides/:id/duplicate      → new slide (inserted after original)
@@ -42,6 +42,7 @@ import {
   blankSlide,
   exportDeck,
   importDeck,
+  publishUrl,
   uid,
 } from './db.mjs';
 import { noteDraft } from './draft.mjs';
@@ -193,6 +194,12 @@ export function apiMiddleware(rootDir) {
         const d = state().deck;
         for (const k of ['title', 'transition', 'font', 'accent'])
           if (b[k] !== undefined) d[k] = b[k];
+        if (b.publish_url !== undefined) {
+          const site = publishUrl(b.publish_url);
+          if (site === undefined)
+            return send(res, 400, { error: 'publish_url must be a site URL' });
+          d.publish_url = site;
+        }
         d.updated_at = now();
         persist();
         return send(res, 200, {
@@ -200,6 +207,7 @@ export function apiMiddleware(rootDir) {
           transition: d.transition,
           font: d.font,
           accent: d.accent,
+          publish_url: d.publish_url ?? null,
         });
       }
 

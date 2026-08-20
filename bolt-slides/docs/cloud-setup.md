@@ -66,7 +66,10 @@ POST   /share/unlock              { token, password } → { key }
 **Tables**: `deck` (single row), `slides`, `profiles`, `comments`, `shares`,
 `share_grants`, and a throttle table for unlock attempts. `adopted_draft` does
 not travel: it records which `deck.draft.json` the local deck already reflects,
-and drafts are a local authoring concern. Enable row-level
+and drafts are a local authoring concern. `publish_url` does: it is where the
+deck is deployed, so the editor can build links that open for someone else, and
+it is what the Share dialog puts in front of `/present?k=…` once tokens mean
+something again. Enable row-level
 security with **no policies at all**: the browser must never read these
 directly, because `shares` holds password hashes and `slides` holds speaker
 notes that the audience link is not allowed to see. The function talks to the
@@ -123,14 +126,18 @@ everywhere and lets you preview what a visitor sees.
 2. Build with `npx vite build` — that is what Bolt's deploy runs for this
    template, so it is what you want to reproduce locally. `npm run typecheck`
    is separate and does not gate the build.
-4. Copying an existing deck across? `slides.position` is **1-based**. Data
+3. Copying an existing deck across? `slides.position` is **1-based**. Data
    copied as 0-based renders off by one; renumber once after the import.
-5. Never test permissions against the live deck. A `PUT /slides/:id` with
+4. Never test permissions against the live deck. A `PUT /slides/:id` with
    `props` **replaces** the whole props object, and writing `notes: ""` wipes
    the real note. Duplicate a slide and test on the copy.
-6. Check the published link in a private window: the editor should open, a
+5. Check the published link in a private window: the editor should open, a
    `present` link should hide speaker notes, and a revoked link should be
    refused.
+6. Give the Share dialog its links back. `src/edit/ShareModal.tsx` offers one
+   public link, because that is all a static build can honour; a checked token
+   makes the per-mode links and passwords in `server/share.mjs` real again, and
+   they belong in front of `publish_url` rather than the dev server's address.
 7. Delete what the port left behind once it is proven: `server/*.mjs`,
    `data/deck.json`, and `scripts/deck.mjs`. Removing `server/` also means
    removing the `deckApi()` and `deckSnapshot()` plugins from

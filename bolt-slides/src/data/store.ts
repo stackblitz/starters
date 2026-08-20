@@ -295,7 +295,10 @@ export const useStore = create<Store>((set, getState) => ({
 
   updateDeck(patch) {
     set((s) => ({ deck: { ...s.deck, ...patch } }));
-    debounceSave('deck', () => api('/deck', 'PUT', patch));
+    /* Sends the whole deck rather than this patch: deck saves share one debounce
+       slot, so a patch sent alone loses whichever change it interrupted — a
+       title still being typed when the publish URL is saved. */
+    debounceSave('deck', () => api('/deck', 'PUT', getState().deck));
   },
 
   patchSlide(id, patch) {

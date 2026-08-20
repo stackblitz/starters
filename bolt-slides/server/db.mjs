@@ -25,6 +25,13 @@ const EMPTY = () => ({
     transition: 'fade',
     font: 'inter',
     accent: null,
+    /* Where this deck is published. A link worth sending someone has to point
+       at the published site: this dev server's own address is reachable by
+       nobody else. Recorded once the project has been published, and editable
+       afterwards, because a project's URL can change under it — a renamed
+       subdomain, a custom domain. Null until then, which is what makes the
+       editor say "publish first" instead of handing out a dead link. */
+    publish_url: null,
     updated_at: null,
   },
   slides: [],
@@ -37,6 +44,35 @@ const EMPTY = () => ({
      exportDeck() so it never travels in a portable deck. */
   adopted_draft: null,
 });
+
+/* The publish URL as it is stored: an origin, no trailing slash, nothing after
+   the host — the deck appends its own paths. Returns null for "not published"
+   and undefined for input that is not a site URL at all, so callers can tell a
+   deliberate clearing from a typo. */
+export function publishUrl(value) {
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string') return undefined;
+  let url;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    return undefined;
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return undefined;
+  return url.origin;
+}
+
+/* Record where the deck is published. Returns the stored value, or undefined
+   if the input was rejected — in which case nothing changed. */
+export function setPublishUrl(value) {
+  const site = publishUrl(value);
+  if (site === undefined) return undefined;
+  const s = db ?? (db = EMPTY());
+  s.deck.publish_url = site;
+  s.deck.updated_at = now();
+  persist();
+  return site;
+}
 
 export const uid = () => crypto.randomUUID().slice(0, 8);
 const now = () => new Date().toISOString();
@@ -150,6 +186,7 @@ export function getState() {
       transition: s.deck.transition,
       font: s.deck.font ?? 'inter',
       accent: s.deck.accent ?? null,
+      publish_url: s.deck.publish_url ?? null,
     },
     slides: sortedSlides().map((sl) => ({ ...sl })),
     profiles: s.profiles.map((p) => ({ ...p })),
@@ -178,7 +215,9 @@ export const blankSlide = (over = {}) => ({
 /* `id` is carried so a deck survives the round trip: re-importing an exported
    deck keeps the same slides rather than replacing them with copies, which is
    what lets comments stay attached (see importDeck). Position is implied by
-   order, and the timestamps belong to the row, not to the authored deck. */
+   order, and the timestamps belong to the row, not to the authored deck. Nor
+   does the publish URL travel: it says where this project is deployed, which
+   is nothing to do with the deck being authored. */
 export function exportDeck() {
   const s = state();
   return {
@@ -216,6 +255,11 @@ export function importDeck(deckJson) {
     transition: deckJson.transition ?? 'fade',
     font: deckJson.font ?? 'inter',
     accent: deckJson.accent ?? null,
+    /* Where the deck is published belongs to the project, not to the authored
+       deck, so a new deck lands at the same address rather than un-publishing
+       itself — and a deck JSON handed around does not carry someone else's
+       site with it. */
+    publish_url: s.deck?.publish_url ?? null,
     updated_at: now(),
   };
   s.slides = (deckJson.slides ?? []).map((sl, i) => {

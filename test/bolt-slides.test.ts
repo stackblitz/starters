@@ -169,6 +169,57 @@ test('a deck survives the export/import round trip with its comments', async ({
    the skill runs the import itself. Minting ids each time would hand the second
    import a deck full of slides nothing else can refer to, so a slide keeps
    whatever identity already sat in its place. */
+/* Every link the editor can hand out is built on the published URL, so if this
+   stops surviving an import the Share button silently goes dead the next time a
+   deck is authored. */
+test('the published URL outlives the deck it was recorded on', async ({
+  webcontainer,
+}) => {
+  const publishUrl = async () =>
+    JSON.parse(await webcontainer.readFile('data/deck.json')).deck.publish_url;
+
+  await webcontainer.runCommand('node', [
+    'scripts/deck.mjs',
+    'published',
+    'https://quarterly-review.bolthost.dev/present',
+  ]);
+  // stored as an origin: the deck appends its own paths
+  expect(await publishUrl()).toBe('https://quarterly-review.bolthost.dev');
+
+  await webcontainer.writeFile('deck.draft.json', JSON.stringify(DECK));
+  await webcontainer.runCommand('node', [
+    'scripts/deck.mjs',
+    'import',
+    'deck.draft.json',
+  ]);
+  expect(await publishUrl()).toBe('https://quarterly-review.bolthost.dev');
+
+  // where a project is deployed is not part of the deck people pass around
+  await webcontainer.runCommand('node', [
+    'scripts/deck.mjs',
+    'export',
+    'exported.json',
+  ]);
+  const exported = JSON.parse(await webcontainer.readFile('exported.json'));
+  expect(exported).not.toHaveProperty('publish_url');
+
+  // a URL that is not one leaves the last good one alone
+  await webcontainer
+    .runCommand('node', ['scripts/deck.mjs', 'published', 'bolthost.dev'])
+    .then(
+      () => {},
+      () => {}
+    );
+  expect(await publishUrl()).toBe('https://quarterly-review.bolthost.dev');
+
+  await webcontainer.runCommand('node', [
+    'scripts/deck.mjs',
+    'published',
+    'none',
+  ]);
+  expect(await publishUrl()).toBe(null);
+});
+
 test('re-importing an authored deck keeps the slides it already had', async ({
   webcontainer,
 }) => {

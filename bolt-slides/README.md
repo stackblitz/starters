@@ -29,18 +29,21 @@ put. Framed — a Bolt preview, a docs page — they take over the frame instead
 preview URL is only resolvable by the tab connected to the project, so a second
 tab would open to nothing. The dock's last button goes back to the editor.
 
-- **Share** (top bar) makes one link per mode: the presentation (read only, no
-  speaker notes), the presenter console (read, plus notes), or the editor (full
-  access). Any link can carry a password. You keep full access from this
-  machine; everyone else needs a link.
+- **Share** (top bar) hands out links to the *published* deck: the presentation,
+  and the presenter console for whoever is speaking. It stays disabled until the
+  deck knows where it was published, because the address this editor runs on is
+  reachable by nobody else — a preview URL belongs to the one tab connected to
+  the project, and localhost belongs to one machine. Record it after publishing
+  (`node scripts/deck.mjs published <url>`, which the agent does for you) or type
+  it into the dialog, and change it there if the project moves.
 
-  What that layer is and is not: passwords are scrypt hashes (N=2^16, ~90ms a
-  guess) with a per-share salt, unlock attempts are capped at 8 per address per
-  10 minutes, links are 96-bit random tokens, and writes are rejected unless
-  they come from this origin. It is a decent lock on a door, not an identity
-  system: there are no accounts, anything that can reach the server on loopback
-  is the owner, and over plain HTTP a link and its password travel in the clear
-  — put a tunnel with TLS in front before sharing anything that matters.
+  A published deck is a static build with no server behind it, so a link cannot
+  be made private, password protected, or writable — and the speaker notes in it
+  are public to anyone holding it. The token-and-password layer the server still
+  implements (`server/share.mjs`: 96-bit tokens, scrypt password hashes, unlock
+  throttling, per-mode permissions) only enforces anything while a server is
+  running, which is what [docs/cloud-setup.md](docs/cloud-setup.md) is for.
+
 - **Export PDF** (top bar) renders every slide at 1280×720 and downloads a PDF.
 - **OG image** (top bar) renders slide 1 to `public/og.png`, wired to the
   OpenGraph tags in `index.html` — share a deployed deck and slide 1 is the
@@ -112,9 +115,13 @@ Two things worth knowing:
 - **Speaker notes are baked in and public.** Anyone with the link can open
   presenter view and read them. Per-slide status, comments, profiles and share
   links are stripped from the snapshot and never leave your machine.
+- **Tell the deck where it landed** — `node scripts/deck.mjs published <url>`,
+  or the Share dialog. That URL is the base for every link the editor hands out,
+  and it is the only base that works: the published site is the one address a
+  visitor can open.
 
-Editing a published deck — plus comments, share links and passwords, which all
-need a server to enforce — means moving storage to a real backend:
+Editing a published deck — plus comments, per-audience links and passwords, which
+all need a server to enforce — means moving storage to a real backend:
 **[docs/cloud-setup.md](docs/cloud-setup.md)** has the route contract, the
 table layout, the permission rules, the owner question (the bare published URL
 is a credential — decide that deliberately) and a publish checklist.
@@ -130,7 +137,7 @@ server/db.mjs           ← JSON file persistence + cross-process reload
 server/api.mjs          ← REST API, mounted on the Vite dev server (vite.config.ts)
 server/snapshot.mjs     ← bakes the deck into the build so published decks render
 server/draft.mjs        ← applies an unimported deck.draft.json (predev + watcher)
-scripts/deck.mjs        ← import/export/apply/reset/status CLI
+scripts/deck.mjs        ← import/export/apply/reset/status/published CLI
 src/data/               ← types + zustand store (optimistic writes)
 src/layouts/            ← the layout registry: props schema + renderer per layout
 src/components/         ← the premium section components (locked design system)

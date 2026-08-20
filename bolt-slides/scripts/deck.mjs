@@ -9,6 +9,8 @@
                                                 does not already reflect it (predev)
      node scripts/deck.mjs reset                re-seed from data/deck.seed.json
      node scripts/deck.mjs status               one line per slide (layout, title, status)
+     node scripts/deck.mjs published <url>      record where the deck is published
+                                                ("published none" to forget it)
 
    The JSON format is documented in .bolt/skills/slides/SKILL.md. */
 import fs from 'node:fs';
@@ -18,6 +20,7 @@ import {
   importDeck,
   getState,
   persistNow,
+  setPublishUrl,
   DB_FILE,
 } from '../server/db.mjs';
 import { applyDraft, noteDraft, DRAFT_FILE } from '../server/draft.mjs';
@@ -71,6 +74,22 @@ if (cmd === 'export') {
   console.log(
     `reset from data/deck.seed.json (${getState().slides.length} slides)`
   );
+} else if (cmd === 'published') {
+  if (!arg) {
+    console.error('usage: deck.mjs published <url | none>');
+    process.exit(1);
+  }
+  const site = setPublishUrl(arg === 'none' ? null : arg);
+  if (site === undefined) {
+    console.error(`not a site URL: ${arg}`);
+    process.exit(1);
+  }
+  persistNow();
+  console.log(
+    site
+      ? `sharing links now point at ${site}`
+      : 'forgot where the deck is published; sharing is off until it is set again'
+  );
 } else if (cmd === 'status') {
   const { slides } = getState();
   for (const s of slides) {
@@ -83,7 +102,7 @@ if (cmd === 'export') {
   }
 } else {
   console.log(
-    'usage: node scripts/deck.mjs <export [file] | import <file> | apply | reset | status>'
+    'usage: node scripts/deck.mjs <export [file] | import <file> | apply | reset | status | published <url|none>>'
   );
 }
 process.exit(0);

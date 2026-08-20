@@ -20,6 +20,7 @@ export default function Canvas() {
   const current = useStore((s) => s.current);
   const setCurrent = useStore((s) => s.setCurrent);
   const title = useStore((s) => s.deck.title);
+  const published = !!useStore((s) => s.deck.publish_url);
   const slide = slides[current];
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -250,7 +251,17 @@ export default function Canvas() {
         </a>
         <button
           className="solid-btn"
-          data-tip="Share links for presenting, the presenter console or editing"
+          /* Nothing to share until the project is published: this editor's own
+             address is not reachable by anyone else. */
+          data-tip={
+            published
+              ? 'Links to the published deck'
+              : 'Publish the project to share it'
+          }
+          disabled={!published}
+          aria-label={
+            published ? undefined : 'Share — publish the project first'
+          }
           aria-haspopup="dialog"
           aria-expanded={share}
           onClick={() => setShare(true)}

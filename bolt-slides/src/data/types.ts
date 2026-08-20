@@ -83,6 +83,9 @@ export interface DeckMeta {
   font?: string;
   /** deck-wide accent override (null/absent = the tokens.css default) */
   accent?: string | null;
+  /** origin of the published site, null until the project has been published —
+      the base every shareable link is built on (see ShareModal) */
+  publish_url?: string | null;
 }
 
 export interface AppState {
