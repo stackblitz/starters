@@ -42,7 +42,11 @@
     },
     {
       "layout": "section",
-      "props": { "n": "01", "kicker": "Chapter one", "title": "The quarter in numbers" },
+      "props": {
+        "n": "01",
+        "kicker": "Chapter one",
+        "title": "The quarter in numbers"
+      },
       "transition": "zoom",
       "animation": "cascade",
       "notes": ""
@@ -64,9 +68,21 @@
         "title": "The scoreboard",
         "body": "Three numbers we said we'd move at the last all-hands — and where they landed.",
         "items": [
-          { "label": "Annual recurring revenue", "value": "$92M", "caption": "vs $78M last quarter" },
-          { "label": "Weekly active builders", "value": "410K", "caption": "+31% QoQ" },
-          { "label": "Prompt-to-deploy success", "value": "81%", "caption": "up from 73%" }
+          {
+            "label": "Annual recurring revenue",
+            "value": "$92M",
+            "caption": "vs $78M last quarter"
+          },
+          {
+            "label": "Weekly active builders",
+            "value": "410K",
+            "caption": "+31% QoQ"
+          },
+          {
+            "label": "Prompt-to-deploy success",
+            "value": "81%",
+            "caption": "up from 73%"
+          }
         ]
       },
       "animation": "cascade",
@@ -116,7 +132,11 @@
     },
     {
       "layout": "section",
-      "props": { "n": "02", "kicker": "Chapter two", "title": "What shipped, what's next" },
+      "props": {
+        "n": "02",
+        "kicker": "Chapter two",
+        "title": "What shipped, what's next"
+      },
       "transition": "zoom",
       "animation": "cascade",
       "notes": ""
@@ -127,11 +147,36 @@
         "kicker": "Shipped this quarter",
         "title": "The Q3 highlight reel",
         "tiles": [
-          { "k": "Agent", "title": "Self-healing builds", "body": "The agent now catches and fixes its own errors mid-build — support tickets on broken builds down 44%.", "c": 8, "r": 1, "variant": "accent" },
+          {
+            "k": "Agent",
+            "title": "Self-healing builds",
+            "body": "The agent now catches and fixes its own errors mid-build — support tickets on broken builds down 44%.",
+            "c": 8,
+            "r": 1,
+            "variant": "accent"
+          },
           { "fig": "44%", "title": "Fewer build failures", "c": 4, "r": 1 },
-          { "k": "Platform", "title": "Payments in one prompt", "body": "Stripe checkout wired end-to-end without leaving the chat.", "c": 4, "r": 2 },
-          { "k": "Mobile", "title": "Phone-ready apps", "body": "Every project now ships a responsive mobile experience by default.", "c": 4, "r": 2 },
-          { "k": "Teams", "title": "Shared workspaces", "body": "Orgs, roles and shared projects — the top enterprise ask, closed.", "c": 4, "r": 2 }
+          {
+            "k": "Platform",
+            "title": "Payments in one prompt",
+            "body": "Stripe checkout wired end-to-end without leaving the chat.",
+            "c": 4,
+            "r": 2
+          },
+          {
+            "k": "Mobile",
+            "title": "Phone-ready apps",
+            "body": "Every project now ships a responsive mobile experience by default.",
+            "c": 4,
+            "r": 2
+          },
+          {
+            "k": "Teams",
+            "title": "Shared workspaces",
+            "body": "Orgs, roles and shared projects — the top enterprise ask, closed.",
+            "c": 4,
+            "r": 2
+          }
         ]
       },
       "animation": "cascade",
@@ -143,9 +188,18 @@
         "title": "Three priorities for Q4",
         "large": true,
         "items": [
-          { "title": "Reliability", "body": "Prompt-to-deploy success from 81% to 90%. Boring, compounding, everything depends on it." },
-          { "title": "Enterprise", "body": "SSO, audit logs and procurement-ready security so teams can standardize on Bolt." },
-          { "title": "The agent", "body": "Longer horizons: multi-step plans, background work, and builds that finish while you sleep." }
+          {
+            "title": "Reliability",
+            "body": "Prompt-to-deploy success from 81% to 90%. Boring, compounding, everything depends on it."
+          },
+          {
+            "title": "Enterprise",
+            "body": "SSO, audit logs and procurement-ready security so teams can standardize on Bolt."
+          },
+          {
+            "title": "The agent",
+            "body": "Longer horizons: multi-step plans, background work, and builds that finish while you sleep."
+          }
         ]
       },
       "animation": "cascade",
@@ -157,10 +211,26 @@
         "kicker": "Roadmap",
         "title": "The next two quarters",
         "items": [
-          { "time": "Sep 2026", "title": "Reliability push", "body": "Eval suite doubles; agent self-correction v2 rolls out to everyone." },
-          { "time": "Oct 2026", "title": "Enterprise GA", "body": "SSO, audit logs and the security review package go live." },
-          { "time": "Nov 2026", "title": "Background agent beta", "body": "Kick off a build, close the tab, come back to a finished app." },
-          { "time": "Jan 2027", "title": "Bolt Conf", "body": "Our first user conference — 2,000 builders, live on stage." }
+          {
+            "time": "Sep 2026",
+            "title": "Reliability push",
+            "body": "Eval suite doubles; agent self-correction v2 rolls out to everyone."
+          },
+          {
+            "time": "Oct 2026",
+            "title": "Enterprise GA",
+            "body": "SSO, audit logs and the security review package go live."
+          },
+          {
+            "time": "Nov 2026",
+            "title": "Background agent beta",
+            "body": "Kick off a build, close the tab, come back to a finished app."
+          },
+          {
+            "time": "Jan 2027",
+            "title": "Bolt Conf",
+            "body": "Our first user conference — 2,000 builders, live on stage."
+          }
         ]
       },
       "animation": "cascade",
@@ -168,7 +238,11 @@
     },
     {
       "layout": "section",
-      "props": { "n": "03", "kicker": "Chapter three", "title": "The people doing it" },
+      "props": {
+        "n": "03",
+        "kicker": "Chapter three",
+        "title": "The people doing it"
+      },
       "transition": "zoom",
       "animation": "cascade",
       "notes": ""
@@ -196,9 +270,18 @@
         "title": "Asked ahead of time",
         "large": true,
         "items": [
-          { "q": "Are we raising again this year?", "a": "No plans. Revenue growth funds the roadmap; we'll revisit only if the market shifts." },
-          { "q": "When do we hire in EMEA?", "a": "First engineering pod opens in Q4 — Amsterdam or remote-EU, JDs out this month." },
-          { "q": "What about model costs?", "a": "Cost per build is down 35% this year from routing and caching. It stays a top-three metric." }
+          {
+            "q": "Are we raising again this year?",
+            "a": "No plans. Revenue growth funds the roadmap; we'll revisit only if the market shifts."
+          },
+          {
+            "q": "When do we hire in EMEA?",
+            "a": "First engineering pod opens in Q4 — Amsterdam or remote-EU, JDs out this month."
+          },
+          {
+            "q": "What about model costs?",
+            "a": "Cost per build is down 35% this year from routing and caching. It stays a top-three metric."
+          }
         ]
       },
       "animation": "cascade",

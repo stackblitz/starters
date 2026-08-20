@@ -1,5 +1,5 @@
 {
-  "name": "bolt-slides-starter",
+  "name": "slides",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,24 +7,25 @@
     "build": "vite build",
     "preview": "vite preview",
     "deck": "node scripts/deck.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc -b"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "framer-motion": "^11.3.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "motion": "^12.43.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.0"
+    "@types/node": "^22.15.2",
+    "@types/react": "~19.2.18",
+    "@types/react-dom": "~19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.0"
   }
 }

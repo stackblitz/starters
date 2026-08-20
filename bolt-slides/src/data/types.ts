@@ -5,63 +5,89 @@ export type Background =
   | { type: 'none' }
   | { type: 'color'; color: string }
   | { type: 'gradient'; from: string; to: string; angle?: number }
-  | { type: 'image'; url: string; dim?: number } // dim 0..1 darkens under a scrim
+  | { type: 'image'; url: string; dim?: number }; // dim 0..1 darkens under a scrim
 
 /* How a slide's content enters when it becomes active:
    cascade = each layout's designed stagger (default) · rise/fade/zoom = the
    whole slide enters as one · none = instant. */
-export type AnimationMode = 'cascade' | 'rise' | 'fade' | 'zoom' | 'none'
+export type AnimationMode = 'cascade' | 'rise' | 'fade' | 'zoom' | 'none';
 
 /* How the deck moves between slides. Per-slide `transition` overrides the
    deck default (null = inherit). */
-export type TransitionMode = 'fade' | 'slide' | 'rise' | 'zoom' | 'none'
+export type TransitionMode = 'fade' | 'slide' | 'rise' | 'zoom' | 'none';
 
-export type SlideStatus = 'none' | 'draft' | 'in-progress' | 'review' | 'approved'
+export type SlideStatus =
+  | 'none'
+  | 'draft'
+  | 'in-progress'
+  | 'review'
+  | 'approved';
 
-export const STATUSES: { value: SlideStatus; label: string; color: string }[] = [
-  { value: 'none', label: 'None', color: 'transparent' },
-  { value: 'draft', label: 'Draft', color: '#9aa4b2' },
-  { value: 'in-progress', label: 'In progress', color: '#eab308' },
-  { value: 'review', label: 'In review', color: '#38bdf8' },
-  { value: 'approved', label: 'Approved', color: '#4fe5b0' },
-]
+export const STATUSES: { value: SlideStatus; label: string; color: string }[] =
+  [
+    { value: 'none', label: 'None', color: 'transparent' },
+    { value: 'draft', label: 'Draft', color: '#9aa4b2' },
+    { value: 'in-progress', label: 'In progress', color: '#eab308' },
+    { value: 'review', label: 'In review', color: '#38bdf8' },
+    { value: 'approved', label: 'Approved', color: '#4fe5b0' },
+  ];
 
-export const ANIMATIONS: AnimationMode[] = ['cascade', 'rise', 'fade', 'zoom', 'none']
-export const TRANSITIONS: TransitionMode[] = ['fade', 'slide', 'rise', 'zoom', 'none']
+export const ANIMATIONS: AnimationMode[] = [
+  'cascade',
+  'rise',
+  'fade',
+  'zoom',
+  'none',
+];
+export const TRANSITIONS: TransitionMode[] = [
+  'fade',
+  'slide',
+  'rise',
+  'zoom',
+  'none',
+];
 
 export interface SlideData {
-  id: string
-  position: number
-  layout: string
+  id: string;
+  position: number;
+  layout: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  props: any
-  background: Background
-  animation: AnimationMode
-  transition: TransitionMode | null
-  nav: string | null
-  notes: string
-  status: SlideStatus
-  assignee: string | null
+  props: any;
+  background: Background;
+  animation: AnimationMode;
+  transition: TransitionMode | null;
+  nav: string | null;
+  notes: string;
+  status: SlideStatus;
+  assignee: string | null;
 }
 
-export interface Profile { id: string; name: string; color: string }
+export interface Profile {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export interface CommentData {
-  id: string
-  slide_id: string
-  profile_id: string | null
-  body: string
-  resolved: number
-  created_at: string
+  id: string;
+  slide_id: string;
+  profile_id: string | null;
+  body: string;
+  resolved: number;
+  created_at: string;
 }
 
-export interface DeckMeta { title: string; transition: TransitionMode; font?: string
+export interface DeckMeta {
+  title: string;
+  transition: TransitionMode;
+  font?: string;
   /** deck-wide accent override (null/absent = the tokens.css default) */
-  accent?: string | null }
+  accent?: string | null;
+}
 
 export interface AppState {
-  deck: DeckMeta
-  slides: SlideData[]
-  profiles: Profile[]
-  comments: CommentData[]
+  deck: DeckMeta;
+  slides: SlideData[];
+  profiles: Profile[];
+  comments: CommentData[];
 }

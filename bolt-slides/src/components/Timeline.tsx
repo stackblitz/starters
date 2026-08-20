@@ -1,16 +1,16 @@
-import { motion, useReducedMotion } from 'framer-motion'
-import type { ReactNode } from 'react'
-import { useInView } from '../deck/useInView'
+import { motion, useReducedMotion } from 'motion/react';
+import type { ReactNode } from 'react';
+import { useInView } from '@/deck/useInView';
 
 /* A vertical timeline / roadmap. The connector draws in, milestones are
    glowing rings with accent cores, and time labels are mono chips. Reveals
    in sequence when scrolled into view; self-centers when standalone.
    <Timeline items={[{ time: 'Q1', title: 'Launch', body: '…' }, …]} /> */
-export type TimelineItem = { time: string; title: string; body?: ReactNode }
+export type TimelineItem = { time: string; title: string; body?: ReactNode };
 
 export default function Timeline({ items }: { items: TimelineItem[] }) {
-  const { ref, inView } = useInView<HTMLDivElement>(0.2)
-  const reduce = useReducedMotion()
+  const { ref, inView } = useInView<HTMLDivElement>(0.2);
+  const reduce = useReducedMotion();
   return (
     <div className="tl" ref={ref}>
       <div className="tl-line">
@@ -28,7 +28,11 @@ export default function Timeline({ items }: { items: TimelineItem[] }) {
             className="tl-item"
             initial={reduce ? false : { opacity: 0, x: -14 }}
             animate={inView ? { opacity: 1, x: 0 } : undefined}
-            transition={{ delay: 0.15 + i * 0.12, duration: reduce ? 0 : 0.5, ease: [0.16, 1, 0.3, 1] }}
+            transition={{
+              delay: 0.15 + i * 0.12,
+              duration: reduce ? 0 : 0.5,
+              ease: [0.16, 1, 0.3, 1],
+            }}
           >
             <span className="tl-dot" />
             <div className="tl-content">
@@ -40,5 +44,5 @@ export default function Timeline({ items }: { items: TimelineItem[] }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
