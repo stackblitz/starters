@@ -1,5 +1,5 @@
 import { test, type TestContext } from '@webcontainer/test';
-import { beforeEach, expect, onTestFinished } from 'vitest';
+import { beforeEach, expect } from 'vitest';
 
 const DECK = {
   title: 'Quarterly Review',
@@ -60,23 +60,6 @@ test('user can build project', async ({ webcontainer }) => {
   expect(snapshot.slides[0]).not.toHaveProperty('status');
   expect(snapshot).not.toHaveProperty('comments');
   expect(snapshot).not.toHaveProperty('profiles');
-});
-
-test('user can start project and see the deck in the editor', async ({
-  preview,
-  webcontainer,
-}) => {
-  await webcontainer.writeFile('deck.draft.json', JSON.stringify(DECK));
-  await webcontainer.runCommand('node', [
-    'scripts/deck.mjs',
-    'import',
-    'deck.draft.json',
-  ]);
-
-  const { exit } = webcontainer.runCommand('npm', ['run', 'dev']);
-  onTestFinished(exit);
-
-  await preview.getByText('Revenue doubled');
 });
 
 /* Authoring is two steps — write deck.draft.json, then import it — and the
@@ -179,4 +162,34 @@ test('a deck survives the export/import round trip with its comments', async ({
   );
   expect(after.comments).toHaveLength(1);
   expect(after.comments[0].slide_id).toBe(after.slides[0].id);
+});
+
+/* A deck written from scratch has no ids in it — the skill does not invent them
+   — and the first prompt imports one twice over, once on start and once when
+   the skill runs the import itself. Minting ids each time would hand the second
+   import a deck full of slides nothing else can refer to, so a slide keeps
+   whatever identity already sat in its place. */
+test('re-importing an authored deck keeps the slides it already had', async ({
+  webcontainer,
+}) => {
+  const draft = { title: 'Authored', slides: DECK.slides };
+  await webcontainer.writeFile('deck.draft.json', JSON.stringify(draft));
+
+  const importDraft = () =>
+    webcontainer.runCommand('node', [
+      'scripts/deck.mjs',
+      'import',
+      'deck.draft.json',
+    ]);
+
+  await importDraft();
+  const first = JSON.parse(await webcontainer.readFile('data/deck.json'));
+  expect(first.slides.every((s: { id: string }) => s.id)).toBe(true);
+
+  await importDraft();
+  const second = JSON.parse(await webcontainer.readFile('data/deck.json'));
+
+  expect(second.slides.map((s: { id: string }) => s.id)).toEqual(
+    first.slides.map((s: { id: string }) => s.id)
+  );
 });

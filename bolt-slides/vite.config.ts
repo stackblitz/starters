@@ -12,7 +12,9 @@ function deckApi(): Plugin {
     name: 'deck-api',
     async configureServer(server) {
       const { apiMiddleware } = await import('./server/api.mjs');
-      const { DB_FILE, lastWriteAt } = await import('./server/db.mjs');
+      const { DB_FILE, rewrittenByAnotherProcess } = await import(
+        './server/db.mjs'
+      );
       const { applyDraft, DRAFT_FILE } = await import('./server/draft.mjs');
       server.middlewares.use(apiMiddleware(server.config.root));
 
@@ -22,12 +24,15 @@ function deckApi(): Plugin {
 
          Only outside rewrites are announced. The editor saves optimistically —
          local state first, request after — so re-fetching on its own writes
-         would race the user and overwrite what they are still typing. A write
-         this process just made is therefore ignored. */
+         would race the user and overwrite what they are still typing. Whose
+         write it was is decided by comparing the file, not by elapsed time: an
+         import lands within milliseconds of an editor save often enough, and
+         mistaking it for our own leaves the browser addressing slides the deck
+         has already replaced, which silently breaks every later edit. */
       let pending: ReturnType<typeof setTimeout> | undefined;
 
       const announce = (file: string) => {
-        if (file !== DB_FILE || Date.now() - lastWriteAt() < 1000) return;
+        if (file !== DB_FILE || !rewrittenByAnotherProcess()) return;
 
         // creating the file emits add + change; coalesce into one re-fetch
         clearTimeout(pending);

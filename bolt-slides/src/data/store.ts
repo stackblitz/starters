@@ -47,6 +47,18 @@ async function api<T = any>(
   return res.json();
 }
 
+/* A write aimed at a slide we do not have. The deck was replaced underneath us
+   and this write is about to vanish, so say which one and re-read the deck
+   rather than keep editing against a version that is gone. Silence here reads
+   as a broken editor: the field shows the typed text for a frame, then snaps
+   back to what the stale deck says. */
+function stale(id: string, what: string) {
+  console.error(
+    `slides: dropped a slide ${what} for ${id} — no such slide; re-reading the deck`
+  );
+  void useStore.getState().load();
+}
+
 /* A published build is static: there is no /api. The deck is baked into the
    bundle at build time (server/snapshot.mjs) and loaded from there instead.
 
@@ -262,6 +274,8 @@ export const useStore = create<Store>((set, getState) => ({
   },
 
   patchSlide(id, patch) {
+    if (!getState().slides.some((sl) => sl.id === id))
+      return stale(id, 'patch');
     set((s) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, ...patch } : sl)),
     }));
@@ -271,7 +285,7 @@ export const useStore = create<Store>((set, getState) => ({
 
   setProp(id, path, value) {
     const slide = getState().slides.find((s) => s.id === id);
-    if (!slide) return;
+    if (!slide) return stale(id, 'edit');
     const props = setPath(slide.props, path, value);
     set((s) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, props } : sl)),

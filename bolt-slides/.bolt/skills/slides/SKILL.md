@@ -127,10 +127,10 @@ work on the copy, or export first so you can put it back.
   "accent": "#1688FC",             // optional — deck-wide accent (solid hex); omit for the tokens.css default
   "slides": [
     {
-      "id": "a1b2c3d4",            // only on slides you exported — keep it, and the
-                                   // slide keeps its comments; drop it and the
-                                   // slide is replaced by a new one. Omit for
-                                   // slides you are writing for the first time.
+      "id": "a1b2c3d4",            // only on slides you exported — keep it and the
+                                   // slide keeps its comments. Omit it on slides you
+                                   // are writing for the first time: those take over
+                                   // the position they land in, comments included.
       "layout": "cover",           // one of the layouts below
       "props": { ... },            // layout-specific (see catalog); every layout
                                    // also accepts "scale": "lg" | "xl" (+15/+30%

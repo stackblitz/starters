@@ -45,17 +45,17 @@ let db = null;
 let saveTimer = null;
 let loadedMtime = 0;
 let dirty = false;
-let lastWrite = 0;
-
-/* When this process last wrote the file. The deck CLI runs as its own process,
-   so its writes leave this untouched — that is how the dev server tells an
-   outside rewrite from one of its own API saves (see vite.config.ts). */
-export const lastWriteAt = () => lastWrite;
 
 const fileMtime = () =>
   fs.existsSync(DB_FILE) ? fs.statSync(DB_FILE).mtimeMs : 0;
 
-const rewrittenByAnotherProcess = () => fileMtime() > loadedMtime + 1;
+/* True when the file on disk is not the one this process last read or wrote —
+   so the deck CLI, or the skill, has replaced it. This is how the dev server
+   tells an outside rewrite from one of its own API saves (see vite.config.ts).
+   It compares the file itself rather than guessing from elapsed time: an import
+   that lands right after an editor save is still an import, and treating it as
+   our own leaves the browser holding slides the deck no longer has. */
+export const rewrittenByAnotherProcess = () => fileMtime() > loadedMtime + 1;
 
 /* Drop what we are holding, pending write included. Called when another process
    has replaced the deck: an import is an explicit "replace the deck" action, so
@@ -124,7 +124,6 @@ export function persistNow() {
 
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
   loadedMtime = fileMtime();
-  lastWrite = Date.now();
   dirty = false;
 }
 for (const sig of ['SIGINT', 'SIGTERM', 'exit']) process.on(sig, persistNow);
@@ -194,13 +193,23 @@ export function exportDeck() {
   };
 }
 
-/* Replaces the deck. Slides authored without an `id` are new, so they get one;
-   slides that carry one keep their identity, and anything pointing at them
-   survives. Comments left without a slide are dropped — the slide they were
-   written on is gone. */
+/* Replaces the deck, keeping slide identity wherever it can. A slide that
+   carries an `id` keeps it. One authored without an id — which is every slide
+   the skill writes from scratch — inherits the id of whatever already sat at
+   its position.
+
+   Position is a weak claim to identity, but a re-issued id is worse than a
+   wrong one: the open editor addresses slides by id, and a deck whose ids all
+   changed leaves it writing to slides that no longer exist. Since an import is
+   usually a revision of the deck on screen, position is the closest thing to
+   "the same slide" the authored format gives us. */
 export function importDeck(deckJson) {
   const s = db ?? (db = EMPTY());
   const previous = new Map(s.slides.map((sl) => [sl.id, sl]));
+  const wasAt = sortedSlides();
+  const claimed = new Set(
+    (deckJson.slides ?? []).map((sl) => sl.id).filter(Boolean)
+  );
 
   s.deck = {
     title: deckJson.title ?? 'Untitled deck',
@@ -209,10 +218,15 @@ export function importDeck(deckJson) {
     accent: deckJson.accent ?? null,
     updated_at: now(),
   };
-  s.slides = (deckJson.slides ?? []).map((sl, i) =>
-    blankSlide({
-      id: sl.id ?? uid(),
-      created_at: previous.get(sl.id)?.created_at ?? now(),
+  s.slides = (deckJson.slides ?? []).map((sl, i) => {
+    const inherited = wasAt[i]?.id;
+    const id =
+      sl.id ?? (inherited && !claimed.has(inherited) ? inherited : uid());
+    claimed.add(id);
+
+    return blankSlide({
+      id,
+      created_at: previous.get(id)?.created_at ?? now(),
       position: i,
       layout: sl.layout,
       props: sl.props ?? {},
@@ -223,8 +237,8 @@ export function importDeck(deckJson) {
       notes: sl.notes ?? '',
       status: sl.status ?? 'none',
       assignee: sl.assignee ?? null,
-    })
-  );
+    });
+  });
 
   const kept = new Set(s.slides.map((sl) => sl.id));
   s.comments = s.comments.filter((c) => kept.has(c.slide_id));

@@ -76,8 +76,11 @@ deck.
 
 Round trips are lossless: `export` carries slide ids and `import` keeps them, so
 exporting a deck, editing the JSON and importing it back leaves the slides —
-and the comments attached to them — intact. Slides written without an `id` are
-new, and a comment whose slide is gone goes with it.
+and the comments attached to them — intact. A slide written without an `id`
+takes over whatever sat in its position, so importing a deck authored from
+scratch does not silently re-issue every id: an editor open on the deck keeps
+working, and comments stay where they were. A comment whose slide is gone
+altogether goes with it.
 
 ## The skill
 
