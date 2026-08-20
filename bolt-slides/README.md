@@ -23,6 +23,12 @@ the editor, or prompt one into existence with the `slides` skill.
 | `/` | Editor — thumbnail rail (always open; drag to reorder, right-click to duplicate/delete/insert), click any text on the slide to edit it, inspector for layout props · background (color/gradient/image) · animation · transition, comments, per-slide status, speaker notes |
 | `/present` | Presentation — floating dock, side panel (S) and grid overview (G), click-builds, presenter view with notes + timer (P), annotation mode (D — pen, highlighter, laser, shapes, eraser, undo/redo), fullscreen (F) |
 
+Present and the presenter console open in a window of their own when the app has
+a tab of its own, so the deck can go up on a projector while the editor stays
+put. Framed — a Bolt preview, a docs page — they take over the frame instead: a
+preview URL is only resolvable by the tab connected to the project, so a second
+tab would open to nothing. The dock's last button goes back to the editor.
+
 - **Share** (top bar) makes one link per mode: the presentation (read only, no
   speaker notes), the presenter console (read, plus notes), or the editor (full
   access). Any link can carry a password. You keep full access from this

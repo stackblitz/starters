@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Deck from '@/deck/Deck';
 import SlideView from '@/slide/SlideView';
 import { useStore } from '@/data/store';
+import { withShare } from '@/data/share';
 import Gate from '@/data/Gate';
 import { applyFont, applyAccent } from '@/data/fonts';
 import { stripRich } from '@/edit/rich';
@@ -17,6 +18,7 @@ export default function PresentApp() {
   const load = useStore((s) => s.load);
   const patchSlide = useStore((s) => s.patchSlide);
   const mode = useStore((s) => s.mode);
+  const canEdit = useStore((s) => s.canEdit);
 
   useEffect(() => {
     load().catch(() => {
@@ -46,6 +48,8 @@ export default function PresentApp() {
     <Deck
       transition={deck.transition}
       allowPresenter={mode !== 'present'}
+      /* only someone who can edit has an editor to go back to */
+      exitTo={canEdit ? withShare('/') : undefined}
       /* the presenter console edits the deck's real notes — same rows the
          editor's Notes tab writes, straight to the deck file */
       onNotes={(i, text) => {

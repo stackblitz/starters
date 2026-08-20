@@ -4,7 +4,9 @@
    pages the deck and carries the deck actions (Export PDF · Play · Share). */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useStore } from '@/data/store';
+import { flushSaves, useStore } from '@/data/store';
+import { embedded } from '@/data/embed';
+import { withShare } from '@/data/share';
 import { DeckCtx } from '@/deck/DeckContext';
 import SlideView from '@/slide/SlideView';
 import ContextMenu from '@/edit/ContextMenu';
@@ -39,6 +41,17 @@ export default function Canvas() {
     } finally {
       setBusy(null);
     }
+  };
+
+  /* Framed, present mode takes over this frame rather than a new tab, so the
+     editor's last keystrokes have to reach the server before we leave. A tab of
+     our own keeps the plain link: the editor stays open and saves on its own. */
+  const onPresent = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!embedded || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)
+      return;
+    e.preventDefault();
+    await flushSaves();
+    window.location.assign(withShare('/present'));
   };
 
   const boxRef = useRef<HTMLDivElement>(null);
@@ -219,10 +232,11 @@ export default function Canvas() {
         <a
           className="icon-btn"
           data-tip="Present"
-          href="/present"
-          target="_blank"
+          href={withShare('/present')}
+          target={embedded ? undefined : '_blank'}
           rel="noreferrer"
-          aria-label="Open the presentation in a new tab"
+          aria-label="Present this deck"
+          onClick={onPresent}
         >
           <svg
             width="18"

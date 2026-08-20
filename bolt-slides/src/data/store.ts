@@ -151,10 +151,35 @@ bus?.addEventListener('message', (e) => {
   }));
 });
 
-const saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
-function debounceSave(id: string, fn: () => void, ms = 500) {
-  clearTimeout(saveTimers[id]);
-  saveTimers[id] = setTimeout(fn, ms);
+interface PendingSave {
+  timer: ReturnType<typeof setTimeout>;
+  send: () => unknown;
+}
+const saveTimers: Record<string, PendingSave> = {};
+function debounceSave(id: string, fn: () => unknown, ms = 500) {
+  clearTimeout(saveTimers[id]?.timer);
+  saveTimers[id] = {
+    send: fn,
+    timer: setTimeout(() => {
+      delete saveTimers[id];
+      fn();
+    }, ms),
+  };
+}
+
+/* Send whatever is still waiting on its debounce, and resolve once the server
+   has it. Awaited before this tab goes somewhere else — presenting in the frame
+   it was given — so the half-second of typing before the click is not lost. */
+export function flushSaves(): Promise<unknown> {
+  const sending = Object.keys(saveTimers).map((id) => {
+    const pending = saveTimers[id];
+    delete saveTimers[id];
+    clearTimeout(pending.timer);
+    return Promise.resolve(pending.send()).catch(() => {
+      /* the save's own error handling has already run */
+    });
+  });
+  return Promise.all(sending);
 }
 
 interface Store extends AppState {

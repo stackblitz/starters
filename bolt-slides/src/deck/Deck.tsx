@@ -28,6 +28,7 @@ import {
   IconPresent,
   IconClose,
 } from '@/deck/icons';
+import { openView } from '@/data/embed';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
    panel, grid overview).
@@ -35,7 +36,7 @@ import {
      → / ↓ / Space   next (reveals the next <Build>, then the next slide)
      ← / ↑           previous            S side panel   G grid overview
      Home / End      first / last        D draw         F fullscreen
-     H  hide/show the UI                 P presenter (new tab)
+     H  hide/show the UI                 P presenter console
    While drawing (D), the annotator owns the letter keys: P pen · H highlighter
    · L laser · I line · A arrow · R rect · O ellipse · E eraser · 1–6 colour ·
    [ ] size · ⌘Z / ⇧⌘Z undo+redo · ⌫ clear · D or Esc to finish.
@@ -95,11 +96,16 @@ export default function Deck({
   onNotes,
   navLabel,
   allowPresenter = true,
+  exitTo,
 }: {
   children: ReactNode;
   transition?: string;
   /** false on an audience share link — the console shows speaker notes */
   allowPresenter?: boolean;
+  /** where "leave the deck" goes, when whoever is watching has an editor to
+      go back to. Presenting can take over the tab (or the frame), so there has
+      to be a way out that is not closing the window. */
+  exitTo?: string;
   /** persist a slide's speaker notes (presenter console edits) */
   onNotes?: (index: number, text: string) => void;
   /** optional short name for a slide, shown as "up next" in the console */
@@ -195,15 +201,20 @@ export default function Deck({
   }, [clicks, slide]);
 
   const toggleFs = useCallback(() => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen?.();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      return;
+    }
+    /* A frame only gets fullscreen if whoever framed us allowed it. Refused,
+       the deck goes on filling whatever it was given. */
+    document.documentElement.requestFullscreen?.().catch(() => {});
   }, []);
   const openPresenter = useCallback(() => {
     if (isPresenter) return;
     const params = new URLSearchParams(window.location.search);
     params.set('presenter', '1');
     const url = `${window.location.pathname}?${params}${window.location.hash}`;
-    window.open(url, 'deck-presenter');
+    openView(url, 'deck-presenter');
   }, [isPresenter]);
 
   // keyboard
@@ -603,12 +614,22 @@ export default function Deck({
             {allowPresenter && (
               <button
                 className="noir-icon-btn noir-optional"
-                data-tip="Presenter — new tab (P)"
-                aria-label="Open the presenter console in a new window"
+                data-tip="Presenter console (P)"
+                aria-label="Open the presenter console"
                 onClick={openPresenter}
               >
                 <IconPresent />
               </button>
+            )}
+            {exitTo && (
+              <a
+                className="noir-icon-btn"
+                data-tip="Back to the editor"
+                aria-label="Back to the editor"
+                href={exitTo}
+              >
+                <IconClose />
+              </a>
             )}
           </div>
         </div>
