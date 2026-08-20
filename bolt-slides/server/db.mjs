@@ -6,192 +6,94 @@
    comments[], shares[], grants[] — because this is the development stand-in
    for a hosted database. Porting to Bolt Cloud / Supabase is one array per
    table and the same API routes on top (see docs/cloud-setup.md). */
-import fs from 'node:fs';
-import path from 'node:path';
-import url from 'node:url';
-import crypto from 'node:crypto';
+import fs from 'node:fs'
+import path from 'node:path'
+import url from 'node:url'
+import crypto from 'node:crypto'
 
-export const ROOT = path.resolve(
-  path.dirname(url.fileURLToPath(import.meta.url)),
-  '..'
-);
-export const DATA_DIR = path.join(ROOT, 'data');
-export const DB_FILE = path.join(DATA_DIR, 'deck.json');
-const SEED_FILE = path.join(DATA_DIR, 'deck.seed.json');
+const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..')
+export const DATA_DIR = path.join(ROOT, 'data')
+export const DB_FILE = path.join(DATA_DIR, 'deck.json')
+const SEED_FILE = path.join(DATA_DIR, 'deck.seed.json')
 
 const EMPTY = () => ({
-  deck: {
-    title: 'Untitled deck',
-    transition: 'fade',
-    font: 'inter',
-    accent: null,
-    /* Where this deck is published. A link worth sending someone has to point
-       at the published site: this dev server's own address is reachable by
-       nobody else. Recorded once the project has been published, and editable
-       afterwards, because a project's URL can change under it — a renamed
-       subdomain, a custom domain. Null until then, which is what makes the
-       editor say "publish first" instead of handing out a dead link. */
-    publish_url: null,
-    updated_at: null,
-  },
+  deck: { title: 'Untitled deck', transition: 'fade', font: 'inter', accent: null, updated_at: null },
   slides: [],
   profiles: [],
   comments: [],
   shares: [],
   grants: [],
-  /* Which deck.draft.json content the deck already reflects — see
-     server/draft.mjs. Bookkeeping, not deck content: it stays out of
-     exportDeck() so it never travels in a portable deck. */
-  adopted_draft: null,
-});
+})
 
-/* The publish URL as it is stored: an origin, no trailing slash, nothing after
-   the host — the deck appends its own paths. Returns null for "not published"
-   and undefined for input that is not a site URL at all, so callers can tell a
-   deliberate clearing from a typo. */
-export function publishUrl(value) {
-  if (value === null || value === '') return null;
-  if (typeof value !== 'string') return undefined;
-  let url;
-  try {
-    url = new URL(value.trim());
-  } catch {
-    return undefined;
-  }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return undefined;
-  return url.origin;
-}
+export const uid = () => crypto.randomUUID().slice(0, 8)
+const now = () => new Date().toISOString()
 
-/* Record where the deck is published. Returns the stored value, or undefined
-   if the input was rejected — in which case nothing changed. */
-export function setPublishUrl(value) {
-  const site = publishUrl(value);
-  if (site === undefined) return undefined;
-  const s = db ?? (db = EMPTY());
-  s.deck.publish_url = site;
-  s.deck.updated_at = now();
-  persist();
-  return site;
-}
+let db = null
+let saveTimer = null
+let loadedMtime = 0
+let dirty = false
 
-export const uid = () => crypto.randomUUID().slice(0, 8);
-const now = () => new Date().toISOString();
-
-let db = null;
-let saveTimer = null;
-let loadedMtime = 0;
-let dirty = false;
-
-const fileMtime = () =>
-  fs.existsSync(DB_FILE) ? fs.statSync(DB_FILE).mtimeMs : 0;
-
-/* True when the file on disk is not the one this process last read or wrote —
-   so the deck CLI, or the skill, has replaced it. This is how the dev server
-   tells an outside rewrite from one of its own API saves (see vite.config.ts).
-   It compares the file itself rather than guessing from elapsed time: an import
-   that lands right after an editor save is still an import, and treating it as
-   our own leaves the browser holding slides the deck no longer has. */
-export const rewrittenByAnotherProcess = () => fileMtime() > loadedMtime + 1;
-
-/* Drop what we are holding, pending write included. Called when another process
-   has replaced the deck: an import is an explicit "replace the deck" action, so
-   it outranks our cached copy. That can cost an edit made in the last 250ms,
-   which is the right trade — the alternative is silently throwing away the whole
-   imported deck, and the client re-fetches on the change anyway. */
-function discard() {
-  clearTimeout(saveTimer);
-  saveTimer = null;
-  dirty = false;
-  db = null;
-}
+const fileMtime = () => (fs.existsSync(DB_FILE) ? fs.statSync(DB_FILE).mtimeMs : 0)
 
 /* Open (or create) the file. Another process — the deck CLI, the skill — may
-   have rewritten it since we last read, so reload when the file is newer. */
+   have rewritten it since we last read, so reload when the file is newer and
+   we have nothing unsaved of our own. */
 export async function openDb() {
-  if (db && rewrittenByAnotherProcess()) discard();
-  if (db) return db;
+  if (db && !dirty && fileMtime() > loadedMtime + 1) db = null
+  if (db) return db
 
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(DATA_DIR, { recursive: true })
   if (fs.existsSync(DB_FILE)) {
-    try {
-      db = { ...EMPTY(), ...JSON.parse(fs.readFileSync(DB_FILE, 'utf8')) };
-    } catch {
-      db = EMPTY();
-    }
-    loadedMtime = fileMtime();
+    try { db = { ...EMPTY(), ...JSON.parse(fs.readFileSync(DB_FILE, 'utf8')) } } catch { db = EMPTY() }
+    loadedMtime = fileMtime()
   } else {
-    db = EMPTY();
+    db = EMPTY()
     if (fs.existsSync(SEED_FILE)) {
-      importDeck(JSON.parse(fs.readFileSync(SEED_FILE, 'utf8')));
+      importDeck(JSON.parse(fs.readFileSync(SEED_FILE, 'utf8')))
     }
-    persistNow();
+    persistNow()
   }
-  return db;
+  return db
 }
 
-export const state = () => db ?? EMPTY();
-
-export const adoptedDraft = () => state().adopted_draft;
-
-export function setAdoptedDraft(hash) {
-  state().adopted_draft = hash;
-  persist();
-}
+export const state = () => db ?? EMPTY()
 
 export function persist() {
-  dirty = true;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(persistNow, 250);
+  dirty = true
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(persistNow, 250)
 }
 /* Flush before exit: a debounced write must never be lost, and a stale copy
    must never clobber newer writes from another process. */
 export function persistNow() {
-  if (!db || !dirty) return;
-  clearTimeout(saveTimer);
-  saveTimer = null;
-
-  /* An import landed while this write was still queued. Writing now would
-     restore the deck the import just replaced, and the CLI would already have
-     reported success — so the deck silently reverts. Drop ours instead. */
-  if (rewrittenByAnotherProcess()) {
-    discard();
-    return;
-  }
-
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-  loadedMtime = fileMtime();
-  dirty = false;
+  if (!db || !dirty) return
+  clearTimeout(saveTimer)
+  saveTimer = null
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2))
+  loadedMtime = fileMtime()
+  dirty = false
 }
-for (const sig of ['SIGINT', 'SIGTERM', 'exit']) process.on(sig, persistNow);
+for (const sig of ['SIGINT', 'SIGTERM', 'exit']) process.on(sig, persistNow)
 
 /* ── rows ──────────────────────────────────────────────────────────── */
-const byPosition = (a, b) => a.position - b.position;
+const byPosition = (a, b) => a.position - b.position
 
-export const findSlide = (id) =>
-  state().slides.find((s) => s.id === id) ?? null;
-export const sortedSlides = () => [...state().slides].sort(byPosition);
+export const findSlide = (id) => state().slides.find((s) => s.id === id) ?? null
+export const sortedSlides = () => [...state().slides].sort(byPosition)
 
 export function renumber() {
-  sortedSlides().forEach((s, i) => {
-    s.position = i;
-  });
-  persist();
+  sortedSlides().forEach((s, i) => { s.position = i })
+  persist()
 }
 
 export function getState() {
-  const s = state();
+  const s = state()
   return {
-    deck: {
-      title: s.deck.title,
-      transition: s.deck.transition,
-      font: s.deck.font ?? 'inter',
-      accent: s.deck.accent ?? null,
-      publish_url: s.deck.publish_url ?? null,
-    },
+    deck: { title: s.deck.title, transition: s.deck.transition, font: s.deck.font ?? 'inter', accent: s.deck.accent ?? null },
     slides: sortedSlides().map((sl) => ({ ...sl })),
     profiles: s.profiles.map((p) => ({ ...p })),
     comments: s.comments.map((c) => ({ ...c })),
-  };
+  }
 }
 
 export const blankSlide = (over = {}) => ({
@@ -209,83 +111,42 @@ export const blankSlide = (over = {}) => ({
   created_at: now(),
   updated_at: now(),
   ...over,
-});
+})
 
 /* ── portable JSON deck format (what the CLI + skill author) ───────── */
-/* `id` is carried so a deck survives the round trip: re-importing an exported
-   deck keeps the same slides rather than replacing them with copies, which is
-   what lets comments stay attached (see importDeck). Position is implied by
-   order, and the timestamps belong to the row, not to the authored deck. Nor
-   does the publish URL travel: it says where this project is deployed, which
-   is nothing to do with the deck being authored. */
 export function exportDeck() {
-  const s = state();
+  const s = state()
   return {
     title: s.deck.title,
     transition: s.deck.transition,
     font: s.deck.font ?? 'inter',
     accent: s.deck.accent ?? undefined,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    slides: sortedSlides().map(
-      ({ position, created_at, updated_at, ...rest }) => rest
-    ),
-  };
+    slides: sortedSlides().map(({ id, position, created_at, updated_at, ...rest }) => rest),
+  }
 }
 
-/* Replaces the deck, keeping slide identity wherever it can. A slide that
-   carries an `id` keeps it. One authored without an id — which is every slide
-   the skill writes from scratch — inherits the id of whatever already sat at
-   its position.
-
-   Position is a weak claim to identity, but a re-issued id is worse than a
-   wrong one: the open editor addresses slides by id, and a deck whose ids all
-   changed leaves it writing to slides that no longer exist. Since an import is
-   usually a revision of the deck on screen, position is the closest thing to
-   "the same slide" the authored format gives us. */
-export function importDeck(deckJson) {
-  const s = db ?? (db = EMPTY());
-  const previous = new Map(s.slides.map((sl) => [sl.id, sl]));
-  const wasAt = sortedSlides();
-  const claimed = new Set(
-    (deckJson.slides ?? []).map((sl) => sl.id).filter(Boolean)
-  );
-
+export function importDeck(deckJson, { keepCollab = false } = {}) {
+  const s = db ?? (db = EMPTY())
+  if (!keepCollab) s.comments = []
   s.deck = {
     title: deckJson.title ?? 'Untitled deck',
     transition: deckJson.transition ?? 'fade',
     font: deckJson.font ?? 'inter',
     accent: deckJson.accent ?? null,
-    /* Where the deck is published belongs to the project, not to the authored
-       deck, so a new deck lands at the same address rather than un-publishing
-       itself — and a deck JSON handed around does not carry someone else's
-       site with it. */
-    publish_url: s.deck?.publish_url ?? null,
     updated_at: now(),
-  };
-  s.slides = (deckJson.slides ?? []).map((sl, i) => {
-    const inherited = wasAt[i]?.id;
-    const id =
-      sl.id ?? (inherited && !claimed.has(inherited) ? inherited : uid());
-    claimed.add(id);
-
-    return blankSlide({
-      id,
-      created_at: previous.get(id)?.created_at ?? now(),
-      position: i,
-      layout: sl.layout,
-      props: sl.props ?? {},
-      background: sl.background ?? { type: 'none' },
-      animation: sl.animation ?? 'cascade',
-      transition: sl.transition ?? null,
-      nav: sl.nav ?? null,
-      notes: sl.notes ?? '',
-      status: sl.status ?? 'none',
-      assignee: sl.assignee ?? null,
-    });
-  });
-
-  const kept = new Set(s.slides.map((sl) => sl.id));
-  s.comments = s.comments.filter((c) => kept.has(c.slide_id));
-
-  persist();
+  }
+  s.slides = (deckJson.slides ?? []).map((sl, i) => blankSlide({
+    position: i,
+    layout: sl.layout,
+    props: sl.props ?? {},
+    background: sl.background ?? { type: 'none' },
+    animation: sl.animation ?? 'cascade',
+    transition: sl.transition ?? null,
+    nav: sl.nav ?? null,
+    notes: sl.notes ?? '',
+    status: sl.status ?? 'none',
+    assignee: sl.assignee ?? null,
+  }))
+  persist()
 }

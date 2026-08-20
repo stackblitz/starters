@@ -1,9 +1,0 @@
-This project is a slide studio, not a blank app. A deck is DATA: JSON rows rendered by a layout registry. Author a deck by writing `deck.draft.json` at the project root, then running `node scripts/deck.mjs import deck.draft.json`. Always run the import: it is what confirms the deck parsed and reports how many slides landed, so never report slides as added before it has. `data/deck.json` is the generated live database: reach it only through that CLI, never by hand. Never write JSX slides, and never rebuild the editor, the presentation engine, or the layouts. Follow the `slides` skill in `.bolt/skills/slides/`.
-
-Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/components/Foo` == `src/components/Foo`), instead of deep relative paths like `../../components/Foo`.
-
-This template uses Vite 8. `resolve.tsconfigPaths: true` is a valid built-in Vite option. Preserve it for the `@/` alias; do not claim it is invalid or add the `vite-tsconfig-paths` plugin.
-
-After publishing the project, record where it landed with `node scripts/deck.mjs published <url>`, and again whenever that URL changes. Sharing a deck means sharing the published site: until the deck knows that address the editor's Share button stays disabled, since a link built from the dev server's own address opens for nobody else.
-
-The deck API in `server/` is Vite dev-server middleware, so it does not exist in a published build. `vite.config.ts` bakes the deck into the bundle at build time and the client falls back to that snapshot, which is what makes a published deck presentable. Preserve both; do not "fix" the missing API by deleting the fallback.

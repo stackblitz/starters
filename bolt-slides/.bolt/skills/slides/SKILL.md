@@ -22,8 +22,7 @@ This repo is a complete slide **studio**, already built and running:
   and grid overview (G), click-builds, presenter view (P), annotator (D),
   fullscreen (F).
 - **One file of truth** — everything persists to `data/deck.json` (or to the
-  project's cloud backend). Copy that file and the whole deck travels. It is
-  written by the app and the CLI, never by you — see rule 2.
+  project's cloud backend). Copy that file and the whole deck travels.
 
 **Your job is to author CONTENT, not code.** A deck is data: you write a JSON
 file and import it. You never write JSX slides.
@@ -44,18 +43,11 @@ file and import it. You never write JSX slides.
    `src/styles/tokens.css` (`:root` values, to theme the deck), your deck JSON,
    and `data/` via the CLI. If the user genuinely wants an app change, say so
    and let them ask for it outside this skill.
-2. **Never write `data/deck.json` yourself.** Two different files are involved
-   and only one of them is yours. `deck.draft.json` (project root) is the deck
-   you author and pass to the CLI. `data/deck.json` is the live database the app
-   reads — generated, gitignored, and reached only through
-   `node scripts/deck.mjs`. Do not open it, edit it, or "keep it in sync" with
-   your draft: hand-edits skip the row fields the app depends on, and the next
-   import overwrites them anyway.
-3. **Author from the user's REAL input.** Their topic, brand, facts, numbers.
+2. **Author from the user's REAL input.** Their topic, brand, facts, numbers.
    Never reskin the seed deck; never invent a placeholder company for a real
    subject. Brand given → derive theme colors/fonts from it (fetch the site or
    use its known palette) and say what you used.
-4. **The accent is ONE SOLID color.** `--accent` must be a solid hex — never a
+3. **The accent is ONE SOLID color.** `--accent` must be a solid hex — never a
    gradient. Keep restraint: one accent, used sparingly.
 
 ## Step 0 · which storage is this project on?
@@ -72,61 +64,27 @@ curl -s localhost:5173/api/state >/dev/null && echo LOCAL || echo CLOUD-OR-DOWN
 - **LOCAL** — import with the CLI (below). Right for authoring on this machine.
 - **CLOUD** — the CLI is inert; POST the same JSON to `$DECK_API/import`.
 
-**Publishing works, read-only.** The build bakes the current deck into the
-bundle, so a published link presents the deck: all layouts, animations,
-transitions, present mode and presenter view. What it cannot do is write —
-there is no API on a published site, so visitors cannot edit or comment, and
-the editor sends them to `/present`.
-
-Two things to tell the user before they publish:
-
-- **Publish after authoring.** The snapshot is taken at build time, so
-  re-publish to push later edits.
-- **Speaker notes ship with the deck and are public.** Anyone with the link
-  can open presenter view and read them. Move anything private out of `notes`
-  before publishing.
-
-**After every publish, record the URL the project was published to.** The
-editor's Share button is dead until you do, because a link built from the
-address the dev server runs on is reachable by nobody but the person looking at
-it — a preview URL belongs to one browser tab, and localhost belongs to one
-machine.
-
-```bash
-node scripts/deck.mjs published https://their-deck.bolthost.dev
-```
-
-Run it again whenever that address changes — a renamed subdomain, a custom
-domain — and `published none` if the project is unpublished. Take the URL from
-the publish result, not from a guess; the user can also set it in the Share
-dialog.
-
-Editing a published deck, comments, per-audience links and passwords all need a
-real backend — that is `docs/cloud-setup.md` (schema, route contract, permission
-rules, publish checklist). That port is app work, not deck work, and is
-outside this skill: say so and let the user decide.
+**If the user wants to publish or share a link, the deck must be on a cloud
+backend first.** Local file mode cannot survive a deploy: the published page
+waits forever for an API that only exists in the dev server, and the editor
+falls back to view-only. That port is app work, not deck work — it is outside
+this skill. Say so, point at `docs/cloud-setup.md` (it carries the schema, the
+route contract, the permission rules and the publish checklist), and let the
+user decide before you spend a turn authoring into storage that will not last.
 
 ## Workflow
 
 ```bash
 npm install && npm run dev        # 1 · the studio runs at :5173
 # 2 · theme: edit ONLY the :root values in src/styles/tokens.css
-# 3 · author the deck: write deck.draft.json (format below)
-node scripts/deck.mjs import deck.draft.json   # 4 · load it (replaces the deck)
-node scripts/deck.mjs status                   # 5 · verify slide list
+# 3 · author the deck: write deck.json (format below)
+node scripts/deck.mjs import deck.json    # 4 · load it (replaces the deck)
+node scripts/deck.mjs status              # 5 · verify slide list
 ```
 
-**Always run step 4.** `deck.draft.json` is your input — a file you author and
-hand to the CLI. The import is what confirms the deck parsed and tells you how
-many slides landed, so never report slides as added before it has. (The dev
-server applies a changed draft by itself as a backstop, so a missed import is not
-fatal; it is not a substitute for running it, and it tells you nothing.)
-
-An import reaches the open browser on its own — the dev server watches the deck
-file and the app re-fetches. Do not tell the user to reload the page.
+The dev server picks up external imports automatically — refresh the browser.
 Other CLI verbs: `export [file]` (read the current deck back — do this before
-editing an existing deck so you keep the user's changes, and so slide ids come
-with it), `reset` (re-seed).
+editing an existing deck so you keep the user's changes), `reset` (re-seed).
 
 **Never test against the user's live deck.** A slide PUT replaces `props`
 wholesale and an empty `notes` erases what was there. Duplicate a slide and
@@ -142,10 +100,6 @@ work on the copy, or export first so you can put it back.
   "accent": "#1688FC",             // optional — deck-wide accent (solid hex); omit for the tokens.css default
   "slides": [
     {
-      "id": "a1b2c3d4",            // only on slides you exported — keep it and the
-                                   // slide keeps its comments. Omit it on slides you
-                                   // are writing for the first time: those take over
-                                   // the position they land in, comments included.
       "layout": "cover",           // one of the layouts below
       "props": { ... },            // layout-specific (see catalog); every layout
                                    // also accepts "scale": "lg" | "xl" (+15/+30%

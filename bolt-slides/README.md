@@ -23,27 +23,18 @@ the editor, or prompt one into existence with the `slides` skill.
 | `/` | Editor — thumbnail rail (always open; drag to reorder, right-click to duplicate/delete/insert), click any text on the slide to edit it, inspector for layout props · background (color/gradient/image) · animation · transition, comments, per-slide status, speaker notes |
 | `/present` | Presentation — floating dock, side panel (S) and grid overview (G), click-builds, presenter view with notes + timer (P), annotation mode (D — pen, highlighter, laser, shapes, eraser, undo/redo), fullscreen (F) |
 
-Present and the presenter console open in a window of their own when the app has
-a tab of its own, so the deck can go up on a projector while the editor stays
-put. Framed — a Bolt preview, a docs page — they take over the frame instead: a
-preview URL is only resolvable by the tab connected to the project, so a second
-tab would open to nothing. The dock's last button goes back to the editor.
+- **Share** (top bar) makes one link per mode: the presentation (read only, no
+  speaker notes), the presenter console (read, plus notes), or the editor (full
+  access). Any link can carry a password. You keep full access from this
+  machine; everyone else needs a link.
 
-- **Share** (top bar) hands out links to the *published* deck: the presentation,
-  and the presenter console for whoever is speaking. It stays disabled until the
-  deck knows where it was published, because the address this editor runs on is
-  reachable by nobody else — a preview URL belongs to the one tab connected to
-  the project, and localhost belongs to one machine. Record it after publishing
-  (`node scripts/deck.mjs published <url>`, which the agent does for you) or type
-  it into the dialog, and change it there if the project moves.
-
-  A published deck is a static build with no server behind it, so a link cannot
-  be made private, password protected, or writable — and the speaker notes in it
-  are public to anyone holding it. The token-and-password layer the server still
-  implements (`server/share.mjs`: 96-bit tokens, scrypt password hashes, unlock
-  throttling, per-mode permissions) only enforces anything while a server is
-  running, which is what [docs/cloud-setup.md](docs/cloud-setup.md) is for.
-
+  What that layer is and is not: passwords are scrypt hashes (N=2^16, ~90ms a
+  guess) with a per-share salt, unlock attempts are capped at 8 per address per
+  10 minutes, links are 96-bit random tokens, and writes are rejected unless
+  they come from this origin. It is a decent lock on a door, not an identity
+  system: there are no accounts, anything that can reach the server on loopback
+  is the owner, and over plain HTTP a link and its password travel in the clear
+  — put a tunnel with TLS in front before sharing anything that matters.
 - **Export PDF** (top bar) renders every slide at 1280×720 and downloads a PDF.
 - **OG image** (top bar) renders slide 1 to `public/og.png`, wired to the
   OpenGraph tags in `index.html` — share a deployed deck and slide 1 is the
@@ -60,36 +51,14 @@ accordion, q&a, pricing, team, logos, poster, story, speaker, persona, bento, st
 and the editor can edit them without either touching React code.
 
 ```bash
-node scripts/deck.mjs export deck.draft.json   # deck → JSON
-node scripts/deck.mjs import deck.draft.json   # JSON → deck (data/deck.json)
-node scripts/deck.mjs apply                    # import the draft if it changed
-node scripts/deck.mjs status                   # slide list: layout · status · owner
-node scripts/deck.mjs reset                    # re-seed from data/deck.seed.json
+node scripts/deck.mjs export deck.json   # deck → JSON
+node scripts/deck.mjs import deck.json   # JSON → deck (data/deck.json)
+node scripts/deck.mjs status             # slide list: layout · status · owner
+node scripts/deck.mjs reset              # back to empty (data/deck.seed.json)
 ```
 
-Two files, one name: `deck.draft.json` is the portable deck you hand to the CLI,
-`data/deck.json` is the live database it writes. The second is generated and
-gitignored — edit the deck in the app or re-import, never by hand.
-
-Importing while the editor is open is fine: the dev server watches
-`data/deck.json` and tells the app to re-fetch, so an import from the skill (or
-from your own terminal) shows up without a page reload. Saves the editor makes
-itself are excluded, so a re-fetch never lands on top of what you are typing.
-
-A `deck.draft.json` left unimported is applied on its own — by `predev` if it is
-there before the server boots, by the watcher if it appears after. The deck
-records which draft content it already reflects, so a draft applies once and a
-restart never re-applies it. Editing in the app does not change the draft, so
-your work is what survives; a draft with new content in it is what replaces the
-deck.
-
-Round trips are lossless: `export` carries slide ids and `import` keeps them, so
-exporting a deck, editing the JSON and importing it back leaves the slides —
-and the comments attached to them — intact. A slide written without an `id`
-takes over whatever sat in its position, so importing a deck authored from
-scratch does not silently re-issue every id: an editor open on the deck keeps
-working, and comments stay where they were. A comment whose slide is gone
-altogether goes with it.
+The dev server auto-reloads when the DB file changes externally, so the skill
+(or you) can import while the editor is open.
 
 ## The skill
 
@@ -100,34 +69,12 @@ and refine what lands in the editor.
 
 ## Publishing
 
-Publish and the deck presents — read-only.
-
-The API lives in the Vite dev server, so a published build has no backend to
-talk to. `npm run build` therefore bakes the current deck into the bundle as
-`deck-snapshot.json`, and the app falls back to it when no API answers. A
-published link gets every layout, animation, transition, present mode and
-presenter view. It cannot write: no editing, no comments, and `/` redirects
-to `/present`.
-
-Two things worth knowing:
-
-- **The snapshot is taken at build time** — re-publish to push later edits.
-- **Speaker notes are baked in and public.** Anyone with the link can open
-  presenter view and read them. Per-slide status, comments, profiles and share
-  links are stripped from the snapshot and never leave your machine.
-- **Tell the deck where it landed** — `node scripts/deck.mjs published <url>`,
-  or the Share dialog. That URL is the base for every link the editor hands out,
-  and it is the only base that works: the published site is the one address a
-  visitor can open.
-
-Editing a published deck — plus comments, per-audience links and passwords, which
-all need a server to enforce — means moving storage to a real backend:
+The deck lives in `data/deck.json`, served by an API that only exists inside the
+Vite dev server — so a published build has no backend and sits on a loading
+screen. Move storage to a cloud backend before the first publish:
 **[docs/cloud-setup.md](docs/cloud-setup.md)** has the route contract, the
 table layout, the permission rules, the owner question (the bare published URL
 is a credential — decide that deliberately) and a publish checklist.
-
-`npm run preview` deliberately serves the build *without* the API, so it shows
-you what visitors get.
 
 ## Architecture
 
@@ -135,9 +82,7 @@ you what visitors get.
 data/deck.json          ← the single source of truth (gitignored; seed JSON is committed)
 server/db.mjs           ← JSON file persistence + cross-process reload
 server/api.mjs          ← REST API, mounted on the Vite dev server (vite.config.ts)
-server/snapshot.mjs     ← bakes the deck into the build so published decks render
-server/draft.mjs        ← applies an unimported deck.draft.json (predev + watcher)
-scripts/deck.mjs        ← import/export/apply/reset/status/published CLI
+scripts/deck.mjs        ← import/export/reset/status CLI
 src/data/               ← types + zustand store (optimistic writes)
 src/layouts/            ← the layout registry: props schema + renderer per layout
 src/components/         ← the premium section components (locked design system)

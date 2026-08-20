@@ -1,18 +1,9 @@
 # Running this deck on a cloud backend (Bolt Cloud / Supabase)
 
-Read this when a published deck needs to do more than present.
-
-Publishing works out of the box: `npm run build` bakes the deck into the
-bundle (`server/snapshot.mjs`) and the app renders that snapshot when no API
-answers, so a published link presents the deck read-only. What a snapshot
-cannot do is write, or keep a secret. Move to a cloud backend when you need:
-
-- **editing or commenting on the published deck** — a snapshot is immutable,
-  and every visitor sees the same build until you publish again
-- **share links and passwords** — the client can send a token, but only a
-  server can *check* one; a static bundle cannot refuse to serve itself
-- **private speaker notes** — notes ride along in the snapshot, so on a
-  published deck they are public to anyone who opens presenter view
+Read this **before** publishing, not after. The starter ships with local
+storage that cannot survive a deploy, and the failure is silent: the published
+page sits on "Loading project" forever, because it is waiting for an API that
+only ever existed inside the dev server.
 
 ---
 
@@ -22,9 +13,7 @@ cannot do is write, or keep a secret. Move to a cloud backend when you need:
 |---|---|---|
 | Data lives in | `data/deck.json` (one JSON file, no database) | Postgres tables |
 | API is | `server/api.mjs`, mounted on the Vite dev server | one edge function |
-| Published deck | presents, read-only, from the build snapshot | fully live |
-| Published deck can be edited | **No** | Yes |
-| Share links / passwords / private notes | local dev only | Yes |
+| Works when published | **No** | Yes |
 | Deck CLI (`scripts/deck.mjs`) | works | not used — import through the API |
 
 Check in one line:
@@ -33,10 +22,9 @@ Check in one line:
 curl -s localhost:5173/api/state >/dev/null && echo "local file mode" || echo "no local API — check for a cloud backend"
 ```
 
-Local file mode is right for authoring on your machine, and its build snapshot
-is enough for a deck you simply want people to *watch*. Move to cloud mode when
-the published deck has to be live — edited, commented on, access-controlled, or
-holding notes you do not want public.
+Local file mode is right for authoring on your machine. The moment the deck
+needs to be *published* — a link you send someone, a client review, anything
+outside your laptop — it has to move to cloud mode first.
 
 ---
 
@@ -64,12 +52,7 @@ POST   /share/unlock              { token, password } → { key }
 ```
 
 **Tables**: `deck` (single row), `slides`, `profiles`, `comments`, `shares`,
-`share_grants`, and a throttle table for unlock attempts. `adopted_draft` does
-not travel: it records which `deck.draft.json` the local deck already reflects,
-and drafts are a local authoring concern. `publish_url` does: it is where the
-deck is deployed, so the editor can build links that open for someone else, and
-it is what the Share dialog puts in front of `/present?k=…` once tokens mean
-something again. Enable row-level
+`share_grants`, and a throttle table for unlock attempts. Enable row-level
 security with **no policies at all**: the browser must never read these
 directly, because `shares` holds password hashes and `slides` holds speaker
 notes that the audience link is not allowed to see. The function talks to the
@@ -120,29 +103,21 @@ everywhere and lets you preview what a visitor sees.
 
 ## Publish checklist
 
-1. Port storage to the cloud backend before the first publish **if the
-   published deck must be live**. A read-only deck does not need this — the
-   build snapshot already covers it.
-2. Build with `npx vite build` — that is what Bolt's deploy runs for this
-   template, so it is what you want to reproduce locally. `npm run typecheck`
-   is separate and does not gate the build.
-3. Copying an existing deck across? `slides.position` is **1-based**. Data
+1. Port storage to the cloud backend **before** the first publish.
+2. `npm run build` — use the npm script, not `npx vite build`; the script is
+   what the deploy runs.
+3. Add `src/vite-env.d.ts` with `/// <reference types="vite/client" />` if
+   TypeScript cannot see `import.meta.env`.
+4. Copying an existing deck across? `slides.position` is **1-based**. Data
    copied as 0-based renders off by one; renumber once after the import.
-4. Never test permissions against the live deck. A `PUT /slides/:id` with
+5. Never test permissions against the live deck. A `PUT /slides/:id` with
    `props` **replaces** the whole props object, and writing `notes: ""` wipes
    the real note. Duplicate a slide and test on the copy.
-5. Check the published link in a private window: the editor should open, a
+6. Check the published link in a private window: the editor should open, a
    `present` link should hide speaker notes, and a revoked link should be
    refused.
-6. Give the Share dialog its links back. `src/edit/ShareModal.tsx` offers one
-   public link, because that is all a static build can honour; a checked token
-   makes the per-mode links and passwords in `server/share.mjs` real again, and
-   they belong in front of `publish_url` rather than the dev server's address.
 7. Delete what the port left behind once it is proven: `server/*.mjs`,
-   `data/deck.json`, and `scripts/deck.mjs`. Removing `server/` also means
-   removing the `deckApi()` and `deckSnapshot()` plugins from
-   `vite.config.ts`, which import from it — the build fails otherwise. Cloud
-   mode has a live API, so the snapshot fallback is no longer needed.
+   `data/deck.json`, and `scripts/deck.mjs`.
 
 ---
 
@@ -155,7 +130,7 @@ instead:
 ```bash
 curl -X POST "$DECK_API/import" \
   -H "Content-Type: application/json" \
-  --data-binary @deck.draft.json
+  --data-binary @deck.json
 ```
 
 The JSON format is identical in both modes and is documented in
