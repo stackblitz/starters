@@ -132,7 +132,7 @@ Deno.serve(async (req: Request) => {
         .select()
         .single();
       if (error) throw error;
-      return json(200, {
+      return written(200, {
         title: data.title,
         transition: data.transition,
         font: data.font,
@@ -162,7 +162,7 @@ Deno.serve(async (req: Request) => {
             assignee: b.assignee ?? null,
           })
         );
-        return json(201, visible(await getState(supabase), acc!));
+        return written(201, visible(await getState(supabase), acc!));
       }
       const id = seg[1];
       if (m === 'PUT' && seg.length === 2) {
@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
         }
         const { error } = await supabase.from('slides').update(patch).eq('id', id);
         if (error) throw error;
-        return json(200, { ok: true });
+        return written(200, { ok: true });
       }
       if (m === 'POST' && seg[2] === 'duplicate') {
         if (!writable('write')) return deny(acc);
@@ -201,14 +201,14 @@ Deno.serve(async (req: Request) => {
             status: 'none',
           })
         );
-        return json(201, visible(await getState(supabase), acc!));
+        return written(201, visible(await getState(supabase), acc!));
       }
       if (m === 'DELETE' && seg.length === 2) {
         if (!writable('write')) return deny(acc);
         await supabase.from('comments').delete().eq('slide_id', id);
         await supabase.from('slides').delete().eq('id', id);
         await renumber(supabase);
-        return json(200, visible(await getState(supabase), acc!));
+        return written(200, visible(await getState(supabase), acc!));
       }
     }
 
@@ -219,7 +219,7 @@ Deno.serve(async (req: Request) => {
       for (let i = 0; i < ids.length; i++) {
         await supabase.from('slides').update({ position: i }).eq('id', ids[i]);
       }
-      return json(200, { ok: true });
+      return written(200, { ok: true });
     }
 
     if (m === 'POST' && seg[0] === 'profiles') {
@@ -233,7 +233,7 @@ Deno.serve(async (req: Request) => {
       };
       const { error } = await supabase.from('profiles').insert(profile);
       if (error) throw error;
-      return json(201, {
+      return written(201, {
         id: profile.id,
         name: profile.name,
         color: profile.color,
@@ -254,7 +254,7 @@ Deno.serve(async (req: Request) => {
         };
         const { error } = await supabase.from('comments').insert(comment);
         if (error) throw error;
-        return json(201, comment);
+        return written(201, comment);
       }
       if (m === 'PUT' && seg[1]) {
         const b = await readBody(req);
@@ -262,11 +262,11 @@ Deno.serve(async (req: Request) => {
           .from('comments')
           .update({ resolved: b.resolved ? 1 : 0 })
           .eq('id', seg[1]);
-        return json(200, { ok: true });
+        return written(200, { ok: true });
       }
       if (m === 'DELETE' && seg[1]) {
         await supabase.from('comments').delete().eq('id', seg[1]);
-        return json(200, { ok: true });
+        return written(200, { ok: true });
       }
     }
 
@@ -277,7 +277,7 @@ Deno.serve(async (req: Request) => {
     if (m === 'POST' && seg[0] === 'import') {
       if (!writable('write')) return deny(acc);
       await importDeck(supabase, await readBody(req));
-      return json(200, visible(await getState(supabase), acc!));
+      return written(200, visible(await getState(supabase), acc!));
     }
 
     if (m === 'POST' && seg[0] === 'og') {
@@ -292,6 +292,37 @@ Deno.serve(async (req: Request) => {
   }
 });
 
+const DECK_CHANNEL = 'deck';
+const DECK_EVENT = 'change';
+
+/** Tell every open editor/presenter to re-fetch. Broadcast does not read
+ *  tables, so it works with RLS-on / no policies. */
+function notifyDeckChanged() {
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!url || !key) return Promise.resolve();
+  return fetch(`${url}/realtime/v1/api/broadcast`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messages: [
+        {
+          topic: DECK_CHANNEL,
+          event: DECK_EVENT,
+          private: false,
+          payload: { at: Date.now() },
+        },
+      ],
+    }),
+  }).catch(() => {
+    /* a missed ping falls back to focus/visibility refetch */
+  });
+}
+
 function json(
   status: number,
   body: unknown,
@@ -305,6 +336,22 @@ function json(
       ...extra,
     },
   });
+}
+
+function written(
+  status: number,
+  body: unknown,
+  extra: Record<string, string> = {}
+): Response {
+  const res = json(status, body, extra);
+  const ping = notifyDeckChanged();
+  const waitUntil = (
+    globalThis as {
+      EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void };
+    }
+  ).EdgeRuntime?.waitUntil;
+  if (waitUntil) waitUntil(ping);
+  return res;
 }
 
 function deny(acc: Acc): Response {

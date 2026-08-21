@@ -93,11 +93,19 @@ bus?.addEventListener('message', (e) => {
 });
 
 const saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+let pendingRefresh = false;
+
+function flushPendingRefresh() {
+  if (!pendingRefresh || Object.keys(saveTimers).length) return;
+  pendingRefresh = false;
+  void useStore.getState().refresh();
+}
+
 function debounceSave(id: string, fn: () => void, ms = 500) {
   clearTimeout(saveTimers[id]);
   saveTimers[id] = setTimeout(() => {
     delete saveTimers[id];
-    fn();
+    Promise.resolve(fn()).finally(flushPendingRefresh);
   }, ms);
 }
 
@@ -204,7 +212,11 @@ export const useStore = create<Store>((set, getState) => ({
   },
 
   async refresh() {
-    if (Object.keys(saveTimers).length) return;
+    if (Object.keys(saveTimers).length) {
+      pendingRefresh = true;
+      return;
+    }
+    pendingRefresh = false;
     if (getState().denied) return;
     try {
       const s = await api<AppState>('/state');

@@ -57,4 +57,6 @@ owner's own browser.
 ## Authoring
 
 Import/export uses the same JSON payload as `.bolt/skills/slides/SKILL.md`.
-Author through `deck-api` — do not `execute_sql` into `slides`.
+Author through `deck-api` — do not `execute_sql` into `slides`. After a write
+the function broadcasts on the `deck` channel so the preview re-fetches
+immediately (no table SELECT; RLS stays locked).

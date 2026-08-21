@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useStore } from './store';
+import { subscribeDeckChanges } from './realtime';
 
-/** Load the deck once, then re-fetch when the tab is focused so agent
- *  imports (and edits from other windows) land in the visual preview. */
+/** Load once, then re-fetch as soon as deck-api broadcasts a write (agent
+ *  import, other windows). Focus/visibility is a fallback if a ping is missed. */
 export function useDeckSync() {
   const load = useStore((s) => s.load);
   const refresh = useStore((s) => s.refresh);
@@ -16,18 +17,21 @@ export function useDeckSync() {
 
   useEffect(() => {
     if (!loaded) return;
+    const pull = () => {
+      refresh().catch(() => {
+        /* keep last good state */
+      });
+    };
     const onVis = () => {
-      if (document.visibilityState === 'visible') {
-        refresh().catch(() => {
-          /* keep last good state */
-        });
-      }
+      if (document.visibilityState === 'visible') pull();
     };
     window.addEventListener('focus', onVis);
     document.addEventListener('visibilitychange', onVis);
+    const unsubscribe = subscribeDeckChanges(pull);
     return () => {
       window.removeEventListener('focus', onVis);
       document.removeEventListener('visibilitychange', onVis);
+      unsubscribe();
     };
   }, [loaded, refresh]);
 }
