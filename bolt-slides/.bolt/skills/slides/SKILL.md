@@ -75,8 +75,8 @@ JSON and import it into the database. You never write JSX slides.
 
 ## Step 0 · make sure the deck has somewhere to live
 
-Do this before authoring anything, and skip whatever is already done — both
-steps are safe to repeat.
+Do this before authoring anything, and skip whatever is already done — every
+step is safe to repeat.
 
 1. **Apply the schema** — pass the contents of `supabase/schema.sql` to
    `mcp__supabase__apply_migration` (name it `deck_schema`). It is written to be
@@ -86,6 +86,17 @@ steps are safe to repeat.
 2. **Deploy the function** — `mcp__supabase__deploy_edge_function` with slug
    `deck`, from `supabase/functions/deck/`. Nothing to configure: it reads the
    database URL Supabase already gives it.
+3. **Give the editor its key** — `mcp__supabase__execute_sql` with
+   `select owner_key from deck;`, then put that value in `.env` as
+   `DECK_OWNER_KEY=<value>` (edit the file; leave every other line alone).
+
+Do not skip step 3 or leave it for the user. The key is what proves a request
+may edit the deck: without it the app can only present, so the person who asked
+for a deck gets a presentation of it with no way into the editor. Nothing else
+supplies the key — it is generated per deck by the migration, so it is not in
+`.env.example`, not in any prompt, and not guessable. The dev server reads
+`.env` per request, so the editor picks the key up on its own within a few
+seconds; the dev server does not need restarting, and must not be restarted.
 
 Publishing and sharing then work as the starter's own features — the published
 deck reads the same database, so a share link opens a live deck rather than a
