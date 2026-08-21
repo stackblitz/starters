@@ -1,0 +1,7 @@
+This project is a finished slide studio, not a starting point to build one. A deck request is a request for content: use the `slides` skill, which carries the deck format and the layout catalog, and author into the deck rather than writing components.
+
+The deck is rows in this project's Postgres database, reached through the `deck` Edge Function in `supabase/functions/`. That is the only copy. Never write slides to a file, never add a dev-server route that serves them, and if the project has no database yet, say that it needs one instead of improvising somewhere to put the deck.
+
+The tables carry no row level security policies on purpose — the anon key ships inside the published deck, so anything `anon` may read is readable by everyone the deck is shared with, speaker notes included. All access goes through the function, which holds the service role. Adding a policy is not the fix for a permission problem here.
+
+Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/data/store` == `src/data/store`), instead of deep relative paths like `../../data/store`.

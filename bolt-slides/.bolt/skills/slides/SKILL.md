@@ -2,12 +2,12 @@
 name: slides
 description: >-
   Author a premium slide deck INTO the Bolt Slides editor — a Pitch-style
-  slide builder (this repo) where slides live as rows in one JSON file.
-  You author the deck as JSON (layouts, copy, backgrounds, animation and
-  transition choices, statuses, speaker notes) and import it with one
-  command; the user then edits any of it in place, comments, presents
-  full-screen, exports PDF and an OpenGraph image. Use
-  this whenever the user asks for a deck, a pitch, slides, or a
+  slide builder (this repo) where every slide is a row in the project's
+  Postgres database. You author the deck as JSON (layouts, copy,
+  backgrounds, animation and transition choices, statuses, speaker notes)
+  and import it with one SQL call; the user then edits any of it in place,
+  presents full-screen, exports a PDF, and shares links to the published
+  deck. Use this whenever the user asks for a deck, a pitch, slides, or a
   presentation in this project.
 ---
 
@@ -17,78 +17,107 @@ This repo is a complete slide **studio**, already built and running:
 
 - `/` — the editor: persistent thumbnail rail (drag to reorder, right-click to
   duplicate/delete), click-to-edit text on the slide itself, an inspector for
-  every layout prop, background and scale, plus comments and speaker notes.
+  every layout prop, background and scale, plus speaker notes.
 - `/present` — the premium presentation engine: floating dock, side panel (S)
   and grid overview (G), click-builds, presenter view (P), annotator (D),
   fullscreen (F).
-- **One file of truth** — everything persists to `data/deck.json` (or to the
-  project's cloud backend). Copy that file and the whole deck travels.
+- **The deck is rows in Postgres**, reached through one Edge Function
+  (`supabase/functions/deck`). That is the only copy. Nothing persists to a
+  file, no file makes the deck travel, and a deck that is not in the database
+  does not exist.
 
-**Your job is to author CONTENT, not code.** A deck is data: you write a JSON
-file and import it. You never write JSX slides.
+**Your job is to author CONTENT, not code.** A deck is data: you write deck
+JSON and import it into the database. You never write JSX slides.
 
 ## ⛔ Hard rules
 
 1. **Don't touch the app — you only generate slides.** The editor UI, the
-   presentation engine, the layouts, the server are the finished product:
-   never rewrite, "improve", restyle, or regenerate any of it. Off-limits, no
-   exceptions: `src/edit/`, `src/deck/`, `src/present/`, `src/slide/`,
-   `src/layouts/`, `src/components/`, `src/styles/base.css`,
-   `src/styles/editor.css`, `server/`, `scripts/`, `index.html`, `vite.config.ts`.
+   presentation engine, the layouts, the database schema and the deck function
+   are the finished product: never rewrite, "improve", restyle, or regenerate
+   any of it. Off-limits, no exceptions: `src/edit/`, `src/deck/`,
+   `src/present/`, `src/slide/`, `src/layouts/`, `src/components/`,
+   `src/styles/base.css`, `src/styles/editor.css`, `supabase/`, `index.html`,
+   `vite.config.ts`.
    That includes every piece of app chrome — the editor's top bar, thumbnail
    sidebar, inspector and modals, and present mode's dock, side panel, grid
    overview, presenter view and annotator. A deck request that mentions colors,
    fonts, sizes or spacing is about the DECK (deck `accent` + `font`, or
    `tokens.css`), never about the UI. The ONLY things you touch:
-   `src/styles/tokens.css` (`:root` values, to theme the deck), your deck JSON,
-   and `data/` via the CLI. If the user genuinely wants an app change, say so
-   and let them ask for it outside this skill.
+   `src/styles/tokens.css` (`:root` values, to theme the deck) and the deck in
+   the database. If the user genuinely wants an app change, say so and let them
+   ask for it outside this skill.
 2. **Author from the user's REAL input.** Their topic, brand, facts, numbers.
    Never reskin the seed deck; never invent a placeholder company for a real
    subject. Brand given → derive theme colors/fonts from it (fetch the site or
    use its known palette) and say what you used.
 3. **The accent is ONE SOLID color.** `--accent` must be a solid hex — never a
    gradient. Keep restraint: one accent, used sparingly.
+4. **Never write a deck to a file.** No `deck.json` in the project, no seed
+   file, no `data/` directory, and never a dev-server route that serves slides.
+   The database is the deck. A second place to keep slides is not a backup, it
+   is a second answer to "what is in this deck", and the app will show the
+   user whichever one they did not mean. Write your deck JSON to a scratch path
+   outside the project (`/tmp`) if you want to look at it, and import it.
+5. **This project's tables get NO row level security policies — leave them
+   that way.** Bolt's database guidance says to enable RLS and add policies for
+   `anon`; here, the policies are deliberately absent and the schema comment
+   says so. The anon key ships inside the published deck, so a policy that lets
+   `anon` read the tables lets anyone who opens the deck read the speaker notes,
+   and one that lets it write lets them rewrite the deck. Everything goes
+   through the `deck` function, which holds the service role and checks who is
+   asking. If you find yourself adding a policy to make something work, the
+   thing to fix is the function.
+6. **No database means stop, not improvise.** If the project has no Supabase
+   project, or you have no Supabase tools in this session, say plainly that the
+   deck needs a database and that asking Bolt for one fixes it — the same thing
+   the app's own screen says. Do not author into a file "for now": there is no
+   later step that would pick it up.
 
-## Step 0 · which storage is this project on?
+## Step 0 · make sure the deck has somewhere to live
 
-Do this before authoring anything. The starter stores the deck in a local
-JSON file served by the dev server; a project that has been moved to a cloud
-backend (Bolt Cloud / Supabase) stores it in Postgres behind one edge
-function. The deck JSON is identical either way — only the import differs.
+Do this before authoring anything, and skip whatever is already done — both
+steps are safe to repeat.
 
-```bash
-curl -s localhost:5173/api/state >/dev/null && echo LOCAL || echo CLOUD-OR-DOWN
-```
+1. **Apply the schema** — pass the contents of `supabase/schema.sql` to
+   `mcp__supabase__apply_migration` (name it `deck_schema`). It is written to be
+   re-runnable, which matters because the tool can time out after the SQL has
+   already committed. Do not edit the file, and do not hand-write migrations
+   into `supabase/migrations/`.
+2. **Deploy the function** — `mcp__supabase__deploy_edge_function` with slug
+   `deck`, from `supabase/functions/deck/`. Nothing to configure: it reads the
+   database URL Supabase already gives it.
 
-- **LOCAL** — import with the CLI (below). Right for authoring on this machine.
-- **CLOUD** — the CLI is inert; POST the same JSON to `$DECK_API/import`.
-
-**If the user wants to publish or share a link, the deck must be on a cloud
-backend first.** Local file mode cannot survive a deploy: the published page
-waits forever for an API that only exists in the dev server, and the editor
-falls back to view-only. That port is app work, not deck work — it is outside
-this skill. Say so, point at `docs/cloud-setup.md` (it carries the schema, the
-route contract, the permission rules and the publish checklist), and let the
-user decide before you spend a turn authoring into storage that will not last.
+Publishing and sharing then work as the starter's own features — the published
+deck reads the same database, so a share link opens a live deck rather than a
+copy of one. There is no port to decide on and no local mode to escape.
 
 ## Workflow
 
 ```bash
-npm install && npm run dev        # 1 · the studio runs at :5173
-# 2 · theme: edit ONLY the :root values in src/styles/tokens.css
-# 3 · author the deck: write deck.json (format below)
-node scripts/deck.mjs import deck.json    # 4 · load it (replaces the deck)
-node scripts/deck.mjs status              # 5 · verify slide list
+npm install && npm run dev   # 1 · the studio runs at :5173
 ```
 
-The dev server picks up external imports automatically — refresh the browser.
-Other CLI verbs: `export [file]` (read the current deck back — do this before
-editing an existing deck so you keep the user's changes), `reset` (re-seed).
+2. Theme: edit ONLY the `:root` values in `src/styles/tokens.css`.
+3. Author the deck as JSON (format below).
+4. Import it with `mcp__supabase__execute_sql`:
 
-**Never test against the user's live deck.** A slide PUT replaces `props`
-wholesale and an empty `notes` erases what was there. Duplicate a slide and
-work on the copy, or export first so you can put it back.
+```sql
+select import_deck($json$ { "title": "…", "slides": [ … ] } $json$);
+```
+
+The return value **is** the verification: it reports the slide count, title and
+the deck's new version, so there is no separate check to run. The open editor
+notices the import within a few seconds — no refresh needed.
+
+**Read the deck back before editing an existing one**, so you keep the user's
+changes: `select export_deck();` returns the same JSON shape `import_deck`
+accepts. Editing then means importing the deck you exported, changed — slides
+keep their identity by `id`, so the user's selection and their untouched slides
+survive.
+
+**Never test against the user's live deck.** An import replaces the deck, and a
+slide's empty `notes` erases what was there. Export first so you can put it
+back.
 
 ## Deck JSON
 
@@ -114,6 +143,11 @@ work on the copy, or export first so you can put it back.
   ]
 }
 ```
+
+A deck you exported also carries an `id` on every slide. Keep them when you
+re-import an edited deck: a named slide is updated in place rather than
+replaced, so the user's selection survives and the change reads as an edit.
+Omit them when authoring something new.
 
 **Rich text** in any text prop: `==accent==` renders in the accent color,
 `**bold**` bold, `_italic_` italic, `{c:#ff6b6b}text{/c}` a specific text
@@ -270,8 +304,10 @@ Visual:
 - Write `notes` for the presenter on every content slide — one or two lines of
   what to SAY, not a repeat of the slide.
 - After importing, tell the user: edit any text by clicking it, right-click
-  thumbnails to duplicate/delete, `/present` to present, Export PDF and OG
-  image live in the top bar.
+  thumbnails to duplicate/delete, `/present` to present, and Export PDF and
+  Share (links for presenting, the presenter console, or editing) in the bottom
+  bar. Sharing needs the project published once, since a link has to point at
+  an address other people can open.
 
 ## Theming (tokens.css `:root` only)
 
