@@ -1,6 +1,6 @@
-/* Export — PDF of the whole deck, and the first slide → public/og.png.
-   Slides are responsive (vw/vh-driven type), so each one is rendered inside
-   an off-screen IFRAME at the exact target size, then rasterized. */
+/* Export — PDF of the whole deck. Slides are responsive (vw/vh-driven type), so
+   each one is rendered inside an off-screen IFRAME at the exact target size,
+   then rasterized. */
 import { createRoot } from 'react-dom/client';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -88,15 +88,4 @@ export async function exportPdf(
   pdf.save(
     `${(title || 'deck').replace(/[^\w\- ]+/g, '').trim() || 'deck'}.pdf`
   );
-}
-
-/* First slide → /og.png (1200×630), wired to the OpenGraph tags in index.html. */
-export async function updateOgImage(first: SlideData): Promise<void> {
-  const png = await renderSlidePng(first, 1200, 630, 1);
-  const res = await fetch('/api/og', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dataUrl: png }),
-  });
-  if (!res.ok) throw new Error('failed to save og.png');
 }

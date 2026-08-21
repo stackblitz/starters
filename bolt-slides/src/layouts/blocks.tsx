@@ -421,7 +421,7 @@ const AccordionDef: LayoutDef = {
     items: [
       {
         title: 'Where does the data live?',
-        body: 'In one JSON file — data/deck.json. Copy it and everything travels.',
+        body: "In this project's database. The editor, the presenter view and the published deck all read the same rows.",
       },
       {
         title: 'Can I change what the AI made?',

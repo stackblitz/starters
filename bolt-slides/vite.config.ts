@@ -1,29 +1,28 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-/* The API (server/api.mjs) + JSON persistence (server/db.mjs → data/deck.json)
-   ride on the Vite dev server, so `npm run dev` runs the whole stack.
+export default defineConfig(({ command, mode }) => {
+  /* The deck's owner key, which is what proves a request may edit the deck.
 
-   This is the storage layer the rebuild replaces: it exists here only so the app
-   keeps running while Postgres is put behind it. */
-function deckApi() {
+     It reaches the app only while this dev server is serving it, and is not
+     prefixed VITE_ precisely so that it cannot leak into a bundle by accident:
+     `vite build` never defines it, so a published deck is keyless by
+     construction and cannot be edited by whoever opens it. Editing a published
+     deck is what an `edit` share link is for.
+
+     The agent writes it into .env after applying supabase/schema.sql, reading it
+     from the deck row the migration created. */
+  const env = loadEnv(mode, process.cwd(), '');
+  const ownerKey = command === 'serve' ? env.DECK_OWNER_KEY ?? '' : '';
+
   return {
-    name: 'deck-api',
-    async configureServer(server: import('vite').ViteDevServer) {
-      const { apiMiddleware } = await import('./server/api.mjs');
-      server.middlewares.use(apiMiddleware(server.config.root));
-    },
-    async configurePreviewServer(server: import('vite').PreviewServer) {
-      const { apiMiddleware } = await import('./server/api.mjs');
-      server.middlewares.use(apiMiddleware(server.config.root));
+    plugins: [react()],
+    /* Vite 8 reads the `paths` in tsconfig.app.json, which is what makes `@/foo`
+       resolve to src/foo. Do not replace this with the vite-tsconfig-paths
+       plugin: this is the built-in option, and it is valid. */
+    resolve: { tsconfigPaths: true },
+    define: {
+      'import.meta.env.DECK_OWNER_KEY': JSON.stringify(ownerKey),
     },
   };
-}
-
-export default defineConfig({
-  plugins: [react(), deckApi()],
-  /* Vite 8 reads the `paths` in tsconfig.app.json, which is what makes `@/foo`
-     resolve to src/foo. Do not replace this with the vite-tsconfig-paths
-     plugin: this is the built-in option, and it is valid. */
-  resolve: { tsconfigPaths: true },
 });

@@ -7,9 +7,6 @@
     "types": ["node"],
     "skipLibCheck": true,
 
-    /* vite.config.ts imports server/api.mjs, which is plain JS with no types */
-    "allowJs": true,
-
     /* Bundler mode */
     "allowImportingTsExtensions": true,
     "moduleDetection": "force",

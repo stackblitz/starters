@@ -43,11 +43,6 @@ function Row({
     transition,
     isDragging,
   } = useSortable({ id: slide.id });
-  const comments = useStore((s) => s.comments);
-  const openComments = comments.filter(
-    (c) => c.slide_id === slide.id && !c.resolved
-  ).length;
-
   return (
     <div
       ref={setNodeRef}
@@ -68,11 +63,6 @@ function Row({
       </div>
       <div className="side-thumb">
         <MiniSlide slide={slide} />
-        {openComments > 0 && (
-          <div className="side-badges">
-            <span className="side-badge cmt">{openComments}</span>
-          </div>
-        )}
       </div>
     </div>
   );

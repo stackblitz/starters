@@ -5,6 +5,7 @@ import Deck from '@/deck/Deck';
 import SlideView from '@/slide/SlideView';
 import { useStore } from '@/data/store';
 import Gate from '@/data/Gate';
+import NoDatabase from '@/data/NoDatabase';
 import { applyFont, applyAccent } from '@/data/fonts';
 import { stripRich } from '@/edit/rich';
 import { LAYOUTS } from '@/layouts/registry';
@@ -12,17 +13,21 @@ import { LAYOUTS } from '@/layouts/registry';
 export default function PresentApp() {
   const loaded = useStore((s) => s.loaded);
   const denied = useStore((s) => s.denied);
+  const problem = useStore((s) => s.problem);
   const slides = useStore((s) => s.slides);
   const deck = useStore((s) => s.deck);
   const load = useStore((s) => s.load);
+  const watch = useStore((s) => s.watch);
   const patchSlide = useStore((s) => s.patchSlide);
   const mode = useStore((s) => s.mode);
 
   useEffect(() => {
     load().catch(() => {
-      /* the gate explains why */
+      /* the gate or the no-database screen explains why */
     });
   }, [load]);
+  /* Presenting a deck someone is still editing: the slides keep up. */
+  useEffect(() => watch(), [watch]);
   useEffect(() => {
     document.title = deck.title || 'Slides';
   }, [deck.title]);
@@ -33,6 +38,7 @@ export default function PresentApp() {
     applyAccent(deck.accent);
   }, [deck.accent]);
 
+  if (problem) return <NoDatabase />;
   if (denied) return <Gate />;
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
   if (!slides.length)
@@ -46,8 +52,9 @@ export default function PresentApp() {
     <Deck
       transition={deck.transition}
       allowPresenter={mode !== 'present'}
-      /* the presenter console edits the deck's real notes — same rows the
-         editor's Notes tab writes, straight to the deck file */
+      /* the presenter console edits the deck's real notes — the same rows the
+         editor's Notes tab writes, and the only thing a presenter link may
+         write */
       onNotes={(i, text) => {
         const s = slides[i];
         if (s) patchSlide(s.id, { notes: text });

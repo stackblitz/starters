@@ -1,16 +1,12 @@
 /* Client side of share links.
 
-   A shared link carries ?k=<token>. The token is remembered for this origin,
-   sent on every API call, and — when the link has a password — exchanged once
-   for a grant key that is remembered too. The owner (on localhost) has no
-   token at all and is simply let through. */
+   A shared link carries ?k=<token>. The token is remembered for this tab, sent
+   on every call, and — when the link has a password — exchanged once for a grant
+   key that is remembered longer. What the token is worth is decided by the deck
+   function, not here: this file only carries it. */
+import { unlock } from './backend';
 
 export type ShareMode = 'edit' | 'presenter' | 'present';
-export interface ShareLink {
-  mode: ShareMode;
-  token: string;
-  hasPassword: boolean;
-}
 
 const TOKEN_KEY = 'deck:share-token';
 const GRANT_KEY = 'deck:share-grant';
@@ -63,38 +59,8 @@ export type UnlockResult =
 
 export async function unlockShare(password: string): Promise<UnlockResult> {
   if (!shareToken) return { ok: false, reason: 'denied' };
-  let res: Response;
-  try {
-    res = await fetch('/api/share/unlock', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: shareToken, password }),
-    });
-  } catch {
-    return { ok: false, reason: 'offline' };
-  }
-
-  if (res.status === 429) {
-    const body = await res.json().catch(() => ({}));
-    const header = Number(res.headers.get('Retry-After'));
-    return {
-      ok: false,
-      reason: 'throttled',
-      retryAfter: body.retryAfter ?? (Number.isFinite(header) ? header : 600),
-    };
-  }
-  if (!res.ok) return { ok: false, reason: 'denied' };
-  const { key } = await res.json();
-  localStorage.setItem(GRANT_KEY, key);
+  const res = await unlock(shareToken, password);
+  if (!res.ok) return res;
+  localStorage.setItem(GRANT_KEY, res.key);
   return { ok: true };
-}
-
-/* what this link is, before we are allowed in (used by the password gate) */
-export async function shareInfo(): Promise<{
-  mode: ShareMode;
-  hasPassword: boolean;
-} | null> {
-  if (!shareToken) return null;
-  const res = await fetch('/api/share?token=' + encodeURIComponent(shareToken));
-  return res.ok ? res.json() : null;
 }

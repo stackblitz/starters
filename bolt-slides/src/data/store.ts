@@ -1,45 +1,52 @@
 /* App state — one zustand store shared by the editor and present mode.
-   Mutations are optimistic: state updates instantly, the API call persists to
-   the deck file in the background (text edits are debounced per slide). */
+
+   Mutations are optimistic: state updates instantly and the deck function
+   persists in the background (text edits debounced per slide). The deck in
+   Postgres is the truth, so anything typed here is on its way there and nowhere
+   else. */
 import { create } from 'zustand';
 import type {
   AppState,
   Background,
-  CommentData,
+  DeckAccess,
   DeckMeta,
-  Profile,
   SlideData,
 } from './types';
-import { shareHeaders, shareInfo, shareToken, type ShareMode } from './share';
+import { DeckError, request, type Failure } from './backend';
+import { shareToken, type ShareMode } from './share';
 
-/* Why a request was refused, when it was: the app shows a password gate for
-   'password-required' and a "ask for a link" screen for 'share-required'. */
+/* Why the deck is not on screen. 'no-database' and 'unreachable' are the app's
+   own problem and get an explanation (NoDatabase.tsx); the other two are about
+   this visitor and get the gate (Gate.tsx). */
 export type Denial = 'share-required' | 'password-required' | null;
+export type Problem = 'no-database' | 'unreachable' | null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function api<T = any>(
+async function api<T = unknown>(
   path: string,
   method = 'GET',
   body?: unknown
 ): Promise<T> {
-  const res = await fetch('/api' + path, {
-    method,
-    headers: {
-      ...shareHeaders(),
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      const why = await res.json().catch(() => ({}));
-      if (why.error === 'share-required' || why.error === 'password-required') {
-        useStore.setState({ denied: why.error, canEdit: false });
-      }
-    }
-    throw new Error(`${method} ${path} → ${res.status}`);
+  try {
+    return await request<T>(path, method, body);
+  } catch (e) {
+    if (e instanceof DeckError) note(e.failure);
+    throw e;
   }
-  return res.json();
+}
+
+/* One place where a failed call becomes something the person can read. Called
+   from every request, including the background ones nobody asked for, so a deck
+   that quietly stops saving says so instead of looking fine. */
+function note(failure: Failure) {
+  if (failure === 'no-database' || failure === 'unreachable') {
+    useStore.setState({ problem: failure });
+    return;
+  }
+  if (failure === 'share-required' || failure === 'password-required') {
+    useStore.setState({ denied: failure, canEdit: false });
+    return;
+  }
+  if (failure === 'read-only') useStore.setState({ canEdit: false });
 }
 
 /* set a deep value in a plain-JSON object via "items.0.title" paths */
@@ -93,24 +100,33 @@ bus?.addEventListener('message', (e) => {
 const saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 function debounceSave(id: string, fn: () => void, ms = 500) {
   clearTimeout(saveTimers[id]);
-  saveTimers[id] = setTimeout(fn, ms);
+  saveTimers[id] = setTimeout(() => {
+    delete saveTimers[id];
+    fn();
+  }, ms);
 }
+const savePending = () => Object.keys(saveTimers).length > 0;
 
 interface Store extends AppState {
   loaded: boolean;
-  /** set when the API refuses us — drives the gate screens */
+  /** set when the deck refuses us — drives the gate screens */
   denied: Denial;
+  /** set when there is no deck to refuse us — drives the no-database screen */
+  problem: Problem;
   /** false for share links that may not write (present / presenter) */
   canEdit: boolean;
   /** what kind of visitor this browser is */
   mode: ShareMode;
   current: number;
-  me: string | null;
+  /** the deck's version as of the last load, for noticing other people's edits */
+  version: number;
   /** "slideId|listPath" while a repeatable list is being edited (keeps its + visible) */
   activeList: string | null;
   setActiveList(v: string | null): void;
 
   load(): Promise<void>;
+  /** poll for edits made elsewhere — the agent, another window */
+  watch(): () => void;
   setCurrent(i: number): void;
 
   updateDeck(patch: Partial<DeckMeta>): void;
@@ -128,11 +144,6 @@ interface Store extends AppState {
   deleteSlide(id: string): Promise<void>;
   reorder(ids: string[]): void;
 
-  setMe(id: string): void;
-  createProfile(name: string, color: string): Promise<Profile>;
-  addComment(slideId: string, body: string): Promise<void>;
-  setCommentResolved(id: string, resolved: boolean): void;
-  deleteComment(id: string): void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   importDeck(json: any): Promise<void>;
   /* freeform canvas: selected item index on the current slide (ephemeral,
@@ -144,6 +155,12 @@ interface Store extends AppState {
   reqCnvData(v: boolean): void;
 }
 
+interface StateResponse {
+  deck: DeckMeta & { version: number };
+  slides: SlideData[];
+  access: DeckAccess;
+}
+
 export const useStore = create<Store>((set, getState) => ({
   loaded: false,
   cnvSel: null,
@@ -152,33 +169,64 @@ export const useStore = create<Store>((set, getState) => ({
   reqCnvData: (v) => set({ cnvDataReq: v }),
   deck: { title: '', transition: 'fade' },
   slides: [],
-  profiles: [],
-  comments: [],
   current: 0,
-  me: localStorage.getItem('slides:me'),
+  version: 0,
   activeList: null,
   setActiveList(v) {
     set({ activeList: v });
   },
 
   denied: null,
+  problem: null,
   canEdit: true,
   mode: 'edit',
 
   async load() {
-    // a visitor arriving on a link is only allowed what that link grants
-    const link = shareToken ? await shareInfo().catch(() => null) : null;
-    const mode: ShareMode = link?.mode ?? 'edit';
-    const s = await api<AppState>('/state');
-    const me = localStorage.getItem('slides:me');
+    const { deck, slides, access } = await api<StateResponse>('/state');
     set({
-      ...s,
+      deck,
+      slides,
+      version: deck.version ?? 0,
       loaded: true,
       denied: null,
-      mode,
-      canEdit: mode === 'edit',
-      me: s.profiles.some((p) => p.id === me) ? me : null,
+      problem: null,
+      /* What this visitor may do is the function's answer, not a guess from
+         which headers happen to be in this tab. A revoked link and an expired
+         owner key both arrive here as "present". */
+      mode: access.mode,
+      canEdit: access.canEdit,
     });
+  },
+
+  /* Someone else edits the deck: the agent authoring slides, the presenter
+     window, a second tab. Postgres knows; this tab does not, until it asks.
+
+     So it asks — cheaply (one integer), only while the tab is on screen, and
+     never while there is unsent typing or a focused editor to interrupt.
+     Reloading over someone mid-sentence would be a worse bug than being a few
+     seconds stale. */
+  watch() {
+    const fresh = async () => {
+      const state = getState();
+      if (document.hidden || savePending() || !state.loaded) return;
+      const editing = document.activeElement as HTMLElement | null;
+      if (editing?.isContentEditable || editing?.closest('input, textarea'))
+        return;
+      try {
+        const { version } = await request<{ version: number }>('/version');
+        if (version !== getState().version) await getState().load();
+      } catch {
+        /* the request already reported itself; a poll is not worth a screen */
+      }
+    };
+    const timer = setInterval(fresh, 4000);
+    document.addEventListener('visibilitychange', fresh);
+    window.addEventListener('focus', fresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', fresh);
+      window.removeEventListener('focus', fresh);
+    };
   },
 
   setCurrent(i) {
@@ -188,14 +236,28 @@ export const useStore = create<Store>((set, getState) => ({
 
   updateDeck(patch) {
     set((s) => ({ deck: { ...s.deck, ...patch } }));
-    debounceSave('deck', () => api('/deck', 'PUT', patch));
+    /* Sends the whole deck rather than this patch: deck saves share one debounce
+       slot, so a patch sent alone loses whichever change it interrupted — a
+       title still being typed when the accent colour is picked. */
+    debounceSave('deck', () => {
+      const { title, transition, font, accent, visibility, publish_url } =
+        getState().deck;
+      api('/meta', 'PUT', {
+        title,
+        transition,
+        font,
+        accent,
+        visibility,
+        publish_url,
+      }).catch(() => {});
+    });
   },
 
   patchSlide(id, patch) {
     set((s) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, ...patch } : sl)),
     }));
-    api('/slides/' + id, 'PUT', patch);
+    api('/slides/' + id, 'PUT', patch).catch(() => {});
     bus?.postMessage({ type: 'patch', id, patch });
   },
 
@@ -209,7 +271,7 @@ export const useStore = create<Store>((set, getState) => ({
     debounceSave(id, () =>
       api('/slides/' + id, 'PUT', {
         props: getState().slides.find((s) => s.id === id)?.props,
-      })
+      }).catch(() => {})
     );
   },
 
@@ -219,25 +281,40 @@ export const useStore = create<Store>((set, getState) => ({
 
   async addSlide(layout, props, position, background) {
     const pos = position ?? getState().current + 1;
-    const s = await api<AppState>('/slides', 'POST', {
+    const s = await api<StateResponse>('/slides', 'POST', {
       layout,
       props,
       position: pos,
       background,
     });
-    set({ ...s, current: pos });
+    set({
+      deck: s.deck,
+      slides: s.slides,
+      version: s.deck.version,
+      current: pos,
+    });
   },
 
   async duplicateSlide(id) {
-    const s = await api<AppState>(`/slides/${id}/duplicate`, 'POST');
+    const s = await api<StateResponse>(`/slides/${id}/duplicate`, 'POST');
     const idx = getState().slides.findIndex((sl) => sl.id === id);
-    set({ ...s, current: idx + 1 });
+    set({
+      deck: s.deck,
+      slides: s.slides,
+      version: s.deck.version,
+      current: idx + 1,
+    });
   },
 
   async deleteSlide(id) {
     const cur = getState().current;
-    const s = await api<AppState>('/slides/' + id, 'DELETE');
-    set({ ...s, current: Math.min(cur, s.slides.length - 1) });
+    const s = await api<StateResponse>('/slides/' + id, 'DELETE');
+    set({
+      deck: s.deck,
+      slides: s.slides,
+      version: s.deck.version,
+      current: Math.min(cur, s.slides.length - 1),
+    });
   },
 
   reorder(ids) {
@@ -251,45 +328,21 @@ export const useStore = create<Store>((set, getState) => ({
         .filter(Boolean),
       current: Math.max(0, ids.indexOf(cur ?? '')),
     }));
-    api('/order', 'PUT', { ids });
-  },
-
-  setMe(id) {
-    localStorage.setItem('slides:me', id);
-    set({ me: id });
-  },
-
-  async createProfile(name, color) {
-    const p = await api<Profile>('/profiles', 'POST', { name, color });
-    set((s) => ({ profiles: [...s.profiles, p] }));
-    return p;
-  },
-
-  async addComment(slideId, body) {
-    const c = await api<CommentData>('/comments', 'POST', {
-      slideId,
-      profileId: getState().me,
-      body,
-    });
-    set((s) => ({ comments: [...s.comments, c] }));
-  },
-
-  setCommentResolved(id, resolved) {
-    set((s) => ({
-      comments: s.comments.map((c) =>
-        c.id === id ? { ...c, resolved: resolved ? 1 : 0 } : c
-      ),
-    }));
-    api('/comments/' + id, 'PUT', { resolved });
-  },
-
-  deleteComment(id) {
-    set((s) => ({ comments: s.comments.filter((c) => c.id !== id) }));
-    api('/comments/' + id, 'DELETE');
+    api('/order', 'PUT', { ids }).catch(() => {});
   },
 
   async importDeck(json) {
-    const s = await api<AppState>('/import', 'POST', json);
-    set({ ...s, current: 0 });
+    const s = await api<StateResponse>('/import', 'POST', json);
+    set({
+      deck: s.deck,
+      slides: s.slides,
+      version: s.deck.version,
+      current: 0,
+    });
   },
 }));
+
+/* A tab opened on a link is a visitor until told otherwise, which matters
+   before the first response arrives: the editor must not flash its chrome at
+   someone holding a read-only link. */
+if (shareToken) useStore.setState({ canEdit: false, mode: 'present' });

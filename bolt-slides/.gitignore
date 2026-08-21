@@ -2,9 +2,6 @@ node_modules/
 dist/
 .vite/
 .DS_Store
-.env
 
-# generated at runtime — the deck lives here (seed via data/deck.seed.json)
-data/deck.json
-data/deck.db
-public/og.png
+# credentials for the project's database, plus the deck's own editing key
+.env

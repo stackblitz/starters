@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useStore } from '@/data/store';
 import { applyFont, applyAccent } from '@/data/fonts';
 import Gate from '@/data/Gate';
+import NoDatabase from '@/data/NoDatabase';
 import { withShare } from '@/data/share';
 import Sidebar from './Sidebar';
 import Canvas from './Canvas';
@@ -12,17 +13,22 @@ import Canvas from './Canvas';
 export default function EditorApp() {
   const loaded = useStore((s) => s.loaded);
   const denied = useStore((s) => s.denied);
+  const problem = useStore((s) => s.problem);
   const mode = useStore((s) => s.mode);
   const load = useStore((s) => s.load);
+  const watch = useStore((s) => s.watch);
   const title = useStore((s) => s.deck.title);
 
   const font = useStore((s) => s.deck.font);
   const accent = useStore((s) => s.deck.accent);
   useEffect(() => {
     load().catch(() => {
-      /* the gate explains why */
+      /* the gate or the no-database screen explains why */
     });
   }, [load]);
+  /* The agent authors slides straight into the database, so the editor watches
+     for edits it did not make rather than waiting to be reloaded. */
+  useEffect(() => watch(), [watch]);
   useEffect(() => {
     document.title = (title ? title + ' — ' : '') + 'Slides';
   }, [title]);
@@ -40,6 +46,7 @@ export default function EditorApp() {
     );
   }, [loaded, mode]);
 
+  if (problem) return <NoDatabase />;
   if (denied) return <Gate />;
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
 

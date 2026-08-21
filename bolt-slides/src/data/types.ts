@@ -1,5 +1,5 @@
-/* The deck as data. Slides are rows in data/deck.json; `props` is the
-   layout-specific payload rendered by src/layouts/registry.tsx. */
+/* The deck as data. Slides are rows in Postgres (supabase/schema.sql); `props`
+   is the layout-specific payload rendered by src/layouts/registry.tsx. */
 
 export type Background =
   | { type: 'none' }
@@ -57,25 +57,13 @@ export interface SlideData {
   animation: AnimationMode;
   transition: TransitionMode | null;
   nav: string | null;
+  /** speaker notes — never sent to the audience view (supabase/functions/deck) */
   notes: string;
   status: SlideStatus;
-  assignee: string | null;
 }
 
-export interface Profile {
-  id: string;
-  name: string;
-  color: string;
-}
-
-export interface CommentData {
-  id: string;
-  slide_id: string;
-  profile_id: string | null;
-  body: string;
-  resolved: number;
-  created_at: string;
-}
+/** Public, or only for whoever holds a link. */
+export type Visibility = 'public' | 'link';
 
 export interface DeckMeta {
   title: string;
@@ -83,11 +71,30 @@ export interface DeckMeta {
   font?: string;
   /** deck-wide accent override (null/absent = the tokens.css default) */
   accent?: string | null;
+  /** who may open the published deck without a link */
+  visibility?: Visibility;
+  /** origin of the published site, null until it has been published — the base
+      every shareable link is built on, because this app's own address is not
+      one anybody else can open (see ShareModal) */
+  publish_url?: string | null;
+}
+
+/** A share link as the deck function reports it. The password is never sent. */
+export interface ShareLink {
+  mode: 'edit' | 'presenter' | 'present';
+  token: string;
+  hasPassword: boolean;
+  created_at?: string;
+}
+
+/** What the deck function says this visitor may do. Never inferred locally. */
+export interface DeckAccess {
+  mode: 'edit' | 'presenter' | 'present';
+  canEdit: boolean;
+  owner: boolean;
 }
 
 export interface AppState {
   deck: DeckMeta;
   slides: SlideData[];
-  profiles: Profile[];
-  comments: CommentData[];
 }
