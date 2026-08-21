@@ -6,6 +6,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import type { SlideData } from '../data/types';
 import SlideView from '../slide/SlideView';
+import { api } from '../data/store';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -93,10 +94,5 @@ export async function exportPdf(
 /* First slide → /og.png (1200×630), wired to the OpenGraph tags in index.html. */
 export async function updateOgImage(first: SlideData): Promise<void> {
   const png = await renderSlidePng(first, 1200, 630, 1);
-  const res = await fetch('/api/og', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dataUrl: png }),
-  });
-  if (!res.ok) throw new Error('failed to save og.png');
+  await api('/og', 'POST', { dataUrl: png });
 }

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import SlideView from '../slide/SlideView';
 import { useStore } from '../data/store';
+import { useDeckSync } from '../data/useDeckSync';
 import Gate from '../data/Gate';
 import { applyFont, applyAccent } from '../data/fonts';
 import { stripRich } from '../edit/rich';
@@ -12,17 +13,13 @@ import { LAYOUTS } from '../layouts/registry';
 export default function PresentApp() {
   const loaded = useStore((s) => s.loaded);
   const denied = useStore((s) => s.denied);
+  const bootError = useStore((s) => s.bootError);
   const slides = useStore((s) => s.slides);
   const deck = useStore((s) => s.deck);
-  const load = useStore((s) => s.load);
   const patchSlide = useStore((s) => s.patchSlide);
   const mode = useStore((s) => s.mode);
 
-  useEffect(() => {
-    load().catch(() => {
-      /* the gate explains why */
-    });
-  }, [load]);
+  useDeckSync();
   useEffect(() => {
     document.title = deck.title || 'Slides';
   }, [deck.title]);
@@ -34,6 +31,7 @@ export default function PresentApp() {
   }, [deck.accent]);
 
   if (denied) return <Gate />;
+  if (bootError) return <div className="boot-screen">{bootError}</div>;
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
   if (!slides.length)
     return (
@@ -47,7 +45,7 @@ export default function PresentApp() {
       transition={deck.transition}
       allowPresenter={mode !== 'present'}
       /* the presenter console edits the deck's real notes — same rows the
-         editor's Notes tab writes, straight to the deck file */
+         editor's Notes tab writes, through the deck API */
       onNotes={(i, text) => {
         const s = slides[i];
         if (s) patchSlide(s.id, { notes: text });

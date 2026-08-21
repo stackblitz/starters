@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShareLink, ShareMode } from '../data/share';
+import { api } from '../data/store';
 
 /* Share links, one per mode. Each row makes a link, optionally behind a
    password, and copies it. Turning a link off kills it everywhere at once.
@@ -34,16 +35,6 @@ const MODES: {
 ];
 
 const MIN_PASSWORD = 8;
-
-const api = async (path: string, method = 'GET', body?: unknown) => {
-  const res = await fetch('/api' + path, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
-};
 
 function Row({
   spec,
@@ -288,8 +279,8 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="share-intro">
-          Links work wherever this deck is reachable: your network, or a tunnel
-          you expose. You always have full access from this machine.
+          Links work on this site's URL. Anyone who opens the bare URL can edit;
+          share links below grant a specific mode (and optional password).
         </p>
 
         {links === null ? (

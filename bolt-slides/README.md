@@ -4,9 +4,10 @@ A Pitch-style slide studio for [Bolt](https://bolt.new): a deck **editor**, a
 premium **presentation engine**, and a bundled **skill** so Bolt's AI can
 prompt entire decks into existence — which you then refine by hand.
 
-Decks are structured data (layout + props + notes) stored in a **database**
-and read/written through the deck API. The skill authors JSON and imports it
-via that API — never via a file on disk.
+Decks are structured data stored in **Postgres** and read/written through the
+`deck-api` edge function. The skill authors JSON and imports it via that API.
+The visual editor talks to the same API, so agent imports and in-preview
+edits share one store.
 
 ## Quick start
 
@@ -15,52 +16,40 @@ npm install
 npm run dev        # editor at http://localhost:5173 · present at /present
 ```
 
-The first run starts from an empty deck — add slides in the editor, or prompt
-one into existence with the `slides` skill.
+On first use in Bolt the agent must apply
+`supabase/migrations/create_deck_tables.sql` and deploy
+`supabase/functions/deck-api` (the instance is already provisioned; the
+schema and function are not). After that, add slides in the editor or prompt
+a deck with the `slides` skill.
 
 ## What's inside
 
-- `/` — Editor: thumbnail rail (drag to reorder, right-click to
-  duplicate/delete/insert), click any text on the slide to edit it, inspector
-  for layout props · background · animation · transition, comments, per-slide
-  status, speaker notes.
-- `/present` — Presentation: floating dock, side panel (S) and grid overview
-  (G), click-builds, presenter view with notes + timer (P), annotation mode
-  (D), fullscreen (F).
-- **Share** (top bar) makes one link per mode: presentation (read only, no
-  speaker notes), presenter console (read, plus notes), or editor (full
-  access). Any link can carry a password.
-- **Export PDF** and **OG image** live in the top bar.
+- `/` — Editor: thumbnail rail, click-to-edit text, speaker notes. The
+  bottom bar pages the deck and holds Export PDF, Present, and Share
+  (one link per mode: presentation, presenter console, or editor; optional
+  password).
+- `/present` — Presentation: dock, side panel (S), grid (G), builds, presenter
+  (P), annotator (D), fullscreen (F).
 
 ## The skill
 
-`.bolt/skills/slides/SKILL.md` teaches Bolt's AI to author decks as JSON and
-import them through the deck API. Ask Bolt for "a 12-slide seed pitch for …"
-and refine what lands in the editor.
-
-## Publishing
-
-Shareable, durable decks need the cloud backend (Postgres + an edge function
-that implements the same API contract). See
-**[docs/cloud-setup.md](docs/cloud-setup.md)** for the route contract, table
-layout, permission rules, and publish checklist.
+`.bolt/skills/slides/SKILL.md` teaches Bolt's AI to bootstrap the database,
+author decks as JSON, and import them through the deck API.
 
 ## Architecture
 
 ```
-src/data/               types + zustand store (optimistic writes via the API)
-src/layouts/            layout registry: props schema + renderer per layout
-src/components/         section components (locked design system)
-src/deck/               presentation engine (dock, rail, builds, presenter)
-src/slide/SlideView.tsx one slide row → pixels
-src/edit/               editor (rail, canvas, inspector, comments, notes)
-src/export/             PDF + OG rendering
-src/styles/tokens.css   theme: edit :root values only; accent is ONE solid color
-server/                 local API stand-in for the database (dev only)
+src/data/               types + zustand store (optimistic writes via deck-api)
+src/layouts/            layout registry
+src/components/         section components (locked)
+src/deck/               presentation engine
+src/edit/               editor
+src/styles/tokens.css   theme: edit :root values only
+supabase/functions/deck-api    edge function — the only backend
+supabase/migrations/           schema applied via apply_migration MCP
 ```
 
 ## Theming
 
-Everything visual derives from the `:root` tokens in `src/styles/tokens.css`
-— change the values (never the names) to re-brand the deck AND the editor
-chrome in one place. `--accent` must stay a solid color.
+Everything visual derives from the `:root` tokens in `src/styles/tokens.css`.
+`--accent` must stay a solid color.

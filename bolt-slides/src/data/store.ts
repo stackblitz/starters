@@ -1,6 +1,6 @@
 /* App state — one zustand store shared by the editor and present mode.
    Mutations are optimistic: state updates instantly, the API call persists to
-   the deck file in the background (text edits are debounced per slide). */
+   the database in the background (text edits are debounced per slide). */
 import { create } from 'zustand';
 import type {
   AppState,
@@ -10,6 +10,7 @@ import type {
   Profile,
   SlideData,
 } from './types';
+import { deckUrl, supabaseAuthHeaders } from './api';
 import { shareHeaders, shareInfo, shareToken, type ShareMode } from './share';
 
 /* Why a request was refused, when it was: the app shows a password gate for
@@ -17,14 +18,15 @@ import { shareHeaders, shareInfo, shareToken, type ShareMode } from './share';
 export type Denial = 'share-required' | 'password-required' | null;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function api<T = any>(
+export async function api<T = any>(
   path: string,
   method = 'GET',
   body?: unknown
 ): Promise<T> {
-  const res = await fetch('/api' + path, {
+  const res = await fetch(deckUrl(path), {
     method,
     headers: {
+      ...supabaseAuthHeaders(),
       ...shareHeaders(),
       ...(body ? { 'Content-Type': 'application/json' } : {}),
     },
@@ -93,11 +95,16 @@ bus?.addEventListener('message', (e) => {
 const saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 function debounceSave(id: string, fn: () => void, ms = 500) {
   clearTimeout(saveTimers[id]);
-  saveTimers[id] = setTimeout(fn, ms);
+  saveTimers[id] = setTimeout(() => {
+    delete saveTimers[id];
+    fn();
+  }, ms);
 }
 
 interface Store extends AppState {
   loaded: boolean;
+  /** set when VITE_SUPABASE_* is missing or the edge function is down */
+  bootError: string | null;
   /** set when the API refuses us — drives the gate screens */
   denied: Denial;
   /** false for share links that may not write (present / presenter) */
@@ -111,6 +118,9 @@ interface Store extends AppState {
   setActiveList(v: string | null): void;
 
   load(): Promise<void>;
+  /** Re-read /state without resetting ephemeral editor UI. Skips if a
+   *  debounced save is in flight so we don't clobber in-progress edits. */
+  refresh(): Promise<void>;
   setCurrent(i: number): void;
 
   updateDeck(patch: Partial<DeckMeta>): void;
@@ -146,6 +156,7 @@ interface Store extends AppState {
 
 export const useStore = create<Store>((set, getState) => ({
   loaded: false,
+  bootError: null,
   cnvSel: null,
   setCnvSel: (i) => set({ cnvSel: i }),
   cnvDataReq: false,
@@ -166,19 +177,47 @@ export const useStore = create<Store>((set, getState) => ({
   mode: 'edit',
 
   async load() {
-    // a visitor arriving on a link is only allowed what that link grants
-    const link = shareToken ? await shareInfo().catch(() => null) : null;
-    const mode: ShareMode = link?.mode ?? 'edit';
-    const s = await api<AppState>('/state');
-    const me = localStorage.getItem('slides:me');
-    set({
-      ...s,
-      loaded: true,
-      denied: null,
-      mode,
-      canEdit: mode === 'edit',
-      me: s.profiles.some((p) => p.id === me) ? me : null,
-    });
+    try {
+      // a visitor arriving on a link is only allowed what that link grants
+      const link = shareToken ? await shareInfo().catch(() => null) : null;
+      const mode: ShareMode = link?.mode ?? 'edit';
+      const s = await api<AppState>('/state');
+      const me = localStorage.getItem('slides:me');
+      set({
+        ...s,
+        loaded: true,
+        bootError: null,
+        denied: null,
+        mode,
+        canEdit: mode === 'edit',
+        me: s.profiles.some((p) => p.id === me) ? me : null,
+      });
+    } catch (err) {
+      if (getState().denied) return;
+      const message = err instanceof Error ? err.message : String(err);
+      set({
+        bootError: message.includes('missing-supabase')
+          ? 'This deck needs a Bolt Cloud database. Apply the slides schema and deploy the deck-api edge function (see .bolt/skills/slides/SKILL.md), then reload.'
+          : 'Could not reach the deck API. Apply the slides schema and deploy deck-api (see .bolt/skills/slides/SKILL.md), then reload.',
+      });
+    }
+  },
+
+  async refresh() {
+    if (Object.keys(saveTimers).length) return;
+    if (getState().denied) return;
+    try {
+      const s = await api<AppState>('/state');
+      const cur = getState().current;
+      set({
+        ...s,
+        current: Math.max(0, Math.min(cur, Math.max(0, s.slides.length - 1))),
+        loaded: true,
+        bootError: null,
+      });
+    } catch {
+      /* keep the last good state; the next focus/visibility pass retries */
+    }
   },
 
   setCurrent(i) {

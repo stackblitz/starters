@@ -6,7 +6,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/editor.css';
 
-/*  /          the editor (Pitch-style: sidebar · canvas · inspector)
+/*  /          the editor (sidebar · canvas · bottom bar)
     /present   full-screen presentation of the same deck  */
 const isPresent = window.location.pathname.startsWith('/present');
 

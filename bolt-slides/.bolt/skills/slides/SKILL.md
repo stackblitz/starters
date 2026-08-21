@@ -4,11 +4,10 @@ description: >-
   Author a premium slide deck INTO the Bolt Slides editor — a Pitch-style
   slide builder (this repo) where slides live as rows in a database.
   You author the deck as JSON (layouts, copy, backgrounds, animation and
-  transition choices, statuses, speaker notes) and import it through the
-  deck API; the user then edits any of it in place, comments, presents
-  full-screen, exports PDF and an OpenGraph image. Use
-  this whenever the user asks for a deck, a pitch, slides, or a
-  presentation in this project.
+  transition choices, speaker notes) and import it through the deck API;
+  the user then edits any of it in place, presents full-screen, and
+  exports PDF. Use this whenever the user asks for a deck, a pitch,
+  slides, or a presentation in this project.
 ---
 
 # Slides — prompt decks into an editable, presentable app
@@ -16,69 +15,104 @@ description: >-
 This repo is a complete slide **studio**, already built and running:
 
 - `/` — the editor: persistent thumbnail rail (drag to reorder, right-click to
-  duplicate/delete), click-to-edit text on the slide itself, an inspector for
-  every layout prop, background and scale, plus comments and speaker notes.
+  duplicate/delete), click-to-edit text on the slide itself, and speaker
+  notes on the bottom bar (with Export PDF, Present, and Share).
 - `/present` — the premium presentation engine: floating dock, side panel (S)
   and grid overview (G), click-builds, presenter view (P), annotator (D),
   fullscreen (F).
-- **The database is the only store.** Deck rows live in Postgres and are
-  read/written through the deck API. Never write, read, copy, or back up a
-  deck to `data/deck.json` (or any other file on disk). JSON is only the
-  interchange format you POST to the API.
+- **Postgres via `deck-api` is the only store.** The visual editor and this
+  skill both read/write through that edge function.
 
-**Your job is to author CONTENT, not code.** A deck is data: you write JSON
-and import it through the API. You never write JSX slides.
+**Your job is to author CONTENT, not code.** A deck is data: you POST JSON
+to the API. You never write JSX slides.
 
 ## Hard rules
 
 1. **Don't touch the app — you only generate slides.** The editor UI, the
-   presentation engine, the layouts, the server are the finished product:
-   never rewrite, "improve", restyle, or regenerate any of it. Off-limits, no
-   exceptions: `src/edit/`, `src/deck/`, `src/present/`, `src/slide/`,
-   `src/layouts/`, `src/components/`, `src/styles/base.css`,
-   `src/styles/editor.css`, `server/`, `scripts/`, `index.html`, `vite.config.ts`.
-   That includes every piece of app chrome — the editor's top bar, thumbnail
-   sidebar, inspector and modals, and present mode's dock, side panel, grid
-   overview, presenter view and annotator. A deck request that mentions colors,
-   fonts, sizes or spacing is about the DECK (deck `accent` + `font`, or
-   `tokens.css`), never about the UI. The ONLY things you touch:
-   `src/styles/tokens.css` (`:root` values, to theme the deck) and the deck
-   API (import / export / slide mutations). If the user genuinely wants an
-   app change, say so and let them ask for it outside this skill.
+   presentation engine, the layouts, and the deck-api function are the
+   finished product: never rewrite, "improve", restyle, or regenerate any of
+   it. Off-limits, no exceptions: `src/edit/`, `src/deck/`, `src/present/`,
+   `src/slide/`, `src/layouts/`, `src/components/`, `src/styles/base.css`,
+   `src/styles/editor.css`, `src/data/`, `supabase/functions/deck-api/`,
+   `index.html`, `vite.config.ts`. That includes every piece of app chrome.
+   A deck request that mentions colors, fonts, sizes or spacing is about the
+   DECK (deck `accent` + `font`, or `tokens.css`), never about the UI. The
+   ONLY things you touch after bootstrap: `src/styles/tokens.css` (`:root`
+   values) and the deck API (import / export / slide mutations). If the user
+   genuinely wants an app change, say so and let them ask for it outside this
+   skill.
 2. **Author from the user's REAL input.** Their topic, brand, facts, numbers.
-   Never reskin the seed deck; never invent a placeholder company for a real
-   subject. Brand given → derive theme colors/fonts from it (fetch the site or
-   use its known palette) and say what you used.
+   Never invent a placeholder company for a real subject. Brand given →
+   derive theme colors/fonts from it (fetch the site or use its known
+   palette) and say what you used.
 3. **The accent is ONE SOLID color.** `--accent` must be a solid hex — never a
    gradient. Keep restraint: one accent, used sparingly.
-4. **Database only.** Do not create, read, or mention `data/deck.json`. Do not
-   use `scripts/deck.mjs` or any file-based CLI to store or back up a deck.
-   If the API is down, say so — do not fall back to a JSON file.
+4. **Author through `deck-api`, not SQL.** Do not `execute_sql` into `slides`
+   (or any other deck table). Share modes and speaker-note stripping live in
+   the function; bypassing it breaks them. If the API is down, fix bootstrap.
+5. **RLS has no policies on purpose.** These tables hold password hashes and
+   speaker notes. The browser talks only to `deck-api` (service role). Do not
+   add `anon` CRUD policies.
+
+## Step 0 · bootstrap the database (mandatory, first)
+
+A Supabase project is already provisioned (`.env` has `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY`). You still have to create the **schema** and
+**deploy the edge function**. This is not optional and is not "only for
+publish" — the visual editor and the skill both need it, including in preview.
+
+Do this before authoring anything. Invoke the `bolt-database` skill, then:
+
+1. Read `supabase/migrations/create_deck_tables.sql` and apply it with
+   `mcp__supabase__apply_migration` (writing the file does nothing by itself).
+   Use a stable filename such as `create_deck_tables`. The SQL is idempotent;
+   if the tool times out, re-apply with the SAME filename.
+2. Deploy `deck-api` with `mcp__supabase__deploy_edge_function`. The source
+   is already at `supabase/functions/deck-api/index.ts` — do not rewrite it.
+   Write nothing; just deploy. If a function of that slug already exists,
+   read the file first, then deploy.
+3. Confirm it works:
+
+```bash
+# source .env — VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+curl -sS -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY" \
+  "$VITE_SUPABASE_URL/functions/v1/deck-api/state"
+```
+
+A `200` means you may author. Anything else: fix bootstrap.
 
 ## Workflow
 
 ```bash
-npm install && npm run dev        # 1 · the studio runs at :5173
-# 2 · theme: edit ONLY the :root values in src/styles/tokens.css
-# 3 · author the deck: write a JSON payload (format below)
-# 4 · import it (replaces the deck in the database)
-curl -sS -X POST "${DECK_API:-http://localhost:5173/api}/import" \
+# DECK_API="$VITE_SUPABASE_URL/functions/v1/deck-api"
+# 1 · theme: edit ONLY the :root values in src/styles/tokens.css
+# 2 · author the deck JSON (format below) and POST it
+curl -sS -X POST "$DECK_API/import" \
+  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
-  --data-binary @deck.json
-# 5 · verify
-curl -sS "${DECK_API:-http://localhost:5173/api}/state" | head
+  --data-binary @- <<'EOF'
+{ "title": "…", "slides": [ … ] }
+EOF
+# 3 · verify
+curl -sS "$DECK_API/state" \
+  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY" | head
 ```
 
-`$DECK_API` is the deck API origin (no trailing slash). Default to
-`http://localhost:5173/api` while the studio is running locally; on a
-published project use the edge-function origin instead (see
-`docs/cloud-setup.md`).
-
-To read the current deck back before editing so you keep the user's changes:
+To read the current deck back before editing so you keep the user's changes
+(including anything they did in the visual editor):
 
 ```bash
-curl -sS "${DECK_API:-http://localhost:5173/api}/export" -o deck.json
+curl -sS "$DECK_API/export" \
+  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY"
 ```
+
+The preview refetches when the tab is focused. After an import, the user
+will see the new slides in the editor without a full reload.
 
 **Never test against the user's live deck.** A slide PUT replaces `props`
 wholesale and an empty `notes` erases what was there. Duplicate a slide and
@@ -264,17 +298,16 @@ Visual:
 - Write `notes` for the presenter on every content slide — one or two lines of
   what to SAY, not a repeat of the slide.
 - After importing, tell the user: edit any text by clicking it, right-click
-  thumbnails to duplicate/delete, `/present` to present, Export PDF and OG
-  image live in the top bar.
+  thumbnails to duplicate/delete, Present / Export PDF / Share live on the
+  editor's bottom bar (`/present` also opens present mode).
 
 ## Theming (tokens.css `:root` only)
 
-Prefer the deck-level `accent` (Deck JSON above — one solid hex, user-changeable
-in the top bar) over editing tokens. For deeper theming: all color/type/radius/
-motion live in `src/styles/tokens.css`. Change VALUES, never names.
-`--accent` = `--primary` = one solid hex. Dark default; for a
-light deck set `--bg`/`--fg` accordingly and `html { color-scheme: light }` in
-base.css. Fonts: prefer the deck-level `font` pairing (see Deck JSON — Google Fonts,
+Prefer the deck-level `accent` and `font` (Deck JSON above) over editing
+tokens. For deeper theming: all color/type/radius/motion live in
+`src/styles/tokens.css`. Change VALUES, never names. `--accent` =
+`--primary` = one solid hex. Dark default; for a light deck set `--bg` /
+`--fg` in tokens.css. Fonts: set the deck-level `font` pairing (Google Fonts,
 loaded automatically; `playfair`/`fraunces` for editorial serifs, `space`/
-`sora`/`outfit` for technical, `manrope`/`dm` for friendly). Only swap the
-base.css `@import` for a brand font the pairings don't cover.
+`sora`/`outfit` for technical, `manrope`/`dm` for friendly). Do not edit
+`base.css`.

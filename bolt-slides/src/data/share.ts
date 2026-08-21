@@ -2,8 +2,9 @@
 
    A shared link carries ?k=<token>. The token is remembered for this origin,
    sent on every API call, and — when the link has a password — exchanged once
-   for a grant key that is remembered too. The owner (on localhost) has no
-   token at all and is simply let through. */
+   for a grant key that is remembered too. The owner (no token) is let through
+   as the editor. */
+import { deckUrl, supabaseAuthHeaders } from './api';
 
 export type ShareMode = 'edit' | 'presenter' | 'present';
 export interface ShareLink {
@@ -65,9 +66,12 @@ export async function unlockShare(password: string): Promise<UnlockResult> {
   if (!shareToken) return { ok: false, reason: 'denied' };
   let res: Response;
   try {
-    res = await fetch('/api/share/unlock', {
+    res = await fetch(deckUrl('/share/unlock'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        ...supabaseAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ token: shareToken, password }),
     });
   } catch {
@@ -95,6 +99,9 @@ export async function shareInfo(): Promise<{
   hasPassword: boolean;
 } | null> {
   if (!shareToken) return null;
-  const res = await fetch('/api/share?token=' + encodeURIComponent(shareToken));
+  const res = await fetch(
+    deckUrl('/share?token=' + encodeURIComponent(shareToken)),
+    { headers: supabaseAuthHeaders() }
+  );
   return res.ok ? res.json() : null;
 }

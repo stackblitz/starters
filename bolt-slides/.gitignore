@@ -23,7 +23,4 @@ dist-ssr
 *.sw?
 .env
 
-# generated at runtime by the local API stand-in
-data/deck.json
-data/deck.db
 public/og.png
