@@ -147,9 +147,9 @@ export function renderRich(text: string | null | undefined): ReactNode {
   );
 }
 
-/* Same rendering as an HTML string — used by the WYSIWYG editor, which must
-   set innerHTML wholesale (dangerouslySetInnerHTML) rather than let React
-   reconcile children the browser has been typing into. */
+/* Same rendering as an HTML string — used by the WYSIWYG editor, which sets
+   innerHTML wholesale rather than let React reconcile children the browser has
+   been typing into (see EditableText). */
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 

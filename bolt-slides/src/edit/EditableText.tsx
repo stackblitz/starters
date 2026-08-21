@@ -7,6 +7,7 @@
    store and the skill both speak. */
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -740,11 +741,29 @@ export default function T({
 
   const empty = focused ? domEmpty : !value;
 
+  /* Write the value into the element ourselves, and never over a live caret.
+
+     Before paint, so text does not flash in empty; only when it differs, so an
+     unrelated re-render is not a DOM rewrite; and never while this field has
+     focus, so an edit arriving from elsewhere — the agent, the presenter window
+     — cannot delete a half-typed sentence. Whatever is typed here is committed
+     to the deck on blur, and the fresh value lands the moment focus leaves. */
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || document.activeElement === el) return;
+    const html = richToHtml(value);
+    if (el.innerHTML !== html) el.innerHTML = html;
+  }, [value]);
+
   return (
     <>
-      {/* innerHTML is set wholesale from the value — React must never
-          reconcile individual children the browser has been typing into,
-          or committed text duplicates alongside browser-created nodes */}
+      {/* The content is written by hand, below, and React is given no children
+          at all to reconcile. It cannot be `dangerouslySetInnerHTML`: React 19
+          compares that prop by object identity, so a new `{ __html }` on every
+          render rewrites this element's DOM on every render — including the
+          renders caused by typing in it (onInput → setDomEmpty, and the caret
+          moving → setBar), each of which replaced what had just been typed with
+          the pre-edit value. That is what made text "flash and revert". */}
       <span
         ref={(el: HTMLElement | null) => {
           ref.current = el;
@@ -777,7 +796,6 @@ export default function T({
           );
           setDomEmpty(!ref.current?.textContent);
         }}
-        dangerouslySetInnerHTML={{ __html: richToHtml(value) }}
       />
       {focused && bar && (
         <FormatMenu
