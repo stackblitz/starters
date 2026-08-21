@@ -1,8 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ShareLink, ShareMode } from '@/data/share';
+import { request } from '@/data/backend';
+import { useStore } from '@/data/store';
+import type { ShareLink, Visibility } from '@/data/types';
+import type { ShareMode } from '@/data/share';
 
 /* Share links, one per mode. Each row makes a link, optionally behind a
    password, and copies it. Turning a link off kills it everywhere at once.
+
+   Every link is built on the deck's published address, never on the address
+   this editor happens to be running at. In a Bolt preview that address belongs
+   to the one tab connected to the project and opens for nobody else, and on a
+   laptop it is localhost — so a link built from it is a link to nothing, which
+   is exactly the bug that made sharing look broken. The published deck reports
+   its own address the first time anyone loads it, so this is normally filled in
+   already; the field is here for correcting it.
 
    The dialog is a focus trap with Escape to close, every control labelled,
    and every result announced in a live region. */
@@ -35,25 +46,31 @@ const MODES: {
 
 const MIN_PASSWORD = 8;
 
-const api = async (path: string, method = 'GET', body?: unknown) => {
-  const res = await fetch('/api' + path, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
-};
+/* The stored form: an origin and nothing else, since the deck appends its own
+   paths. Same rule the deck function applies, so a URL accepted here is not
+   rejected on save. */
+function siteOrigin(value: string): string | null {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' || url.protocol === 'http:'
+      ? url.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 function Row({
   spec,
   link,
+  site,
   onSave,
   onStop,
   announce,
 }: {
   spec: (typeof MODES)[number];
   link?: ShareLink;
+  site: string;
   onSave: (
     mode: ShareMode,
     patch: { password?: string | null; rotate?: boolean }
@@ -64,7 +81,7 @@ function Row({
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const on = !!link;
-  const url = link ? window.location.origin + spec.path(link.token) : '';
+  const url = link ? site + spec.path(link.token) : '';
   const passId = `share-pass-${spec.id}`;
 
   const run = async (fn: () => Promise<void>, done: string) => {
@@ -212,7 +229,16 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
     typeof document !== 'undefined' ? document.activeElement : null
   );
 
-  const refresh = useCallback(async () => setLinks(await api('/shares')), []);
+  const site = useStore((s) => s.deck.publish_url) ?? '';
+  const visibility = useStore((s) => s.deck.visibility) ?? 'public';
+  const updateDeck = useStore((s) => s.updateDeck);
+  const [draft, setDraft] = useState(site);
+  useEffect(() => setDraft(site), [site]);
+
+  const refresh = useCallback(
+    async () => setLinks(await request<ShareLink[]>('/shares')),
+    []
+  );
   useEffect(() => {
     refresh().catch(() => setLinks([]));
   }, [refresh]);
@@ -253,12 +279,32 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
     mode: ShareMode,
     patch: { password?: string | null; rotate?: boolean }
   ) => {
-    await api('/shares/' + mode, 'PUT', patch);
+    await request('/shares/' + mode, 'PUT', patch);
     await refresh();
   };
   const onStop = async (mode: ShareMode) => {
-    await api('/shares/' + mode, 'DELETE');
+    await request('/shares/' + mode, 'DELETE');
     await refresh();
+  };
+
+  const savePublishUrl = () => {
+    const next = siteOrigin(draft);
+    if (!next) {
+      setMessage('That is not a site address. It should look like https://…');
+      return;
+    }
+    updateDeck({ publish_url: next });
+    setDraft(next);
+    setMessage(`Links now point at ${next}`);
+  };
+
+  const setVisibility = (next: Visibility) => {
+    updateDeck({ visibility: next });
+    setMessage(
+      next === 'public'
+        ? 'Anyone who opens the published deck can read the slides'
+        : 'The published deck now shows nothing without a link'
+    );
   };
 
   return (
@@ -288,11 +334,77 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="share-intro">
-          Links work wherever this deck is reachable: your network, or a tunnel
-          you expose. You always have full access from this machine.
+          These links open the published deck, so they keep working for whoever
+          you send them to. The deck they show is live: an edit here is an edit
+          there, with no need to publish again.
         </p>
 
-        {links === null ? (
+        <div className="share-row">
+          <div className="share-row-head">
+            <div>
+              <h3 className="share-row-title">Anyone with the address</h3>
+              <p className="share-row-body">
+                {visibility === 'public'
+                  ? 'Opening the published deck shows the slides. Speaker notes are never included.'
+                  : 'The published deck shows nothing without one of the links below.'}
+              </p>
+            </div>
+            <button
+              className={
+                'share-toggle' + (visibility === 'public' ? ' on' : '')
+              }
+              role="switch"
+              aria-checked={visibility === 'public'}
+              aria-label="Let anyone with the address read the deck"
+              onClick={() =>
+                setVisibility(visibility === 'public' ? 'link' : 'public')
+              }
+            >
+              <span className="share-toggle-knob" />
+            </button>
+          </div>
+        </div>
+
+        <div className="share-row">
+          <label className="share-row-title" htmlFor="share-site">
+            Published at
+          </label>
+          <div className="share-row-body-open">
+            <div className="share-link">
+              <input
+                id="share-site"
+                className="share-input"
+                type="url"
+                inputMode="url"
+                placeholder="https://your-deck.bolthost.dev"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') savePublishUrl();
+                }}
+              />
+              <button
+                className="ghost-btn xs"
+                disabled={!draft.trim() || draft.trim() === site}
+                onClick={savePublishUrl}
+              >
+                Save
+              </button>
+            </div>
+            <p className="share-hint">
+              Filled in the first time the published deck is opened. Change it
+              here if the project moves — a renamed subdomain, or a domain of
+              your own.
+            </p>
+          </div>
+        </div>
+
+        {!site ? (
+          <p className="share-intro">
+            Publish the project to get links worth sending. The address this
+            editor is running on opens for nobody else.
+          </p>
+        ) : links === null ? (
           <p className="share-intro">Loading links…</p>
         ) : (
           <ul className="share-list">
@@ -300,6 +412,7 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
               <Row
                 key={spec.id}
                 spec={spec}
+                site={site}
                 link={links.find((l) => l.mode === spec.id)}
                 onSave={onSave}
                 onStop={onStop}
