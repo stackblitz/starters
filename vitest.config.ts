@@ -5,6 +5,11 @@ import { vitestWebContainers } from '@webcontainer/test/plugin';
 export default defineConfig({
   plugins: [vitestWebContainers()],
 
+  /* pglite ships its Postgres as WebAssembly plus a filesystem bundle, and
+     pre-bundling the package leaves the second one empty — it fails with
+     "Invalid FS bundle size: 0". The slides tests run their SQL on it. */
+  optimizeDeps: { exclude: ['@electric-sql/pglite'] },
+
   test: {
     reporters: 'verbose',
 

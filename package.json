@@ -12,6 +12,7 @@
     "test:watch": "vitest --watch --browser.provider=preview --browser.name=chromium --browser.headless=false"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.5",
     "@types/node": "^22.15.2",
     "@vitest/browser-playwright": "^4.0.14",
     "@webcontainer/test": "^0.3.0",
