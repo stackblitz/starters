@@ -415,6 +415,17 @@ export default function T({
   const ref = useRef<HTMLElement | null>(null);
   const blockStyle = block ? { display: 'block' as const } : undefined;
 
+  /* Uncontrolled while focused. React 19 treats a new `{ __html }` object as
+     a change and writes innerHTML on every render, which wipes the caret and
+     the text the browser just typed. Seed from the store only when this
+     field is not the active editor. */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || el.contains(document.activeElement)) return;
+    el.innerHTML = richToHtml(value);
+    setDomEmpty(!value);
+  }, [value]);
+
   // the text bar: anchored under the element for the whole edit session;
   // active-format marks refresh as the caret/selection moves
   useEffect(() => {
@@ -742,9 +753,6 @@ export default function T({
 
   return (
     <>
-      {/* innerHTML is set wholesale from the value — React must never
-          reconcile individual children the browser has been typing into,
-          or committed text duplicates alongside browser-created nodes */}
       <span
         ref={(el: HTMLElement | null) => {
           ref.current = el;
@@ -777,7 +785,6 @@ export default function T({
           );
           setDomEmpty(!ref.current?.textContent);
         }}
-        dangerouslySetInnerHTML={{ __html: richToHtml(value) }}
       />
       {focused && bar && (
         <FormatMenu
