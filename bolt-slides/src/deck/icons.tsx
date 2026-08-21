@@ -10,19 +10,18 @@ const base = {
   strokeLinejoin: 'round' as const,
 };
 
-export const IconSidebar = () => (
-  <svg {...base}>
-    <rect x="2.5" y="3.5" width="19" height="17" rx="2" />
-    <path d="M10 3.5v17" />
-    <path d="M5.6 8.5h1.4M5.6 12h1.4" />
-  </svg>
-);
 export const IconGrid = () => (
   <svg {...base}>
     <rect x="3" y="3" width="7" height="7" rx="1.5" />
     <rect x="14" y="3" width="7" height="7" rx="1.5" />
     <rect x="3" y="14" width="7" height="7" rx="1.5" />
     <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </svg>
+);
+export const IconSidebar = () => (
+  <svg {...base}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M10 4v16" />
   </svg>
 );
 export const IconLeft = () => (

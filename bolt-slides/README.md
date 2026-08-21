@@ -1,36 +1,66 @@
-# Bolt slides skill
+# Bolt Slides
 
-A Bolt skill that builds a premium, **responsive React presentation deck** — classic
-paged slides you present one at a time, with a Slidev-style floating dock + thumbnail
-rail, grid overview, click-builds, annotation, and presenter mode — but each slide is a
-responsive web layout (no fixed canvas, no clipping) built from a rich component
-library.
+A Pitch-style slide studio for [Bolt](https://bolt.new): a deck **editor**, a
+premium **presentation engine**, and a bundled **skill** so Bolt's AI can
+prompt entire decks into existence — which you then refine by hand.
 
-## The skill
+Decks are structured data (layout + props + notes) stored in a **database**
+and read/written through the deck API. The skill authors JSON and imports it
+via that API — never via a file on disk.
 
-This repo **is** the running app. The authoring guide lives at
-[`.bolt/skills/slides/SKILL.md`](./.bolt/skills/slides/SKILL.md); the app itself sits
-at the repo root — a complete Vite + React deck: the paged engine + chrome
-(`src/deck/`), fourteen slide layouts (`src/components/`: Cover, BigNumber,
-Contrast, Chat, Globe, Bento, Split, StatGrid, Section, Quote, Pricing, Steps,
-Agenda, Team) plus a dozen building blocks (Table, Comparison, Tabs, Accordion, Timeline,
-CodeWindow, BrowserFrame, SpotlightCard, charts, CountUp, TiltCard, Marquee, …),
-and the token-driven theme (`src/styles/`). The engine is left as-is; only the
-`:root` token block and the slides in `src/App.tsx` are authored per deck.
-
-## Add it in Bolt
-
-1. In Bolt's **Add skill from GitHub**, paste this repo's URL —
-   `https://github.com/inkko44/bolt-slides-skill`.
-2. The `slides` skill auto-discovers at `.bolt/skills/slides.md`.
-3. Tell Bolt to use the `slides` skill and build a deck about your topic/brand.
-
-## Run it locally
+## Quick start
 
 ```bash
 npm install
-npm run dev
+npm run dev        # editor at http://localhost:5173 · present at /present
 ```
 
-`npm run dev` opens the deck at `/`. Re-theme everything by editing one `:root` block
-in `src/styles/tokens.css`.
+The first run starts from an empty deck — add slides in the editor, or prompt
+one into existence with the `slides` skill.
+
+## What's inside
+
+- `/` — Editor: thumbnail rail (drag to reorder, right-click to
+  duplicate/delete/insert), click any text on the slide to edit it, inspector
+  for layout props · background · animation · transition, comments, per-slide
+  status, speaker notes.
+- `/present` — Presentation: floating dock, side panel (S) and grid overview
+  (G), click-builds, presenter view with notes + timer (P), annotation mode
+  (D), fullscreen (F).
+- **Share** (top bar) makes one link per mode: presentation (read only, no
+  speaker notes), presenter console (read, plus notes), or editor (full
+  access). Any link can carry a password.
+- **Export PDF** and **OG image** live in the top bar.
+
+## The skill
+
+`.bolt/skills/slides/SKILL.md` teaches Bolt's AI to author decks as JSON and
+import them through the deck API. Ask Bolt for "a 12-slide seed pitch for …"
+and refine what lands in the editor.
+
+## Publishing
+
+Shareable, durable decks need the cloud backend (Postgres + an edge function
+that implements the same API contract). See
+**[docs/cloud-setup.md](docs/cloud-setup.md)** for the route contract, table
+layout, permission rules, and publish checklist.
+
+## Architecture
+
+```
+src/data/               types + zustand store (optimistic writes via the API)
+src/layouts/            layout registry: props schema + renderer per layout
+src/components/         section components (locked design system)
+src/deck/               presentation engine (dock, rail, builds, presenter)
+src/slide/SlideView.tsx one slide row → pixels
+src/edit/               editor (rail, canvas, inspector, comments, notes)
+src/export/             PDF + OG rendering
+src/styles/tokens.css   theme: edit :root values only; accent is ONE solid color
+server/                 local API stand-in for the database (dev only)
+```
+
+## Theming
+
+Everything visual derives from the `:root` tokens in `src/styles/tokens.css`
+— change the values (never the names) to re-brand the deck AND the editor
+chrome in one place. `--accent` must stay a solid color.

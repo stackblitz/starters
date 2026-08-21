@@ -9,6 +9,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.vite
 *.local
 
 .vscode/*
@@ -21,3 +22,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# generated at runtime by the local API stand-in
+data/deck.json
+data/deck.db
+public/og.png

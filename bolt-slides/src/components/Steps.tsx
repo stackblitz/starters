@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import Reveal from '@/deck/Reveal';
-import { useDeck } from '@/deck/DeckContext';
+import Reveal from '../deck/Reveal';
+import { useDeck } from '../deck/DeckContext';
 
 /* A horizontal numbered process (the "how it works" slide): mono number
    rings joined by a connector that draws in left-to-right as each step

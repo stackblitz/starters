@@ -2,18 +2,24 @@ import {
   Children,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import type { ReactElement, ReactNode } from 'react';
-import { MotionConfig } from 'motion/react';
-import { DeckCtx } from '@/deck/DeckContext';
-import Annotator, { type Stroke } from '@/deck/Annotator';
 import {
-  IconSidebar,
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  type Variants,
+} from 'motion/react';
+import { DeckCtx } from './DeckContext';
+import Annotator, { loadAnnotations, type Stroke } from './Annotator';
+import Thumb from './Thumb';
+import Presenter from './Presenter';
+import {
   IconGrid,
+  IconSidebar,
   IconLeft,
   IconRight,
   IconPencil,
@@ -21,65 +27,84 @@ import {
   IconShrink,
   IconPresent,
   IconClose,
-} from '@/deck/icons';
+} from './icons';
 
-/* ── The paged presentation engine + the Slidev-style chrome (dock + rail).
+/* ── The paged presentation engine + the Slidev-style chrome (dock, side
+   panel, grid overview).
    Wrap your <Slide>/<Bento>/… in <Deck>. Each top-level child is one slide.
      → / ↓ / Space   next (reveals the next <Build>, then the next slide)
-     ← / ↑           previous            S sidebar     G grid view
-     Home / End      first / last        A annotate    P presenter (new tab)
-     F fullscreen    H hide/show the UI
+     ← / ↑           previous            S side panel   G grid overview
+     Home / End      first / last        D draw         F fullscreen
+     H  hide/show the UI                 P presenter (new tab)
+   While drawing (D), the annotator owns the letter keys: P pen · H highlighter
+   · L laser · I line · A arrow · R rect · O ellipse · E eraser · 1–6 colour ·
+   [ ] size · ⌘Z / ⇧⌘Z undo+redo · ⌫ clear · D or Esc to finish.
    Copy verbatim; theme only via the :root tokens. ───────────────────────── */
 
-const fmt = (s: number) =>
-  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(
-    2,
-    '0'
-  )}`;
-
-function Thumb({ children }: { children: ReactNode }) {
-  const frameRef = useRef<HTMLDivElement>(null);
-  const [d, setD] = useState({ vw: 1280, vh: 720, scale: 0.15 });
-  // measure before paint — with useEffect the first frame renders at the
-  // default scale and visibly snaps (worst in the grid view, which has no
-  // slide-in transition to mask it).
-  useLayoutEffect(() => {
-    const el = frameRef.current;
-    if (!el) return;
-    const update = () =>
-      setD({
-        vw: window.innerWidth,
-        vh: window.innerHeight,
-        scale: el.clientWidth / window.innerWidth,
-      });
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    window.addEventListener('resize', update);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', update);
-    };
-  }, []);
-  return (
-    <div
-      className="noir-thumb-frame"
-      ref={frameRef}
-      style={{ aspectRatio: `${d.vw} / ${d.vh}` }}
-    >
-      <DeckCtx.Provider value={{ clicks: 9999, isStatic: true }}>
-        <div
-          className="noir-thumb-scale"
-          style={{ width: d.vw, height: d.vh, transform: `scale(${d.scale})` }}
-        >
-          {children}
-        </div>
-      </DeckCtx.Provider>
-    </div>
-  );
+/* True once a scroll container has moved off the top — the sticky heads stay
+   fully transparent until something actually scrolls under them. */
+function useScrolled(
+  ref: React.RefObject<HTMLElement | null>,
+  active: boolean
+) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!active || !el) {
+      setScrolled(false);
+      return;
+    }
+    const onScroll = () => setScrolled(el.scrollTop > 0);
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [ref, active]);
+  return scrolled;
 }
 
-export default function Deck({ children }: { children: ReactNode }) {
+/* Slide-to-slide transition variants. The deck default comes from the
+   `transition` prop; a slide can override it via a `transition` prop on the
+   slide element itself (SlideView passes the row's value through). */
+const TRANSITIONS: Record<string, Variants> = {
+  fade: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+  },
+  slide: {
+    initial: { opacity: 0, x: 56 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -56 },
+  },
+  rise: {
+    initial: { opacity: 0, y: 44 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -44 },
+  },
+  zoom: {
+    initial: { opacity: 0, scale: 0.965 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 1.02 },
+  },
+  none: { initial: {}, animate: {}, exit: {} },
+};
+
+export default function Deck({
+  children,
+  transition = 'fade',
+  onNotes,
+  navLabel,
+  allowPresenter = true,
+}: {
+  children: ReactNode;
+  transition?: string;
+  /** false on an audience share link — the console shows speaker notes */
+  allowPresenter?: boolean;
+  /** persist a slide's speaker notes (presenter console edits) */
+  onNotes?: (index: number, text: string) => void;
+  /** optional short name for a slide, shown as "up next" in the console */
+  navLabel?: (index: number) => string | undefined;
+}) {
   const slides = useMemo(
     () => Children.toArray(children) as ReactElement[],
     [children]
@@ -96,28 +121,35 @@ export default function Deck({ children }: { children: ReactNode }) {
   });
   const [clicks, setClicks] = useState(0);
   const [curMax, setCurMax] = useState(0);
-  const [railOpen, setRailOpen] = useState(false);
-  const [gridOpen, setGridOpen] = useState(false);
+  // two ways to browse the deck, mutually exclusive: a persistent side panel
+  // (stays open while you jump around) and a full-screen grid overview (a
+  // picker — it closes on pick). Opening one closes the other.
+  const [browse, setBrowse] = useState<'none' | 'rail' | 'grid'>('none');
+  const railOpen = browse === 'rail';
+  const gridOpen = browse === 'grid';
+  const toggleRail = useCallback(
+    () => setBrowse((b) => (b === 'rail' ? 'none' : 'rail')),
+    []
+  );
+  const toggleGrid = useCallback(
+    () => setBrowse((b) => (b === 'grid' ? 'none' : 'grid')),
+    []
+  );
+  const closeBrowse = useCallback(() => setBrowse('none'), []);
   const [drawing, setDrawing] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+  // false while the incoming slide is still animating — annotations wait for it
+  const [stageIn, setStageIn] = useState(false);
   const [fs, setFs] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
   const [nearDock, setNearDock] = useState(false);
   const [cursorIdle, setCursorIdle] = useState(false);
-  const [noteOverrides, setNoteOverrides] = useState<Record<number, string>>(
-    () => {
-      try {
-        return JSON.parse(localStorage.getItem('deck:notes') || '{}');
-      } catch {
-        return {};
-      }
-    }
-  );
 
   // per-slide build maxima (so going back restores the right click state) and
   // per-slide annotations (so drawings persist on the slide they were made).
   const maxMap = useRef<Record<number, number>>({});
-  const annStore = useRef<Record<number, Stroke[]>>({});
+  const annStore = useRef<Record<number, Stroke[]>>(loadAnnotations());
+  const railRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const slideRef = useRef(slide);
   slideRef.current = slide;
 
@@ -166,30 +198,11 @@ export default function Deck({ children }: { children: ReactNode }) {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.();
   }, []);
-  // sidebar and grid view are mutually exclusive — opening one closes the other
-  const toggleRail = useCallback(() => {
-    setRailOpen((v) => !v);
-    setGridOpen(false);
-  }, []);
-  const toggleGrid = useCallback(() => {
-    setGridOpen((v) => !v);
-    setRailOpen(false);
-  }, []);
-  const setNote = useCallback((text: string) => {
-    setNoteOverrides((prev) => {
-      const nextO = { ...prev, [slideRef.current]: text };
-      try {
-        localStorage.setItem('deck:notes', JSON.stringify(nextO));
-      } catch {
-        /* ignore */
-      }
-      return nextO;
-    });
-  }, []);
   const openPresenter = useCallback(() => {
     if (isPresenter) return;
-    const url =
-      window.location.pathname + '?presenter=1' + window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    params.set('presenter', '1');
+    const url = `${window.location.pathname}?${params}${window.location.hash}`;
     window.open(url, 'deck-presenter');
   }, [isPresenter]);
 
@@ -227,6 +240,13 @@ export default function Deck({ children }: { children: ReactNode }) {
           e.preventDefault();
           go(total - 1);
           break;
+        // while drawing, the annotator owns the letter keys it uses (O, P, H
+        // are ellipse / pen / highlighter there) — D and Escape still exit
+        case 'o':
+        case 'O':
+          if (drawing) break;
+          toggleRail();
+          break;
         case 's':
         case 'S':
           toggleRail();
@@ -239,21 +259,23 @@ export default function Deck({ children }: { children: ReactNode }) {
         case 'F':
           toggleFs();
           break;
-        case 'a':
-        case 'A':
+        case 'd':
+        case 'D':
+          if (isPresenter) break;
           setDrawing((v) => !v);
           break;
         case 'p':
         case 'P':
+          if (drawing || !allowPresenter) break;
           openPresenter();
           break;
         case 'h':
         case 'H':
+          if (drawing) break;
           setUiHidden((v) => !v);
           break;
         case 'Escape':
-          setRailOpen(false);
-          setGridOpen(false);
+          closeBrowse();
           setDrawing(false);
           setUiHidden(false);
           break;
@@ -261,18 +283,28 @@ export default function Deck({ children }: { children: ReactNode }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev, go, total, toggleRail, toggleGrid, toggleFs, openPresenter]);
+  }, [
+    next,
+    prev,
+    go,
+    total,
+    toggleFs,
+    openPresenter,
+    toggleRail,
+    toggleGrid,
+    closeBrowse,
+    drawing,
+    isPresenter,
+    allowPresenter,
+  ]);
 
-  // safety net: if the authored deck kept the placeholder tab title, derive
-  // one from the current slide's heading so shared links look right.
+  // the slide's entrance owns the screen first: hold the ink until the stage
+  // has finished animating in (with a safety net if no animation ever runs)
   useEffect(() => {
-    if (!document.title.startsWith('Replace')) return;
-    const h = document.querySelector<HTMLElement>(
-      '.slide-stage h1, .slide-stage h2'
-    );
-    const t = h?.innerText.replace(/\s+/g, ' ').trim();
-    if (t) document.title = t;
-  }, []);
+    setStageIn(false);
+    const t = window.setTimeout(() => setStageIn(true), 1000);
+    return () => clearTimeout(t);
+  }, [slide]);
 
   // URL hash sync (initial slide comes from the hash via useState above)
   useEffect(() => {
@@ -318,12 +350,6 @@ export default function Deck({ children }: { children: ReactNode }) {
     document.addEventListener('fullscreenchange', h);
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
-  useEffect(() => {
-    if (!isPresenter) return;
-    setElapsed(0);
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(t);
-  }, [isPresenter]);
   // mouse-driven only: keyboard nav keeps the UI hidden; the dock returns when
   // the pointer nears the bottom (where it lives); the cursor hides on idle.
   useEffect(() => {
@@ -341,53 +367,78 @@ export default function Deck({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const railScrolled = useScrolled(railRef, railOpen);
+  const gridScrolled = useScrolled(gridRef, gridOpen);
+
   const liveCtx = useMemo(
     () => ({ clicks, isStatic: false, registerMax }),
     [clicks, registerMax]
   );
   const hasPrev = slide > 0 || clicks > 0;
   const hasNext = slide < total - 1 || clicks < curMax;
-  const notes = (slides[slide]?.props as { notes?: string } | undefined)?.notes;
-  const noteText = noteOverrides[slide] ?? notes ?? '';
-  const nextSlide = slides[slide + 1];
+  const noteText =
+    (slides[slide]?.props as { notes?: string } | undefined)?.notes ?? '';
+  const slideTransition =
+    (slides[slide]?.props as { transition?: string } | undefined)?.transition ||
+    transition;
   const hideUI = uiHidden || (fs && !nearDock);
   const cursorHidden = fs && cursorIdle && !drawing;
   const showAnnotator = drawing || (annStore.current[slide]?.length ?? 0) > 0;
 
-  // prev / counter / next — rendered inside the pill on desktop, in its own
-  // pill above the tools on phones (only one is visible at a time).
-  const navCluster = (
-    <>
-      <button
-        className="noir-icon-btn"
-        data-tip="Previous"
-        disabled={!hasPrev}
-        onClick={prev}
-      >
-        <IconLeft />
-      </button>
-      <div className="noir-counter">
-        <span className="noir-counter-now">{slide + 1}</span>
-        <span className="noir-counter-tot">/ {total}</span>
-      </div>
-      <button
-        className="noir-icon-btn"
-        data-tip="Next"
-        disabled={!hasNext}
-        onClick={next}
-      >
-        <IconRight />
-      </button>
-    </>
-  );
+  /* Presenter mode is its own screen: a console with the live slide, what is
+     next, the notes and the clock — not a second copy of the presentation.
+     The audience window stays in step over the BroadcastChannel. */
+  if (isPresenter) {
+    return (
+      <MotionConfig reducedMotion="user">
+        <Presenter
+          slides={slides}
+          slide={slide}
+          total={total}
+          clicks={clicks}
+          curMax={curMax}
+          liveCtx={liveCtx}
+          notes={noteText}
+          onNotes={onNotes}
+          onGo={go}
+          onNext={next}
+          onPrev={prev}
+          navLabel={navLabel}
+        />
+      </MotionConfig>
+    );
+  }
 
   return (
     <MotionConfig reducedMotion="user">
       <div className={'deck' + (cursorHidden ? ' nocursor' : '')}>
         <DeckCtx.Provider value={liveCtx}>
-          <div className="slide-stage" key={slide}>
-            {slides[slide]}
-          </div>
+          <AnimatePresence mode="wait" initial={false}>
+            {(() => {
+              const t = slideTransition;
+              const v = TRANSITIONS[t] ?? TRANSITIONS.fade;
+              return (
+                <motion.div
+                  className="slide-stage"
+                  key={slide}
+                  style={{ animation: 'none' }}
+                  variants={v}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{
+                    duration: t === 'none' ? 0 : 0.42,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  onAnimationComplete={(d) => {
+                    if (d === 'animate') setStageIn(true);
+                  }}
+                >
+                  {slides[slide]}
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
         </DeckCtx.Provider>
 
         {showAnnotator && (
@@ -396,30 +447,39 @@ export default function Deck({ children }: { children: ReactNode }) {
             slide={slide}
             store={annStore.current}
             active={drawing}
+            onDone={() => setDrawing(false)}
+            hold={!stageIn}
           />
         )}
 
-        <aside className={'noir-rail' + (railOpen ? ' open' : '')}>
-          <div className="noir-rail-head">
+        <aside
+          className={'noir-rail' + (railOpen ? ' open' : '')}
+          ref={railRef}
+        >
+          <div className={'noir-rail-head' + (railScrolled ? ' scrolled' : '')}>
             <span className="noir-rail-title">Slides</span>
             <button
               className="noir-icon-btn sm"
               data-tip="Close"
-              onClick={() => setRailOpen(false)}
+              aria-label="Close the slide panel"
+              onClick={closeBrowse}
             >
               <IconClose />
             </button>
           </div>
+          {/* picking a slide does NOT close the panel — it stays open so you can
+              keep browsing; close it deliberately (button, S, Esc). */}
           <div className="noir-rail-list">
             {railOpen &&
               slides.map((s, i) => (
                 <button
                   key={i}
                   className={'noir-thumb' + (i === slide ? ' active' : '')}
-                  onClick={() => {
-                    go(i);
-                    setRailOpen(false);
-                  }}
+                  aria-label={`Go to slide ${i + 1}${
+                    navLabel?.(i) ? ' — ' + navLabel(i) : ''
+                  }`}
+                  aria-current={i === slide ? 'true' : undefined}
+                  onClick={() => go(i)}
                 >
                   <span className="noir-thumb-no">{i + 1}</span>
                   <Thumb>{s}</Thumb>
@@ -428,86 +488,106 @@ export default function Deck({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        {gridOpen && (
-          <div className="noir-grid">
-            <div className="noir-grid-head">
-              <span className="noir-rail-title">All slides</span>
-              <button
-                className="noir-icon-btn sm"
-                data-tip="Close"
-                onClick={() => setGridOpen(false)}
+        {/* Grid overview — a full-screen picker; it covers the slide, so
+            choosing one closes it. */}
+        <AnimatePresence>
+          {gridOpen && (
+            <motion.div
+              className="noir-grid"
+              ref={gridRef}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              <div
+                className={'noir-grid-head' + (gridScrolled ? ' scrolled' : '')}
               >
-                <IconClose />
-              </button>
-            </div>
-            <div className="noir-grid-list">
-              {slides.map((s, i) => (
+                <span className="noir-rail-title">All slides · {total}</span>
                 <button
-                  key={i}
-                  className={'noir-thumb' + (i === slide ? ' active' : '')}
-                  onClick={() => {
-                    go(i);
-                    setGridOpen(false);
-                  }}
+                  className="noir-icon-btn sm"
+                  data-tip="Close"
+                  aria-label="Close the grid overview"
+                  onClick={closeBrowse}
                 >
-                  <span className="noir-thumb-no">{i + 1}</span>
-                  <Thumb>{s}</Thumb>
+                  <IconClose />
                 </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {isPresenter && (
-          <div className="noir-presenter">
-            <div className="noir-presenter-row">
-              <span className="noir-presenter-label">
-                Presenter · {slide + 1} / {total}
-              </span>
-              <span className="noir-presenter-timer">{fmt(elapsed)}</span>
-            </div>
-            {nextSlide && (
-              <div className="noir-presenter-next">
-                <Thumb>{nextSlide}</Thumb>
               </div>
-            )}
-            <textarea
-              className="noir-presenter-notes"
-              value={noteText}
-              spellCheck={false}
-              placeholder={'No notes — type here, or add notes="…" in code.'}
-              onChange={(e) => setNote(e.target.value)}
-            />
-            <div className="noir-presenter-hint">
-              Notes you type are saved on this device.
-            </div>
-          </div>
-        )}
+              <div className="noir-grid-list">
+                {slides.map((s, i) => (
+                  <button
+                    key={i}
+                    className={
+                      'noir-thumb noir-thumb-grid' +
+                      (i === slide ? ' active' : '')
+                    }
+                    aria-label={`Go to slide ${i + 1}${
+                      navLabel?.(i) ? ' — ' + navLabel(i) : ''
+                    }`}
+                    aria-current={i === slide ? 'true' : undefined}
+                    onClick={() => {
+                      go(i);
+                      closeBrowse();
+                    }}
+                  >
+                    <Thumb>{s}</Thumb>
+                    <span className="noir-thumb-no">{i + 1}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className={'noir-dock' + (hideUI ? ' hidden' : '')}>
-          {/* phones: nav floats bare above the tools pill (see base.css) */}
-          <div className="noir-bar noir-nav-bar">{navCluster}</div>
           <div className="noir-bar">
             <button
               className={'noir-icon-btn' + (railOpen ? ' on' : '')}
-              data-tip="Sidebar (S)"
+              data-tip="Side panel (S)"
+              aria-label="Slide panel"
+              aria-pressed={railOpen}
               onClick={toggleRail}
             >
               <IconSidebar />
             </button>
             <button
               className={'noir-icon-btn' + (gridOpen ? ' on' : '')}
-              data-tip="Grid view (G)"
+              data-tip="Grid overview (G)"
+              aria-label="Grid overview"
+              aria-pressed={gridOpen}
               onClick={toggleGrid}
             >
               <IconGrid />
             </button>
             <span className="noir-sep" />
-            <div className="noir-nav-inline">{navCluster}</div>
+            <button
+              className="noir-icon-btn"
+              data-tip="Previous"
+              aria-label="Previous slide"
+              disabled={!hasPrev}
+              onClick={prev}
+            >
+              <IconLeft />
+            </button>
+            <div className="noir-counter">
+              <span className="noir-counter-now">{slide + 1}</span>
+              <span className="noir-counter-tot">/ {total}</span>
+            </div>
+            <button
+              className="noir-icon-btn"
+              data-tip="Next"
+              aria-label="Next slide"
+              disabled={!hasNext}
+              onClick={next}
+            >
+              <IconRight />
+            </button>
             <span className="noir-sep" />
             <button
-              className={'noir-icon-btn' + (drawing ? ' on' : '')}
-              data-tip="Annotate (A)"
+              className={'noir-icon-btn noir-optional' + (drawing ? ' on' : '')}
+              data-tip="Annotate (D)"
+              aria-label="Annotate the slide"
+              aria-pressed={drawing}
               onClick={() => setDrawing((v) => !v)}
             >
               <IconPencil />
@@ -515,17 +595,21 @@ export default function Deck({ children }: { children: ReactNode }) {
             <button
               className="noir-icon-btn"
               data-tip={fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
+              aria-label={fs ? 'Exit fullscreen' : 'Enter fullscreen'}
               onClick={toggleFs}
             >
               {fs ? <IconShrink /> : <IconExpand />}
             </button>
-            <button
-              className="noir-icon-btn"
-              data-tip="Presenter — new tab (P)"
-              onClick={openPresenter}
-            >
-              <IconPresent />
-            </button>
+            {allowPresenter && (
+              <button
+                className="noir-icon-btn noir-optional"
+                data-tip="Presenter — new tab (P)"
+                aria-label="Open the presenter console in a new window"
+                onClick={openPresenter}
+              >
+                <IconPresent />
+              </button>
+            )}
           </div>
         </div>
       </div>

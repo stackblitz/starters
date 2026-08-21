@@ -1,3 +1,5 @@
 Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/components/Foo` == `src/components/Foo`), instead of deep relative paths like `../../components/Foo`.
 
 This template uses Vite 8. `resolve.tsconfigPaths: true` is a valid built-in Vite option. Preserve it for the `@/` alias; do not claim it is invalid or add the `vite-tsconfig-paths` plugin.
+
+Author decks as JSON and import them through the deck API. A database is the only store for slide data — never write, read, or back up decks to `data/deck.json`. Follow `.bolt/skills/slides/SKILL.md`.
