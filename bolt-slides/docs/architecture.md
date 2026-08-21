@@ -125,10 +125,19 @@ broken rather than a list being short.
 ## Editing versus publishing
 
 The editor proves itself with the deck's `owner_key`, which `vite.config.ts`
-hands to the app **only while the dev server is serving it**. It is deliberately
-not prefixed `VITE_`, so `vite build` never defines it: a published deck is
-keyless by construction and cannot be edited by whoever opens it. Sharing the
-editor is what an `edit` link is for.
+hands to the app **only while the dev server is serving it**, from a small route
+that reads `.env` per request. A published build has no such route: it is keyless
+by construction and cannot be edited by whoever opens it. Sharing the editor is
+what an `edit` link is for.
+
+It reads `.env` per request rather than at startup because in Bolt the values are
+written after startup: the database is provisioned, and the key written, while
+the dev server is already running. Vite restarts itself when it notices `.env`
+change, which would pick them up — but that is a file watch event inside
+WebContainer, and neither Bolt nor the agent can restart the server if it does
+not arrive (the agent is not allowed to, and there is no button for it). A file
+read per page load costs nothing and takes the question away; the editor also
+watches for the key appearing, so it usually does not even take a reload.
 
 That is why the published deck is not a static copy. It reads the same database
 through the same function, so an edit made in the editor appears on it — and a

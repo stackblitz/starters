@@ -13,12 +13,25 @@ beforeEach<TestContext>(async ({ setup, webcontainer }) => {
    the build and no snapshot for a published page to fall behind.
 
    The owner key is the thing that must not be there. It is the credential that
-   proves a request may edit the deck, and it is deliberately not prefixed
-   VITE_ so that `vite build` never defines it — a published deck is keyless by
-   construction and cannot be edited by whoever opens it (sharing the editor is
-   what an `edit` share link is for). If that ever stops holding, every deck
-   anyone publishes becomes editable by its audience. */
+   proves a request may edit the deck, and the only thing that ever holds it is
+   the dev server, which hands it over on a route it serves itself — so a
+   published deck is keyless by construction and cannot be edited by whoever
+   opens it (sharing the editor is what an `edit` share link is for). If that
+   ever stops holding, every deck anyone publishes becomes editable by its
+   audience. */
 test('user can build project', async ({ webcontainer }) => {
+  /* Build against a filled-in .env, which is the state a project is published
+     from: the deck's address has to reach the bundle, and the deck's key must
+     not — these three lines are exactly what Bolt and the agent leave behind. */
+  await webcontainer.writeFile(
+    '.env',
+    [
+      'VITE_SUPABASE_URL=https://project-under-test.supabase.co',
+      'VITE_SUPABASE_ANON_KEY=anon-key-under-test',
+      'DECK_OWNER_KEY=owner-key-under-test',
+    ].join('\n')
+  );
+
   await webcontainer.runCommand('npm', ['run', 'build']);
 
   await expect(webcontainer.readdir('dist')).resolves.toMatchInlineSnapshot(`
@@ -32,14 +45,20 @@ test('user can build project', async ({ webcontainer }) => {
   const scripts = assets.filter((name) => name.endsWith('.js'));
   expect(scripts.length).toBeGreaterThan(0);
 
-  /* Vite replaces the expression with a literal, so the name surviving into a
-     bundle means it was not replaced — the build would be reading the key at
-     runtime, wherever it is published. */
-  for (const name of scripts) {
-    expect(await webcontainer.readFile(`dist/assets/${name}`)).not.toContain(
-      'DECK_OWNER_KEY'
-    );
-  }
+  const bundles = await Promise.all(
+    scripts.map((name) => webcontainer.readFile(`dist/assets/${name}`))
+  );
+  const bundled = bundles.join('\n');
+
+  // the published deck has to reach the same database the editor writes to
+  expect(bundled).toContain('https://project-under-test.supabase.co');
+  expect(bundled).toContain('anon-key-under-test');
+
+  /* And must carry no way to edit it. Not the key, and not the dev server's
+     route for handing the key out either: `import.meta.env.DEV` is a literal
+     `false` here, which takes that whole branch out of the build with it. */
+  expect(bundled).not.toContain('owner-key-under-test');
+  expect(bundled).not.toContain('__deck/env');
 });
 
 test('user can typecheck project', async ({ webcontainer }) => {
