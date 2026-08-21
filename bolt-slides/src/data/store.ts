@@ -208,7 +208,16 @@ export const useStore = create<Store>((set, getState) => ({
   watch() {
     const fresh = async () => {
       const state = getState();
-      if (document.hidden || savePending() || !state.loaded) return;
+      if (document.hidden || savePending()) return;
+      /* Nothing loaded because nothing was there to load: no database yet, or a
+         function not deployed yet. Both are things the agent may be finishing
+         as we poll, so keep asking — the explanation screen should turn into
+         the deck by itself. A gate is not retried: a wrong password does not
+         become right by being asked again. */
+      if (!state.loaded) {
+        if (state.problem) await state.load().catch(() => {});
+        return;
+      }
       const editing = document.activeElement as HTMLElement | null;
       if (editing?.isContentEditable || editing?.closest('input, textarea'))
         return;
