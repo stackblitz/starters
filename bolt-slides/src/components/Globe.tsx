@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useReducedMotion } from 'motion/react';
-import Reveal from '@/deck/Reveal';
-import { useDeck } from '@/deck/DeckContext';
+import Reveal from '../deck/Reveal';
+import { useDeck } from '../deck/DeckContext';
 
 /* A 3D-globe slide, hand-built on Canvas2D (no WebGL, no dependencies): a
    slowly-rotating, drag-to-spin dotted earth with accent markers at real

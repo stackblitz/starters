@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { useInView } from '@/deck/useInView';
+import { useInView } from '../deck/useInView';
 
 /* A data-rich table done properly: uppercase mono-ruled header, hairline rows,
    right-aligned tabular numerals (first column left for labels), an optional
