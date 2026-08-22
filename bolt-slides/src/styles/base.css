@@ -4768,6 +4768,7 @@ strong {
   font-family: var(--font-mono, ui-monospace, monospace);
 }
 /* the wide tracking is for the dots only — it made "No password" look odd */
+.share-url::placeholder,
 .share-input::placeholder {
   color: var(--fg-muted, #8e8e93);
   letter-spacing: 0;
