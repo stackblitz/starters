@@ -1,7 +1,6 @@
 /* Owner proof for deck-api. Not a VITE_ var — those bake into the published
-   bundle. Proof arrives from Bolt's injected preview script (parent → iframe)
-   or, in `vite dev` only, from `/.bolt/owner-proof`. Top-level bolt.host has
-   neither, so the API sees no header and requires ?k=. */
+   bundle. Bolt injects it into the preview iframe. Top-level bolt.host has
+   no parent, so the API sees no header and requires ?k=. */
 
 declare global {
   interface Window {
@@ -26,18 +25,21 @@ export function applyOwnerProof(token: string | null): void {
   );
 }
 
-/** Wait for Bolt's broadcast, then fall back to the Vite serve endpoint. */
+/** Wait for Bolt's preview inject. Local Vite (no parent) continues immediately. */
 export async function bootOwnerProof(): Promise<void> {
   if (typeof window.__BOLT_OWNER_PROOF === 'string' && window.__BOLT_OWNER_PROOF) {
     return;
   }
-  if (!import.meta.env.DEV) return;
-  try {
-    const res = await fetch('/.bolt/owner-proof');
-    if (!res.ok) return;
-    const body = (await res.json()) as { token?: string | null };
-    if (typeof body.token === 'string' && body.token) applyOwnerProof(body.token);
-  } catch {
-    /* published static host has no such route */
+  if (window.parent === window) {
+    return;
   }
+  await new Promise<void>((resolve) => {
+    const finish = () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener(OWNER_PROOF_EVENT, finish);
+      resolve();
+    };
+    const timeout = window.setTimeout(finish, 2000);
+    window.addEventListener(OWNER_PROOF_EVENT, finish);
+  });
 }

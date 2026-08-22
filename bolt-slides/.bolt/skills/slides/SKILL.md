@@ -86,11 +86,12 @@ curl -sS -o /dev/null -w "%{http_code}" \
 
 A `200` means you may author. Anything else: fix bootstrap.
 
-**Do not mint, print, or curl `DECK_OWNER_SECRET` / `X-Deck-Owner`.** Preview
-injects owner proof for the browser. You author with the provisioned
-`SUPABASE_SERVICE_ROLE_KEY` as the Bearer token (never `VITE_`, never write
-it into source, never echo it). If that key is missing, stop — Bolt already
-injects it; do not invent a replacement.
+**Do not mint extra secrets or ask the user to add any.** Bolt injects
+owner proof into the preview. Never write credentials into `.env` with a
+`VITE_` prefix. You author with the provisioned `SUPABASE_SERVICE_ROLE_KEY`
+as the Bearer token (never `VITE_`, never write it into source, never echo
+it). If that key is missing, stop — Bolt already injects it; do not invent
+a replacement.
 
 ## Workflow
 

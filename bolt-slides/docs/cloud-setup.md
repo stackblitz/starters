@@ -17,12 +17,16 @@ $VITE_SUPABASE_URL/functions/v1/deck-api
 The gateway still wants `Authorization` and `apikey`. Who is calling
 decides which Bearer:
 
-- **Browser (preview)** — anon key + host-injected `X-Deck-Owner` matching
-  `DECK_OWNER_SECRET` (never a `VITE_` var; not in the published JS).
+- **Browser (Bolt preview)** — anon key + host-injected `X-Deck-Owner`.
+  Bolt derives `DECK_OWNER_SECRET`, sets it as an edge-function secret, and
+  injects the same value into the iframe. It is not in workspace `.env` and
+  never a `VITE_` var.
 - **Skill / agent** — `SUPABASE_SERVICE_ROLE_KEY` as Bearer. Do not mint a
-  second owner secret; do not send `X-Deck-Owner`.
-- **Share links** — anon key + `X-Share-Token` (and `X-Share-Grant` after a
-  password unlock).
+  second owner secret; do not send `X-Deck-Owner`; do not ask the user to
+  add `DECK_OWNER_SECRET`.
+- **Share links / published `bolt.host`** — anon key + `X-Share-Token` (and
+  `X-Share-Grant` after a password unlock). The bare published URL is not
+  the editor.
 
 Custom headers `X-Share-Token`, `X-Share-Grant`, and `X-Deck-Owner` must be
 allowed in CORS (the shipped function already does this). `GET /health` is
@@ -56,10 +60,10 @@ The function uses the service role.
 ## Permissions the function enforces
 
 - `Authorization` bearer is `SUPABASE_SERVICE_ROLE_KEY` — **owner** (agent)
-- `X-Deck-Owner` matching `DECK_OWNER_SECRET` — **owner**. Bolt preview
-  injects this; it is not in the published JS bundle.
+- `X-Deck-Owner` matching `DECK_OWNER_SECRET` — **owner**. Bolt injects this
+  into preview. Top-level published `bolt.host` does not get it.
 - no share token, no service role, no owner proof — **401** once the secret
-  is configured (legacy: owner if the secret is unset)
+  is configured (legacy: owner if the secret is unset, e.g. local Vite)
 - `edit` share link — everything
 - `presenter` — read, plus writing `notes` on a slide
 - `present` — read, with `notes` stripped from the response

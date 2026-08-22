@@ -19,8 +19,9 @@
  *
  * Owner, in order: share token (that token's mode, even from the owner
  * browser) → Authorization bearer is SUPABASE_SERVICE_ROLE_KEY (agent) →
- * X-Deck-Owner matches DECK_OWNER_SECRET (Bolt preview, host-injected) →
- * deny. If the owner secret is unset, no-token is still owner (legacy pins).
+ * X-Deck-Owner matches DECK_OWNER_SECRET (Bolt injects this into preview;
+ * it is not in the workspace .env or the published JS) → deny. If the
+ * function secret is unset, no-token is still owner (local Vite / legacy).
  * Tables have RLS and no policies; the function uses the service role.
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.57.4';
@@ -443,8 +444,7 @@ async function access(req: Request, supabase: SupabaseClient): Promise<Acc> {
   const proof = req.headers.get('x-deck-owner');
   if (secret && proof && proof === secret) return { mode: 'edit', owner: true };
   if (!secret) {
-    /* not configured yet — keep "bare URL is owner" so existing previews
-       do not lock until the host injects DECK_OWNER_SECRET */
+    /* not on Bolt yet (local Vite) — keep "bare URL is owner" */
     return { mode: 'edit', owner: true };
   }
   return null;
