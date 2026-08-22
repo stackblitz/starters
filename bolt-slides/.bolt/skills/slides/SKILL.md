@@ -35,7 +35,8 @@ to the API. You never write JSX slides.
    it. Off-limits, no exceptions: `src/edit/`, `src/deck/`, `src/present/`,
    `src/slide/`, `src/layouts/`, `src/components/`, `src/styles/base.css`,
    `src/styles/editor.css`, `src/data/`, `supabase/functions/deck-api/`,
-   `index.html`, `vite.config.ts`. That includes every piece of app chrome.
+   `.bolt/config.json`, `index.html`, `vite.config.ts`. That includes every
+   piece of app chrome.
    A deck request that mentions colors, fonts, sizes or spacing is about the
    DECK (deck `accent` + `font`, or `tokens.css`), never about the UI. The
    ONLY things you touch after bootstrap: `src/styles/tokens.css` (`:root`
@@ -87,7 +88,8 @@ curl -sS -o /dev/null -w "%{http_code}" \
 A `200` means you may author. Anything else: fix bootstrap.
 
 **Do not mint extra secrets or ask the user to add any.** Bolt injects
-owner proof into the preview. Never write credentials into `.env` with a
+owner proof into the preview and syncs it to `DECK_OWNER_SECRET` from
+`.bolt/config.json`. Never write credentials into `.env` with a
 `VITE_` prefix. You author with the provisioned `SUPABASE_SERVICE_ROLE_KEY`
 as the Bearer token (never `VITE_`, never write it into source, never echo
 it). If that key is missing, stop — Bolt already injects it; do not invent

@@ -19,9 +19,11 @@
  *
  * Owner, in order: share token (that token's mode, even from the owner
  * browser) → Authorization bearer is SUPABASE_SERVICE_ROLE_KEY (agent) →
- * X-Deck-Owner matches DECK_OWNER_SECRET (Bolt injects this into preview;
- * it is not in the workspace .env or the published JS) → deny. If the
- * function secret is unset, no-token is still owner (local Vite / legacy).
+ * X-Deck-Owner matches DECK_OWNER_SECRET (Bolt injects a preview owner
+ * token into the iframe and, when `.bolt/config.json` names this secret,
+ * copies it to the function env; it is not in the workspace .env or the
+ * published JS) → deny. If the function secret is unset, no-token is still
+ * owner (local Vite / legacy).
  * Tables have RLS and no policies; the function uses the service role.
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.57.4';

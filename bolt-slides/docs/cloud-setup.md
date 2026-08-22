@@ -18,9 +18,10 @@ The gateway still wants `Authorization` and `apikey`. Who is calling
 decides which Bearer:
 
 - **Browser (Bolt preview)** — anon key + host-injected `X-Deck-Owner`.
-  Bolt derives `DECK_OWNER_SECRET`, sets it as an edge-function secret, and
-  injects the same value into the iframe. It is not in workspace `.env` and
-  never a `VITE_` var.
+  Bolt derives a per-project preview owner token, injects it into the
+  iframe, and (because `.bolt/config.json` sets `previewOwnerSecret`)
+  copies the same value to the `DECK_OWNER_SECRET` edge-function secret.
+  It is not in workspace `.env` and never a `VITE_` var.
 - **Skill / agent** — `SUPABASE_SERVICE_ROLE_KEY` as Bearer. Do not mint a
   second owner secret; do not send `X-Deck-Owner`; do not ask the user to
   add `DECK_OWNER_SECRET`.
@@ -60,8 +61,10 @@ The function uses the service role.
 ## Permissions the function enforces
 
 - `Authorization` bearer is `SUPABASE_SERVICE_ROLE_KEY` — **owner** (agent)
-- `X-Deck-Owner` matching `DECK_OWNER_SECRET` — **owner**. Bolt injects this
-  into preview. Top-level published `bolt.host` does not get it.
+- `X-Deck-Owner` matching `DECK_OWNER_SECRET` — **owner**. Bolt injects the
+  preview owner token into the iframe and syncs it to this secret when
+  `previewOwnerSecret` is set in `.bolt/config.json`. Top-level published
+  `bolt.host` does not get the header.
 - no share token, no service role, no owner proof — **401** once the secret
   is configured (legacy: owner if the secret is unset, e.g. local Vite)
 - `edit` share link — everything
