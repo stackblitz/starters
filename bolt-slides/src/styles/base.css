@@ -3806,7 +3806,7 @@ strong {
   }
 }
 
-/* ── Speaker: profile slide — label top-left, name + role mid-left, bio
+/* ── Speaker slide — label top-left, name + role mid-left, bio
    anchored low; portrait fills the right's lower portion, bottom-aligned. ── */
 .speaker {
   display: grid;

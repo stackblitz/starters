@@ -42,7 +42,6 @@ PUT    /slides/:id
 POST   /slides/:id/duplicate
 DELETE /slides/:id
 PUT    /order
-POST   /profiles · /comments · PUT/DELETE /comments/:id
 GET    /export      POST /import
 GET|PUT|DELETE /shares[/:mode]
 GET    /share?token=…
@@ -51,7 +50,7 @@ POST   /share/unlock
 
 ## Tables
 
-`deck` (single row), `slides`, `profiles`, `comments`, `shares`,
+`deck` (single row), `slides`, `shares`,
 `share_grants`, `unlock_attempts`.
 
 **RLS is on with no policies.** The browser must never query these tables

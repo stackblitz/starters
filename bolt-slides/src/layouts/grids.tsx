@@ -71,7 +71,7 @@ const BentoDef: LayoutDef = {
       {
         k: 'Teams',
         title: 'Built for review',
-        body: 'Comments and statuses on every slide.',
+        body: 'Live edits, one source of truth.',
         c: 4,
         r: 1,
       },
@@ -236,8 +236,8 @@ const ContrastDef: LayoutDef = {
       title: 'One living deck',
       points: [
         'Slides prompted into existence',
-        'Comments live on the slide',
-        'Statuses show what is ready',
+        'Notes travel with the deck',
+        'Share a link, not a file',
       ],
     },
   },
@@ -392,7 +392,7 @@ const PricingDef: LayoutDef = {
         name: 'Pro',
         price: '$19',
         period: '/mo',
-        features: ['Unlimited decks', 'Comments & statuses', 'OG images'],
+        features: ['Unlimited decks', 'Presenter notes', 'OG images'],
         highlight: true,
         badge: 'Most popular',
       },

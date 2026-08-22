@@ -32,7 +32,6 @@ const previewSlide = (l: LayoutDef, i: number): SlideData => ({
   nav: null,
   notes: '',
   status: 'none',
-  assignee: null,
 });
 
 export default function AddSlide({

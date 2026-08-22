@@ -312,29 +312,6 @@
   border-color: color-mix(in srgb, var(--ui-accent) 70%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
 }
-.side-badges {
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  display: flex;
-  gap: 4px;
-  z-index: 2;
-}
-.side-badge {
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 9.5px/1 var(--font-ui);
-  color: var(--accent-ink);
-}
-.side-badge.cmt {
-  background: var(--fg);
-  color: var(--bg);
-}
 
 .mini-frame {
   width: 100%;

@@ -5,9 +5,7 @@ import { create } from 'zustand';
 import type {
   AppState,
   Background,
-  CommentData,
   DeckMeta,
-  Profile,
   SlideData,
 } from './types';
 import { deckUrl, supabaseAuthHeaders } from './api';
@@ -122,7 +120,6 @@ interface Store extends AppState {
   /** what kind of visitor this browser is */
   mode: ShareMode;
   current: number;
-  me: string | null;
   /** "slideId|listPath" while a repeatable list is being edited (keeps its + visible) */
   activeList: string | null;
   setActiveList(v: string | null): void;
@@ -151,11 +148,6 @@ interface Store extends AppState {
   deleteSlide(id: string): Promise<void>;
   reorder(ids: string[]): void;
 
-  setMe(id: string): void;
-  createProfile(name: string, color: string): Promise<Profile>;
-  addComment(slideId: string, body: string): Promise<void>;
-  setCommentResolved(id: string, resolved: boolean): void;
-  deleteComment(id: string): void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   importDeck(json: any): Promise<void>;
   /* freeform canvas: selected item index on the current slide (ephemeral,
@@ -176,10 +168,7 @@ export const useStore = create<Store>((set, getState) => ({
   reqCnvData: (v) => set({ cnvDataReq: v }),
   deck: { title: '', transition: 'fade' },
   slides: [],
-  profiles: [],
-  comments: [],
   current: 0,
-  me: localStorage.getItem('slides:me'),
   activeList: null,
   setActiveList(v) {
     set({ activeList: v });
@@ -199,7 +188,6 @@ export const useStore = create<Store>((set, getState) => ({
       const link = shareToken ? await shareInfo().catch(() => null) : null;
       const mode: ShareMode = link?.mode ?? 'edit';
       const s = await api<AppState>('/state');
-      const me = localStorage.getItem('slides:me');
       set({
         ...s,
         loaded: true,
@@ -207,7 +195,6 @@ export const useStore = create<Store>((set, getState) => ({
         denied: null,
         mode,
         canEdit: mode === 'edit',
-        me: s.profiles.some((p) => p.id === me) ? me : null,
       });
     } catch (err) {
       if (getState().denied) return;
@@ -312,40 +299,6 @@ export const useStore = create<Store>((set, getState) => ({
       current: Math.max(0, ids.indexOf(cur ?? '')),
     }));
     api('/order', 'PUT', { ids });
-  },
-
-  setMe(id) {
-    localStorage.setItem('slides:me', id);
-    set({ me: id });
-  },
-
-  async createProfile(name, color) {
-    const p = await api<Profile>('/profiles', 'POST', { name, color });
-    set((s) => ({ profiles: [...s.profiles, p] }));
-    return p;
-  },
-
-  async addComment(slideId, body) {
-    const c = await api<CommentData>('/comments', 'POST', {
-      slideId,
-      profileId: getState().me,
-      body,
-    });
-    set((s) => ({ comments: [...s.comments, c] }));
-  },
-
-  setCommentResolved(id, resolved) {
-    set((s) => ({
-      comments: s.comments.map((c) =>
-        c.id === id ? { ...c, resolved: resolved ? 1 : 0 } : c
-      ),
-    }));
-    api('/comments/' + id, 'PUT', { resolved });
-  },
-
-  deleteComment(id) {
-    set((s) => ({ comments: s.comments.filter((c) => c.id !== id) }));
-    api('/comments/' + id, 'DELETE');
   },
 
   async importDeck(json) {

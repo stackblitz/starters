@@ -302,13 +302,13 @@ const PersonaDef: LayoutDef = {
   },
 };
 
-/* speaker/profile slide from the user's reference: label top-left, big name
+/* speaker slide from the user's reference: label top-left, big name
    + small-caps role mid-left, bio anchored low; portrait fills the right
    side's lower portion, bottom-aligned. No image → gradient wash. */
 const SpeakerDef: LayoutDef = {
   type: 'speaker',
   label: 'Speaker',
-  hint: 'Profile — name, role and bio left, portrait anchored right',
+  hint: 'Speaker — name, role and bio left, portrait anchored right',
   defaults: {
     label: "TODAY'S SPEAKER",
     name: 'Firstname Lastname',

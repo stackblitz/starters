@@ -257,7 +257,7 @@ Visual:
   Empty images → gradient wash. The narrative beat.
 - `speaker` — `label` (small caps, top-left), `name`, `role` (small caps,
   supports \n), `bio`, `image?` (portrait, bottom-anchored right; empty →
-  gradient wash), `flip?`. The presenter/profile slide.
+  gradient wash), `flip?`. The presenter slide.
 - `persona` — `title` (big multi-line "Meet X, role, company"), `body` (their
   story), `label` (small caps, anchored bottom), `image?` (tall portrait
   left, near full height; empty → gradient wash), `flip?`. The client /

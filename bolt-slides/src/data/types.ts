@@ -59,22 +59,6 @@ export interface SlideData {
   nav: string | null;
   notes: string;
   status: SlideStatus;
-  assignee: string | null;
-}
-
-export interface Profile {
-  id: string;
-  name: string;
-  color: string;
-}
-
-export interface CommentData {
-  id: string;
-  slide_id: string;
-  profile_id: string | null;
-  body: string;
-  resolved: number;
-  created_at: string;
 }
 
 export interface DeckMeta {
@@ -88,6 +72,4 @@ export interface DeckMeta {
 export interface AppState {
   deck: DeckMeta;
   slides: SlideData[];
-  profiles: Profile[];
-  comments: CommentData[];
 }

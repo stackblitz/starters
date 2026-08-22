@@ -4,8 +4,6 @@
   1. New Tables
     - `deck` — single-row deck metadata (title, transition, font, accent)
     - `slides` — one row per slide (layout, props jsonb, notes, status)
-    - `profiles` — lightweight comment authors (name + color)
-    - `comments` — per-slide comments
     - `shares` — one share link per mode (edit / presenter / present)
     - `share_grants` — proof a visitor unlocked a password-protected link
     - `unlock_attempts` — per-address throttle for share-password guesses
@@ -42,25 +40,8 @@ CREATE TABLE IF NOT EXISTS slides (
   nav text,
   notes text NOT NULL DEFAULT '',
   status text NOT NULL DEFAULT 'none',
-  assignee text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS profiles (
-  id text PRIMARY KEY,
-  name text NOT NULL,
-  color text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS comments (
-  id text PRIMARY KEY,
-  slide_id text NOT NULL,
-  profile_id text,
-  body text NOT NULL,
-  resolved int NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS shares (
@@ -85,8 +66,6 @@ CREATE TABLE IF NOT EXISTS unlock_attempts (
 
 ALTER TABLE deck ENABLE ROW LEVEL SECURITY;
 ALTER TABLE slides ENABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE share_grants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unlock_attempts ENABLE ROW LEVEL SECURITY;

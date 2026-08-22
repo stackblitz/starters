@@ -10,7 +10,6 @@
  *   POST   /slides/:id/duplicate
  *   DELETE /slides/:id
  *   PUT    /order
- *   POST   /profiles · /comments · PUT/DELETE /comments/:id
  *   GET    /export      POST /import
  *   POST   /og
  *   GET|PUT|DELETE /shares[/:mode]
@@ -50,7 +49,6 @@ const SLIDE_FIELDS = [
   'nav',
   'notes',
   'status',
-  'assignee',
 ] as const;
 
 type Acc =
@@ -170,7 +168,6 @@ Deno.serve(async (req: Request) => {
             nav: b.nav ?? null,
             notes: b.notes ?? '',
             status: b.status ?? 'none',
-            assignee: b.assignee ?? null,
           })
         );
         return written(201, visible(await getState(supabase), acc!));
@@ -216,7 +213,6 @@ Deno.serve(async (req: Request) => {
       }
       if (m === 'DELETE' && seg.length === 2) {
         if (!writable('write')) return deny(acc);
-        await supabase.from('comments').delete().eq('slide_id', id);
         await supabase.from('slides').delete().eq('id', id);
         await renumber(supabase);
         return written(200, visible(await getState(supabase), acc!));
@@ -231,54 +227,6 @@ Deno.serve(async (req: Request) => {
         await supabase.from('slides').update({ position: i }).eq('id', ids[i]);
       }
       return written(200, { ok: true });
-    }
-
-    if (m === 'POST' && seg[0] === 'profiles') {
-      if (!writable('write')) return deny(acc);
-      const b = await readBody(req);
-      const profile = {
-        id: uid(),
-        name: b.name,
-        color: b.color,
-        created_at: now(),
-      };
-      const { error } = await supabase.from('profiles').insert(profile);
-      if (error) throw error;
-      return written(201, {
-        id: profile.id,
-        name: profile.name,
-        color: profile.color,
-      });
-    }
-
-    if (seg[0] === 'comments') {
-      if (m !== 'GET' && !writable('write')) return deny(acc);
-      if (m === 'POST') {
-        const b = await readBody(req);
-        const comment = {
-          id: uid(),
-          slide_id: b.slideId,
-          profile_id: b.profileId ?? null,
-          body: b.body,
-          resolved: 0,
-          created_at: now(),
-        };
-        const { error } = await supabase.from('comments').insert(comment);
-        if (error) throw error;
-        return written(201, comment);
-      }
-      if (m === 'PUT' && seg[1]) {
-        const b = await readBody(req);
-        await supabase
-          .from('comments')
-          .update({ resolved: b.resolved ? 1 : 0 })
-          .eq('id', seg[1]);
-        return written(200, { ok: true });
-      }
-      if (m === 'DELETE' && seg[1]) {
-        await supabase.from('comments').delete().eq('id', seg[1]);
-        return written(200, { ok: true });
-      }
     }
 
     if (m === 'GET' && seg[0] === 'export') {
@@ -471,8 +419,6 @@ function visible(
   state: {
     deck: unknown;
     slides: Array<Record<string, unknown>>;
-    profiles: unknown;
-    comments: unknown;
   },
   acc: { mode: ShareMode }
 ) {
@@ -533,10 +479,6 @@ async function getState(supabase: SupabaseClient) {
     .single();
   if (deckErr) throw deckErr;
   const slides = await loadSlides(supabase);
-  const { data: profiles, error: pErr } = await supabase.from('profiles').select('*');
-  if (pErr) throw pErr;
-  const { data: comments, error: cErr } = await supabase.from('comments').select('*');
-  if (cErr) throw cErr;
   return {
     deck: {
       title: deck.title,
@@ -545,8 +487,6 @@ async function getState(supabase: SupabaseClient) {
       accent: deck.accent ?? null,
     },
     slides,
-    profiles: profiles ?? [],
-    comments: comments ?? [],
   };
 }
 
@@ -562,7 +502,6 @@ function blankSlide(over: Record<string, unknown> = {}) {
     nav: null,
     notes: '',
     status: 'none',
-    assignee: null,
     created_at: now(),
     updated_at: now(),
     ...over,
@@ -611,7 +550,6 @@ async function importDeck(
   deckJson: Record<string, unknown>
 ) {
   await ensureDeck(supabase);
-  await supabase.from('comments').delete().neq('id', '');
   await supabase.from('slides').delete().neq('id', '');
   const { error: deckErr } = await supabase
     .from('deck')
@@ -637,7 +575,6 @@ async function importDeck(
         nav: sl.nav ?? null,
         notes: sl.notes ?? '',
         status: sl.status ?? 'none',
-        assignee: sl.assignee ?? null,
       })
     );
     const { error } = await supabase.from('slides').insert(rows);
