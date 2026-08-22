@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from './store';
 import { subscribeDeckChanges } from './realtime';
-import { bootOwnerProof, OWNER_PROOF_EVENT } from './owner';
+import { bootOwnerProof, hasOwnerProof, OWNER_PROOF_EVENT } from './owner';
 
 /** Load once, then re-fetch as soon as deck-api broadcasts a write (agent
  *  import, other windows). Focus/visibility is a fallback if a ping is missed. */
@@ -12,17 +12,24 @@ export function useDeckSync({ enabled = true }: { enabled?: boolean } = {}) {
 
   useEffect(() => {
     if (!enabled) return;
-    void bootOwnerProof()
-      .then(() => load())
+    const ac = new AbortController();
+    void bootOwnerProof(ac.signal)
+      .then(() => {
+        if (ac.signal.aborted) return;
+        return load();
+      })
       .catch(() => {
         /* the gate / bootError explains why */
       });
+    return () => ac.abort();
   }, [enabled, load]);
 
   useEffect(() => {
     if (!enabled) return;
     const onProof = () => {
-      if (useStore.getState().denied !== 'share-required') return;
+      if (!hasOwnerProof()) return;
+      const s = useStore.getState();
+      if (s.denied !== 'share-required' && s.loaded) return;
       useStore.setState({ denied: null });
       load().catch(() => {
         /* still gated */

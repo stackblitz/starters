@@ -10,12 +10,16 @@ declare global {
 
 export const OWNER_PROOF_EVENT = 'bolt:owner-proof';
 
-export function ownerHeaders(): Record<string, string> {
+const IFRAME_WAIT_MS = 8_000;
+
+export function hasOwnerProof(): boolean {
   const token = window.__BOLT_OWNER_PROOF;
-  if (typeof token === 'string' && token.length > 0) {
-    return { 'x-deck-owner': token };
-  }
-  return {};
+  return typeof token === 'string' && token.length > 0;
+}
+
+export function ownerHeaders(): Record<string, string> {
+  if (!hasOwnerProof()) return {};
+  return { 'x-deck-owner': window.__BOLT_OWNER_PROOF as string };
 }
 
 export function applyOwnerProof(token: string | null): void {
@@ -25,21 +29,27 @@ export function applyOwnerProof(token: string | null): void {
   );
 }
 
-/** Wait for Bolt's preview inject. Local Vite (no parent) continues immediately. */
-export async function bootOwnerProof(): Promise<void> {
-  if (typeof window.__BOLT_OWNER_PROOF === 'string' && window.__BOLT_OWNER_PROOF) {
+/** Wait for Bolt's preview inject. Local Vite / published origin (no parent)
+ *  continue immediately. Iframe waits for a non-empty token; a late inject
+ *  still wins via OWNER_PROOF_EVENT even after this returns. */
+export async function bootOwnerProof(signal?: AbortSignal): Promise<void> {
+  if (hasOwnerProof() || window.parent === window || signal?.aborted) {
     return;
   }
-  if (window.parent === window) {
-    return;
-  }
+
   await new Promise<void>((resolve) => {
     const finish = () => {
       window.clearTimeout(timeout);
-      window.removeEventListener(OWNER_PROOF_EVENT, finish);
+      window.removeEventListener(OWNER_PROOF_EVENT, onProof);
+      signal?.removeEventListener('abort', finish);
       resolve();
     };
-    const timeout = window.setTimeout(finish, 2000);
-    window.addEventListener(OWNER_PROOF_EVENT, finish);
+    const onProof = () => {
+      if (hasOwnerProof()) finish();
+    };
+    const timeout = window.setTimeout(finish, IFRAME_WAIT_MS);
+    window.addEventListener(OWNER_PROOF_EVENT, onProof);
+    signal?.addEventListener('abort', finish);
+    if (hasOwnerProof()) finish();
   });
 }
