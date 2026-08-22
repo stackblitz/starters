@@ -28,11 +28,12 @@ a deck with the `slides` skill.
   bottom bar pages the deck and holds Export PDF, Present, and Share
   (one link per mode: presentation, presenter console, or editor; optional
   password). Present replaces the editor in place (Esc or the dock close
-  control returns to editing). The presenter console (P) still opens a
-  second window.
-- `/present` — Same presentation engine, used by share links. Dedicated
-  present/share URLs often fail in Bolt preview (WebContainer vs published
-  origin); treat that as environmental.
+  control returns to editing). From local Vite or the published site, **P**
+  opens a presenter console in a second window. In Bolt preview that control
+  stays disabled (it would open a WebContainer URL); use Share after
+  publishing.
+- `/present` — Same presentation engine, used by share links on the
+  published origin.
 
 ## The skill
 

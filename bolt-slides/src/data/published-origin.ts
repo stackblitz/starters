@@ -3,6 +3,8 @@
    parent, so they mint on location.origin. A Bolt preview with no live deploy
    must not copy a WebContainer URL. */
 
+import { useEffect, useState } from 'react';
+
 declare global {
   interface Window {
     __BOLT_PUBLISHED_ORIGIN?: string | null;
@@ -16,6 +18,10 @@ export type ShareOrigin = {
   canCopy: boolean;
 };
 
+export function pageOrigin(): string {
+  return window.location.origin.replace(/\/$/, '');
+}
+
 export function shareOrigin(): ShareOrigin {
   if ('__BOLT_PUBLISHED_ORIGIN' in window) {
     const injected = window.__BOLT_PUBLISHED_ORIGIN;
@@ -28,4 +34,21 @@ export function shareOrigin(): ShareOrigin {
     return { origin: null, canCopy: false };
   }
   return { origin: window.location.origin, canCopy: true };
+}
+
+/** This window is already the public (or local) origin. A Bolt preview iframe
+ *  is a WebContainer URL even after publish — don't open or copy it. */
+export function isShareablePage(): boolean {
+  const { origin, canCopy } = shareOrigin();
+  return canCopy && origin === pageOrigin();
+}
+
+export function useShareOrigin(): ShareOrigin {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const onChange = () => setTick((n) => n + 1);
+    window.addEventListener(PUBLISHED_ORIGIN_EVENT, onChange);
+    return () => window.removeEventListener(PUBLISHED_ORIGIN_EVENT, onChange);
+  }, []);
+  return shareOrigin();
 }

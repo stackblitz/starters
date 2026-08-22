@@ -28,6 +28,7 @@ import {
   IconPresent,
   IconClose,
 } from './icons';
+import { isShareablePage, useShareOrigin } from '../data/published-origin';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
    panel, grid overview).
@@ -120,6 +121,13 @@ export default function Deck({
     () => new URLSearchParams(window.location.search).has('presenter'),
     []
   );
+  const { canCopy } = useShareOrigin();
+  const canOpenPresenter = allowPresenter && isShareablePage();
+  const presenterTip = canOpenPresenter
+    ? 'Presenter — new tab (P)'
+    : canCopy
+      ? 'Use Share for a presenter link'
+      : 'Publish to open presenter';
 
   const [slide, setSlide] = useState(() => {
     if (initialSlide != null)
@@ -207,7 +215,7 @@ export default function Deck({
     else document.documentElement.requestFullscreen?.();
   }, []);
   const openPresenter = useCallback(() => {
-    if (isPresenter) return;
+    if (isPresenter || !isShareablePage()) return;
     const params = new URLSearchParams(window.location.search);
     params.set('presenter', '1');
     const url = `${window.location.pathname}?${params}#${slide + 1}`;
@@ -274,7 +282,7 @@ export default function Deck({
           break;
         case 'p':
         case 'P':
-          if (drawing || !allowPresenter) break;
+          if (drawing || !canOpenPresenter) break;
           openPresenter();
           break;
         case 'h':
@@ -312,7 +320,7 @@ export default function Deck({
     browse,
     uiHidden,
     isPresenter,
-    allowPresenter,
+    canOpenPresenter,
     onExit,
     slide,
   ]);
@@ -636,14 +644,16 @@ export default function Deck({
               {fs ? <IconShrink /> : <IconExpand />}
             </button>
             {allowPresenter && (
-              <button
-                className="noir-icon-btn noir-optional"
-                data-tip="Presenter — new tab (P)"
-                aria-label="Open the presenter console in a new window"
-                onClick={openPresenter}
-              >
-                <IconPresent />
-              </button>
+              <span className="noir-tip" data-tip={presenterTip}>
+                <button
+                  className="noir-icon-btn noir-optional"
+                  aria-label={presenterTip}
+                  disabled={!canOpenPresenter}
+                  onClick={openPresenter}
+                >
+                  <IconPresent />
+                </button>
+              </span>
             )}
           </div>
         </div>

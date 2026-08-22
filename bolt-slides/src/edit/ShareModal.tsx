@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShareLink, ShareMode } from '../data/share';
-import { shareOrigin, PUBLISHED_ORIGIN_EVENT } from '../data/published-origin';
+import { useShareOrigin } from '../data/published-origin';
 import { api } from '../data/store';
 
 /* Share links, one per mode. Each row makes a link, optionally behind a
@@ -36,16 +36,6 @@ const MODES: {
 ];
 
 const MIN_PASSWORD = 8;
-
-function useShareOrigin() {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const onChange = () => setTick((n) => n + 1);
-    window.addEventListener(PUBLISHED_ORIGIN_EVENT, onChange);
-    return () => window.removeEventListener(PUBLISHED_ORIGIN_EVENT, onChange);
-  }, []);
-  return shareOrigin();
-}
 
 function Row({
   spec,

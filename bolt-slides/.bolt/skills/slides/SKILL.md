@@ -19,7 +19,8 @@ This repo is a complete slide **studio**, already built and running:
   notes on the bottom bar (with Export PDF, Present, and Share). Present
   replaces the editor in the same view (no new tab or URL).
 - Present mode — the premium presentation engine: floating dock, side panel (S)
-  and grid overview (G), click-builds, presenter view (P, new window),
+  and grid overview (G), click-builds, presenter view (P, new window on
+  the published site or local Vite; disabled in Bolt preview — use Share),
   annotator (D), fullscreen (F). Esc returns to the editor.
 - **Postgres via `deck-api` is the only store.** The visual editor and this
   skill both read/write through that edge function.

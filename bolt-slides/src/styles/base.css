@@ -2076,6 +2076,13 @@ strong {
 .noir-icon-btn:hover {
   background: rgba(255, 255, 255, 0.12);
 }
+.noir-tip {
+  display: grid;
+  place-items: center;
+}
+.noir-tip .noir-icon-btn:disabled {
+  pointer-events: none;
+}
 .noir-icon-btn:disabled {
   opacity: 0.28;
   cursor: default;
