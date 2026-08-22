@@ -73,6 +73,7 @@ export default function Presenter({
   onNext,
   onPrev,
   navLabel,
+  onExit,
 }: {
   slides: ReactElement[];
   slide: number;
@@ -86,6 +87,8 @@ export default function Presenter({
   onNext: () => void;
   onPrev: () => void;
   navLabel?: (i: number) => string | undefined;
+  /** leave the console for the editor when this is not a script-opened window */
+  onExit?: (slideIndex: number) => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(true);
@@ -213,9 +216,17 @@ export default function Presenter({
           </button>
           <button
             className="pres-icon"
-            onClick={() => window.close()}
-            data-tip="Close presenter"
-            aria-label="Close presenter view"
+            onClick={() => {
+              window.close();
+              window.setTimeout(() => {
+                if (window.closed) return;
+                if (onExit) onExit(slide);
+              }, 0);
+            }}
+            data-tip={onExit ? 'Back to editor' : 'Close presenter'}
+            aria-label={
+              onExit ? 'Back to the editor' : 'Close presenter view'
+            }
           >
             <IconClose />
           </button>

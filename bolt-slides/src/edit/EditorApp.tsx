@@ -1,7 +1,7 @@
 /* The editor — persistent slide rail · scaled live canvas with in-place
    editing; the canvas's bottom bar carries the deck actions
    (Export PDF / Play / Share). */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../data/store';
 import { useDeckSync } from '../data/useDeckSync';
 import { applyFont, applyAccent } from '../data/fonts';
@@ -23,6 +23,9 @@ export default function EditorApp() {
 
   const font = useStore((s) => s.deck.font);
   const accent = useStore((s) => s.deck.accent);
+  const [presenterQuery, setPresenterQuery] = useState(() =>
+    new URLSearchParams(window.location.search).has('presenter')
+  );
   useDeckSync();
   useEffect(() => {
     document.title = (title ? title + ' — ' : '') + 'Slides';
@@ -46,21 +49,25 @@ export default function EditorApp() {
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
   // Present from the editor is in-place (no /present). A presenter console
   // opened with P still uses ?presenter=1 on this same path.
-  const presenterQuery = new URLSearchParams(window.location.search).has(
-    'presenter'
-  );
   if (presenting || presenterQuery)
     return (
       <PresentApp
         embedded
-        onExit={
-          presenterQuery
-            ? undefined
-            : (i) => {
-                setCurrent(i);
-                setPresenting(false);
-              }
-        }
+        onExit={(i) => {
+          setCurrent(i);
+          setPresenting(false);
+          if (presenterQuery) {
+            const params = new URLSearchParams(window.location.search);
+            params.delete('presenter');
+            const q = params.toString();
+            history.replaceState(
+              null,
+              '',
+              window.location.pathname + (q ? '?' + q : '')
+            );
+            setPresenterQuery(false);
+          }
+        }}
       />
     );
 

@@ -425,6 +425,7 @@ export default function Deck({
           onNext={next}
           onPrev={prev}
           navLabel={navLabel}
+          onExit={onExit}
         />
       </MotionConfig>
     );
