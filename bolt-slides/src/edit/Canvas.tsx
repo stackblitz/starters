@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStore } from '../data/store';
+import { useShareOrigin } from '../data/published-origin';
 import { DeckCtx } from '../deck/DeckContext';
 import SlideView from '../slide/SlideView';
 import ContextMenu from './ContextMenu';
@@ -25,6 +26,10 @@ export default function Canvas() {
   const [flash, setFlash] = useState<string | null>(null);
   const [share, setShare] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const { origin, canCopy } = useShareOrigin();
+  const shareTip = canCopy
+    ? 'Share links for presenting, the presenter console or editing'
+    : 'Publish to share';
   const note = (msg: string) => {
     setFlash(msg);
     setTimeout(() => setFlash(null), 2600);
@@ -51,6 +56,9 @@ export default function Canvas() {
     setDataOpen(false);
     setMenu(null);
   }, [current]);
+  useEffect(() => {
+    if (!canCopy) setShare(false);
+  }, [canCopy]);
   // live context: animations run on the canvas exactly like in present mode
   const liveCtx = useMemo(() => ({ clicks: 9999, isStatic: false }), []);
 
@@ -235,17 +243,22 @@ export default function Canvas() {
             <path d="M7 4.5v15c0 0.9 1 1.45 1.77 0.97l11.5-7.5a1.15 1.15 0 0 0 0-1.94L8.77 3.53C8 3.05 7 3.6 7 4.5Z" />
           </svg>
         </button>
-        <button
-          className="solid-btn"
-          data-tip="Share links for presenting, the presenter console or editing"
-          aria-haspopup="dialog"
-          aria-expanded={share}
-          onClick={() => setShare(true)}
-        >
-          Share
-        </button>
+        <span className="ed-tip" data-tip={shareTip}>
+          <button
+            className="solid-btn"
+            aria-label={shareTip}
+            aria-haspopup="dialog"
+            aria-expanded={share}
+            disabled={!canCopy}
+            onClick={() => setShare(true)}
+          >
+            Share
+          </button>
+        </span>
       </div>
-      {share && <ShareModal onClose={() => setShare(false)} />}
+      {share && origin && (
+        <ShareModal origin={origin} onClose={() => setShare(false)} />
+      )}
       {notesOpen && (
         <div className="notes-pop">
           <NotesEditor

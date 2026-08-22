@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShareLink, ShareMode } from '../data/share';
-import { useShareOrigin } from '../data/published-origin';
 import { api } from '../data/store';
 
 /* Share links, one per mode. Each row makes a link, optionally behind a
    password, and copies it. Turning a link off kills it everywhere at once.
 
    The dialog is a focus trap with Escape to close, every control labelled,
-   and every result announced in a live region. */
+   and every result announced in a live region. The Share button is disabled
+   until a public origin exists, so this dialog always has one. */
 
 const MODES: {
   id: ShareMode;
@@ -41,15 +41,13 @@ function Row({
   spec,
   link,
   origin,
-  canCopy,
   onSave,
   onStop,
   announce,
 }: {
   spec: (typeof MODES)[number];
   link?: ShareLink;
-  origin: string | null;
-  canCopy: boolean;
+  origin: string;
   onSave: (
     mode: ShareMode,
     patch: { password?: string | null; rotate?: boolean }
@@ -60,7 +58,7 @@ function Row({
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const on = !!link;
-  const url = link && origin ? origin + spec.path(link.token) : '';
+  const url = link ? origin + spec.path(link.token) : '';
   const passId = `share-pass-${spec.id}`;
 
   const run = async (fn: () => Promise<void>, done: string) => {
@@ -107,14 +105,13 @@ function Row({
             <input
               className="share-url"
               readOnly
-              value={canCopy ? url : ''}
-              placeholder="Publish to copy a link"
+              value={url}
               aria-label={`${spec.title} link`}
               onFocus={(e) => e.currentTarget.select()}
             />
             <button
               className="ghost-btn xs"
-              disabled={!canCopy || !url}
+              disabled={!url}
               onClick={() =>
                 navigator.clipboard.writeText(url).then(
                   () => announce('Link copied'),
@@ -202,10 +199,15 @@ function Row({
   );
 }
 
-export default function ShareModal({ onClose }: { onClose: () => void }) {
+export default function ShareModal({
+  origin,
+  onClose,
+}: {
+  origin: string;
+  onClose: () => void;
+}) {
   const [links, setLinks] = useState<ShareLink[] | null>(null);
   const [message, setMessage] = useState('');
-  const { origin, canCopy } = useShareOrigin();
   const ref = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(
     typeof document !== 'undefined' ? document.activeElement : null
@@ -287,9 +289,8 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="share-intro">
-          {canCopy
-            ? 'Links open on the published site. The editor in Bolt does not need a link. Share links grant a specific mode (and optional password).'
-            : 'Publish this project to copy share links. The editor in Bolt does not need a link; visitors use the published URL with a token (and optional password).'}
+          Links open on the published site. The editor in Bolt does not need a
+          link. Share links grant a specific mode (and optional password).
         </p>
 
         {links === null ? (
@@ -302,7 +303,6 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
                 spec={spec}
                 link={links.find((l) => l.mode === spec.id)}
                 origin={origin}
-                canCopy={canCopy}
                 onSave={onSave}
                 onStop={onStop}
                 announce={setMessage}

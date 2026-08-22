@@ -85,6 +85,13 @@
   width: 30px;
   height: 30px;
 }
+.ed-tip {
+  display: grid;
+  place-items: center;
+}
+.ed-tip .solid-btn:disabled {
+  pointer-events: none;
+}
 /* Share is white-on-dark, not accent-coloured */
 .ed-canvas-nav .solid-btn {
   background: #fff;
@@ -92,7 +99,7 @@
   box-shadow: 0 6px 18px -10px rgba(255, 255, 255, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
-.ed-canvas-nav .solid-btn:hover {
+.ed-canvas-nav .solid-btn:hover:not(:disabled) {
   filter: brightness(0.92);
 }
 .ed-canvas-nav .icon-btn.on {
@@ -207,7 +214,7 @@
   align-items: center;
   gap: 6px;
 }
-.solid-btn:hover {
+.solid-btn:hover:not(:disabled) {
   filter: brightness(1.08);
 }
 .solid-btn:disabled {

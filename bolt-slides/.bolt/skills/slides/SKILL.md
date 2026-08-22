@@ -16,8 +16,9 @@ This repo is a complete slide **studio**, already built and running:
 
 - `/` — the editor: persistent thumbnail rail (drag to reorder, right-click to
   duplicate/delete), click-to-edit text on the slide itself, and speaker
-  notes on the bottom bar (with Export PDF, Present, and Share). Present
-  replaces the editor in the same view (no new tab or URL).
+  notes on the bottom bar (with Export PDF, Present, and Share). Share is
+  disabled until the project is published. Present replaces the editor in
+  the same view (no new tab or URL).
 - Present mode — the premium presentation engine: floating dock, side panel (S)
   and grid overview (G), click-builds, presenter view (P, new window on
   the published site or local Vite; disabled in Bolt preview — use Share),
