@@ -57,10 +57,11 @@ to the API. You never write JSX slides.
 
 ## Step 0 · bootstrap the database (mandatory, first)
 
-A Supabase project is already provisioned (`.env` has `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_ANON_KEY`). You still have to create the **schema** and
-**deploy the edge function**. This is not optional and is not "only for
-publish" — the visual editor and the skill both need it, including in preview.
+A Supabase project is already provisioned (`.env` has `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`). You still have
+to create the **schema** and **deploy the edge function**. This is not
+optional and is not "only for publish" — the visual editor and the skill
+both need it, including in preview.
 
 Do this before authoring anything. Invoke the `bolt-database` skill, then:
 
@@ -72,26 +73,36 @@ Do this before authoring anything. Invoke the `bolt-database` skill, then:
    is already at `supabase/functions/deck-api/index.ts` — do not rewrite it.
    Write nothing; just deploy. If a function of that slug already exists,
    read the file first, then deploy.
-3. Confirm it works:
+3. Confirm it works. `/health` returns `200` with no deck data and does not
+   need owner credentials:
 
 ```bash
-# source .env — VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+# source .env — VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 curl -sS -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
-  "$VITE_SUPABASE_URL/functions/v1/deck-api/state"
+  "$VITE_SUPABASE_URL/functions/v1/deck-api/health"
 ```
 
 A `200` means you may author. Anything else: fix bootstrap.
 
+**Do not mint, print, or curl `DECK_OWNER_SECRET` / `X-Deck-Owner`.** Preview
+injects owner proof for the browser. You author with the provisioned
+`SUPABASE_SERVICE_ROLE_KEY` as the Bearer token (never `VITE_`, never write
+it into source, never echo it). If that key is missing, stop — Bolt already
+injects it; do not invent a replacement.
+
 ## Workflow
+
+Import and export go through `deck-api` as the **service role**. Source
+`.env` in the shell and reference the variable; do not paste the value.
 
 ```bash
 # DECK_API="$VITE_SUPABASE_URL/functions/v1/deck-api"
 # 1 · theme: edit ONLY the :root values in src/styles/tokens.css
 # 2 · author the deck JSON (format below) and POST it
 curl -sS -X POST "$DECK_API/import" \
-  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   --data-binary @- <<'EOF'
@@ -99,7 +110,7 @@ curl -sS -X POST "$DECK_API/import" \
 EOF
 # 3 · verify
 curl -sS "$DECK_API/state" \
-  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" | head
 ```
 
@@ -108,7 +119,7 @@ To read the current deck back before editing so you keep the user's changes
 
 ```bash
 curl -sS "$DECK_API/export" \
-  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY"
 ```
 

@@ -14,11 +14,22 @@ The browser and the skill both talk to:
 $VITE_SUPABASE_URL/functions/v1/deck-api
 ```
 
-with `Authorization: Bearer $VITE_SUPABASE_ANON_KEY` and `apikey` set to the
-same key. Custom headers `X-Share-Token` and `X-Share-Grant` must be allowed
-in CORS (the shipped function already does this).
+The gateway still wants `Authorization` and `apikey`. Who is calling
+decides which Bearer:
+
+- **Browser (preview)** — anon key + host-injected `X-Deck-Owner` matching
+  `DECK_OWNER_SECRET` (never a `VITE_` var; not in the published JS).
+- **Skill / agent** — `SUPABASE_SERVICE_ROLE_KEY` as Bearer. Do not mint a
+  second owner secret; do not send `X-Deck-Owner`.
+- **Share links** — anon key + `X-Share-Token` (and `X-Share-Grant` after a
+  password unlock).
+
+Custom headers `X-Share-Token`, `X-Share-Grant`, and `X-Deck-Owner` must be
+allowed in CORS (the shipped function already does this). `GET /health` is
+the deploy probe: `200` and no deck data, no owner credentials.
 
 ```
+GET    /health
 GET    /state
 PUT    /deck
 POST   /slides
@@ -44,8 +55,11 @@ The function uses the service role.
 
 ## Permissions the function enforces
 
-- no share token — **owner** (full edit). The published/preview URL is the
-  credential.
+- `Authorization` bearer is `SUPABASE_SERVICE_ROLE_KEY` — **owner** (agent)
+- `X-Deck-Owner` matching `DECK_OWNER_SECRET` — **owner**. Bolt preview
+  injects this; it is not in the published JS bundle.
+- no share token, no service role, no owner proof — **401** once the secret
+  is configured (legacy: owner if the secret is unset)
 - `edit` share link — everything
 - `presenter` — read, plus writing `notes` on a slide
 - `present` — read, with `notes` stripped from the response

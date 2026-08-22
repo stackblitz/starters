@@ -2,6 +2,7 @@
  * deck-api — REST contract the editor, presenter, and slides skill all speak.
  *
  * Routes (each prefixed /deck-api by the gateway):
+ *   GET    /health      (no deck data — deploy probe)
  *   GET    /state
  *   PUT    /deck
  *   POST   /slides
@@ -16,9 +17,11 @@
  *   GET    /share?token=…
  *   POST   /share/unlock
  *
- * Owner = a request with no share token. A token is judged by that token even
- * from the owner's own browser. Service role only — tables have RLS and no
- * policies, so PostgREST from the anon key returns nothing.
+ * Owner, in order: share token (that token's mode, even from the owner
+ * browser) → Authorization bearer is SUPABASE_SERVICE_ROLE_KEY (agent) →
+ * X-Deck-Owner matches DECK_OWNER_SECRET (Bolt preview, host-injected) →
+ * deny. If the owner secret is unset, no-token is still owner (legacy pins).
+ * Tables have RLS and no policies; the function uses the service role.
  */
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.57.4';
 
@@ -26,7 +29,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers':
-    'Content-Type, Authorization, X-Client-Info, Apikey, X-Share-Token, X-Share-Grant',
+    'Content-Type, Authorization, X-Client-Info, Apikey, X-Share-Token, X-Share-Grant, X-Deck-Owner',
 };
 
 const MODES = ['edit', 'presenter', 'present'] as const;
@@ -58,15 +61,20 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const url = new URL(req.url);
+    const seg = pathSegments(url.pathname);
+    const m = req.method;
+
+    if (m === 'GET' && seg[0] === 'health') {
+      return json(200, { ok: true });
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const url = new URL(req.url);
-    const seg = pathSegments(url.pathname);
-    const m = req.method;
     const acc = await access(req, supabase);
 
     if (seg[0] === 'share') {
@@ -409,26 +417,52 @@ function may(
 
 async function access(req: Request, supabase: SupabaseClient): Promise<Acc> {
   const t = req.headers.get('x-share-token');
-  if (!t) return { mode: 'edit', owner: true };
-  const { data: share } = await supabase
-    .from('shares')
-    .select('*')
-    .eq('token', t)
-    .maybeSingle();
-  if (!share) return null;
-  if (share.pass_hash) {
-    const key = req.headers.get('x-share-grant');
-    const { data: grant } = key
-      ? await supabase.from('share_grants').select('*').eq('key', key).maybeSingle()
-      : { data: null };
-    const fresh =
-      grant &&
-      Date.now() - Date.parse(grant.created_at) < GRANT_DAYS * 86_400_000;
-    if (!grant || !fresh || grant.mode !== share.mode) {
-      return { needsPassword: true, mode: share.mode, owner: false };
+  if (t) {
+    const { data: share } = await supabase
+      .from('shares')
+      .select('*')
+      .eq('token', t)
+      .maybeSingle();
+    if (!share) return null;
+    if (share.pass_hash) {
+      const key = req.headers.get('x-share-grant');
+      const { data: grant } = key
+        ? await supabase.from('share_grants').select('*').eq('key', key).maybeSingle()
+        : { data: null };
+      const fresh =
+        grant &&
+        Date.now() - Date.parse(grant.created_at) < GRANT_DAYS * 86_400_000;
+      if (!grant || !fresh || grant.mode !== share.mode) {
+        return { needsPassword: true, mode: share.mode, owner: false };
+      }
     }
+    return { mode: share.mode as ShareMode, owner: false };
   }
-  return { mode: share.mode as ShareMode, owner: false };
+  if (bearerIsServiceRole(req)) return { mode: 'edit', owner: true };
+  const secret = Deno.env.get('DECK_OWNER_SECRET');
+  const proof = req.headers.get('x-deck-owner');
+  if (secret && proof && proof === secret) return { mode: 'edit', owner: true };
+  if (!secret) {
+    /* not configured yet — keep "bare URL is owner" so existing previews
+       do not lock until the host injects DECK_OWNER_SECRET */
+    return { mode: 'edit', owner: true };
+  }
+  return null;
+}
+
+function bearerIsServiceRole(req: Request): boolean {
+  const expected = (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '').trim();
+  if (!expected) return false;
+  const auth = req.headers.get('authorization') ?? '';
+  const bearer = auth.replace(/^Bearer\s+/i, '').trim();
+  return timingSafeEqual(bearer, expected);
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
 }
 
 function visible(

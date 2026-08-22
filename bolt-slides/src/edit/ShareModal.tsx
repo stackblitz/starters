@@ -279,8 +279,9 @@ export default function ShareModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="share-intro">
-          Links work on this site's URL. Anyone who opens the bare URL can edit;
-          share links below grant a specific mode (and optional password).
+          Links work on this site's URL. The editor in Bolt does not need a
+          link. Outside Bolt, the bare URL is closed; share links below grant
+          a specific mode (and optional password).
         </p>
 
         {links === null ? (

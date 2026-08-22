@@ -12,6 +12,7 @@ import type {
 } from './types';
 import { deckUrl, supabaseAuthHeaders } from './api';
 import { shareHeaders, shareInfo, shareToken, type ShareMode } from './share';
+import { ownerHeaders } from './owner';
 
 /* Why a request was refused, when it was: the app shows a password gate for
    'password-required' and a "ask for a link" screen for 'share-required'. */
@@ -28,6 +29,7 @@ export async function api<T = any>(
     headers: {
       ...supabaseAuthHeaders(),
       ...shareHeaders(),
+      ...ownerHeaders(),
       ...(body ? { 'Content-Type': 'application/json' } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
