@@ -7,7 +7,8 @@ import './styles/base.css';
 import './styles/editor.css';
 
 /*  /          the editor (sidebar · canvas · bottom bar)
-    /present   full-screen presentation of the same deck  */
+               Present swaps this view in place — no new URL
+    /present   same engine, used by share links (often broken in Bolt preview) */
 const isPresent = window.location.pathname.startsWith('/present');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

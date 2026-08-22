@@ -13,7 +13,7 @@ edits share one store.
 
 ```bash
 npm install
-npm run dev        # editor at http://localhost:5173 · present at /present
+npm run dev        # editor at http://localhost:5173 — Present swaps this view
 ```
 
 On first use in Bolt the agent must apply
@@ -27,9 +27,12 @@ a deck with the `slides` skill.
 - `/` — Editor: thumbnail rail, click-to-edit text, speaker notes. The
   bottom bar pages the deck and holds Export PDF, Present, and Share
   (one link per mode: presentation, presenter console, or editor; optional
-  password).
-- `/present` — Presentation: dock, side panel (S), grid (G), builds, presenter
-  (P), annotator (D), fullscreen (F).
+  password). Present replaces the editor in place (Esc or the dock close
+  control returns to editing). The presenter console (P) still opens a
+  second window.
+- `/present` — Same presentation engine, used by share links. Dedicated
+  present/share URLs often fail in Bolt preview (WebContainer vs published
+  origin); treat that as environmental.
 
 ## The skill
 

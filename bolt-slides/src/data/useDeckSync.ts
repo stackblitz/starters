@@ -4,19 +4,20 @@ import { subscribeDeckChanges } from './realtime';
 
 /** Load once, then re-fetch as soon as deck-api broadcasts a write (agent
  *  import, other windows). Focus/visibility is a fallback if a ping is missed. */
-export function useDeckSync() {
+export function useDeckSync({ enabled = true }: { enabled?: boolean } = {}) {
   const load = useStore((s) => s.load);
   const refresh = useStore((s) => s.refresh);
   const loaded = useStore((s) => s.loaded);
 
   useEffect(() => {
+    if (!enabled) return;
     load().catch(() => {
       /* the gate / bootError explains why */
     });
-  }, [load]);
+  }, [enabled, load]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!enabled || !loaded) return;
     const pull = () => {
       refresh().catch(() => {
         /* keep last good state */
@@ -33,5 +34,5 @@ export function useDeckSync() {
       document.removeEventListener('visibilitychange', onVis);
       unsubscribe();
     };
-  }, [loaded, refresh]);
+  }, [enabled, loaded, refresh]);
 }

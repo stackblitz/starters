@@ -95,6 +95,8 @@ export default function Deck({
   onNotes,
   navLabel,
   allowPresenter = true,
+  initialSlide,
+  onExit,
 }: {
   children: ReactNode;
   transition?: string;
@@ -104,6 +106,10 @@ export default function Deck({
   onNotes?: (index: number, text: string) => void;
   /** optional short name for a slide, shown as "up next" in the console */
   navLabel?: (index: number) => string | undefined;
+  /** start here instead of the URL hash (in-place present from the editor) */
+  initialSlide?: number;
+  /** leave present mode without changing the URL (in-place from the editor) */
+  onExit?: (slideIndex: number) => void;
 }) {
   const slides = useMemo(
     () => Children.toArray(children) as ReactElement[],
@@ -116,6 +122,8 @@ export default function Deck({
   );
 
   const [slide, setSlide] = useState(() => {
+    if (initialSlide != null)
+      return Math.max(0, Math.min(total - 1, initialSlide));
     const h = parseInt(window.location.hash.slice(1), 10);
     return h >= 1 && h <= total ? h - 1 : 0;
   });
@@ -202,9 +210,9 @@ export default function Deck({
     if (isPresenter) return;
     const params = new URLSearchParams(window.location.search);
     params.set('presenter', '1');
-    const url = `${window.location.pathname}?${params}${window.location.hash}`;
+    const url = `${window.location.pathname}?${params}#${slide + 1}`;
     window.open(url, 'deck-presenter');
-  }, [isPresenter]);
+  }, [isPresenter, slide]);
 
   // keyboard
   useEffect(() => {
@@ -275,9 +283,16 @@ export default function Deck({
           setUiHidden((v) => !v);
           break;
         case 'Escape':
-          closeBrowse();
-          setDrawing(false);
-          setUiHidden(false);
+          if (browse !== 'none' || drawing || uiHidden) {
+            closeBrowse();
+            setDrawing(false);
+            setUiHidden(false);
+            break;
+          }
+          if (onExit) {
+            e.preventDefault();
+            onExit(slide);
+          }
           break;
       }
     };
@@ -294,8 +309,12 @@ export default function Deck({
     toggleGrid,
     closeBrowse,
     drawing,
+    browse,
+    uiHidden,
     isPresenter,
     allowPresenter,
+    onExit,
+    slide,
   ]);
 
   // the slide's entrance owns the screen first: hold the ink until the stage
@@ -306,20 +325,22 @@ export default function Deck({
     return () => clearTimeout(t);
   }, [slide]);
 
-  // URL hash sync (initial slide comes from the hash via useState above)
+  // URL hash sync — skipped in-place (no new URL). Share /present still uses it.
   useEffect(() => {
+    if (onExit) return;
     const want = String(slide + 1);
     if (window.location.hash.slice(1) !== want)
       history.replaceState(null, '', '#' + want);
-  }, [slide]);
+  }, [slide, onExit]);
   useEffect(() => {
+    if (onExit) return;
     const onHash = () => {
       const h = parseInt(window.location.hash.slice(1), 10);
       if (h >= 1 && h <= total && h - 1 !== slide) go(h - 1);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, [slide, total, go]);
+  }, [slide, total, go, onExit]);
 
   // cross-tab sync (audience ⇄ presenter), via BroadcastChannel
   const chan = useRef<BroadcastChannel | null>(null);
@@ -541,6 +562,19 @@ export default function Deck({
 
         <div className={'noir-dock' + (hideUI ? ' hidden' : '')}>
           <div className="noir-bar">
+            {onExit && (
+              <>
+                <button
+                  className="noir-icon-btn"
+                  data-tip="Back to editor (Esc)"
+                  aria-label="Back to the editor"
+                  onClick={() => onExit(slide)}
+                >
+                  <IconClose />
+                </button>
+                <span className="noir-sep" />
+              </>
+            )}
             <button
               className={'noir-icon-btn' + (railOpen ? ' on' : '')}
               data-tip="Side panel (S)"

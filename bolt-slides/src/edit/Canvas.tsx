@@ -17,6 +17,7 @@ export default function Canvas() {
   const slides = useStore((s) => s.slides);
   const current = useStore((s) => s.current);
   const setCurrent = useStore((s) => s.setCurrent);
+  const setPresenting = useStore((s) => s.setPresenting);
   const title = useStore((s) => s.deck.title);
   const slide = slides[current];
 
@@ -216,13 +217,13 @@ export default function Canvas() {
         >
           Export PDF
         </button>
-        <a
+        <button
           className="icon-btn"
           data-tip="Present"
-          href="/present"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Open the presentation in a new tab"
+          type="button"
+          aria-label="Present this deck"
+          disabled={!slides.length}
+          onClick={() => setPresenting(true)}
         >
           <svg
             width="18"
@@ -233,7 +234,7 @@ export default function Canvas() {
           >
             <path d="M7 4.5v15c0 0.9 1 1.45 1.77 0.97l11.5-7.5a1.15 1.15 0 0 0 0-1.94L8.77 3.53C8 3.05 7 3.6 7 4.5Z" />
           </svg>
-        </a>
+        </button>
         <button
           className="solid-btn"
           data-tip="Share links for presenting, the presenter console or editing"

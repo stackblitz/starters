@@ -16,10 +16,11 @@ This repo is a complete slide **studio**, already built and running:
 
 - `/` — the editor: persistent thumbnail rail (drag to reorder, right-click to
   duplicate/delete), click-to-edit text on the slide itself, and speaker
-  notes on the bottom bar (with Export PDF, Present, and Share).
-- `/present` — the premium presentation engine: floating dock, side panel (S)
-  and grid overview (G), click-builds, presenter view (P), annotator (D),
-  fullscreen (F).
+  notes on the bottom bar (with Export PDF, Present, and Share). Present
+  replaces the editor in the same view (no new tab or URL).
+- Present mode — the premium presentation engine: floating dock, side panel (S)
+  and grid overview (G), click-builds, presenter view (P, new window),
+  annotator (D), fullscreen (F). Esc returns to the editor.
 - **Postgres via `deck-api` is the only store.** The visual editor and this
   skill both read/write through that edge function.
 
@@ -299,7 +300,7 @@ Visual:
   what to SAY, not a repeat of the slide.
 - After importing, tell the user: edit any text by clicking it, right-click
   thumbnails to duplicate/delete, Present / Export PDF / Share live on the
-  editor's bottom bar (`/present` also opens present mode).
+  editor's bottom bar (Present swaps the current view).
 
 ## Theming (tokens.css `:root` only)
 

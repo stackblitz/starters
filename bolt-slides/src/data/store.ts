@@ -124,6 +124,9 @@ interface Store extends AppState {
   /** "slideId|listPath" while a repeatable list is being edited (keeps its + visible) */
   activeList: string | null;
   setActiveList(v: string | null): void;
+  /** editor Present — in-place swap, no URL change */
+  presenting: boolean;
+  setPresenting(v: boolean): void;
 
   load(): Promise<void>;
   /** Re-read /state without resetting ephemeral editor UI. Skips if a
@@ -178,6 +181,10 @@ export const useStore = create<Store>((set, getState) => ({
   activeList: null,
   setActiveList(v) {
     set({ activeList: v });
+  },
+  presenting: false,
+  setPresenting(v) {
+    set({ presenting: v });
   },
 
   denied: null,

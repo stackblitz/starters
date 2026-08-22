@@ -1,5 +1,5 @@
-/* Present mode (/present) — the untouched premium engine (dock, thumbnail
-   rail, click-builds, presenter view, annotator), fed from the database. */
+/* Present mode — full-screen engine. Opened in-place from the editor (no
+   URL change) or at /present for share links. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import SlideView from '../slide/SlideView';
@@ -10,7 +10,13 @@ import { applyFont, applyAccent } from '../data/fonts';
 import { stripRich } from '../edit/rich';
 import { LAYOUTS } from '../layouts/registry';
 
-export default function PresentApp() {
+export default function PresentApp({
+  embedded,
+  onExit,
+}: {
+  embedded?: boolean;
+  onExit?: (slideIndex: number) => void;
+}) {
   const loaded = useStore((s) => s.loaded);
   const denied = useStore((s) => s.denied);
   const bootError = useStore((s) => s.bootError);
@@ -18,8 +24,9 @@ export default function PresentApp() {
   const deck = useStore((s) => s.deck);
   const patchSlide = useStore((s) => s.patchSlide);
   const mode = useStore((s) => s.mode);
+  const current = useStore((s) => s.current);
 
-  useDeckSync();
+  useDeckSync({ enabled: !embedded });
   useEffect(() => {
     document.title = deck.title || 'Slides';
   }, [deck.title]);
@@ -37,6 +44,16 @@ export default function PresentApp() {
     return (
       <div className="boot-screen">
         This deck has no slides yet — add some in the editor.
+        {onExit && (
+          <button
+            type="button"
+            className="ghost-btn"
+            style={{ marginTop: 16 }}
+            onClick={() => onExit(0)}
+          >
+            Back to editor
+          </button>
+        )}
       </div>
     );
 
@@ -44,6 +61,8 @@ export default function PresentApp() {
     <Deck
       transition={deck.transition}
       allowPresenter={mode !== 'present'}
+      initialSlide={embedded ? current : undefined}
+      onExit={onExit}
       /* the presenter console edits the deck's real notes — same rows the
          editor's Notes tab writes, through the deck API */
       onNotes={(i, text) => {
