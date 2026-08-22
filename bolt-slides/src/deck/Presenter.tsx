@@ -214,22 +214,24 @@ export default function Presenter({
             <IconType />
             <span className="pres-icon-sub">+</span>
           </button>
-          <button
-            className="pres-icon"
-            onClick={() => {
-              window.close();
-              window.setTimeout(() => {
-                if (window.closed) return;
-                if (onExit) onExit(slide);
-              }, 0);
-            }}
-            data-tip={onExit ? 'Back to editor' : 'Close presenter'}
-            aria-label={
-              onExit ? 'Back to the editor' : 'Close presenter view'
-            }
-          >
-            <IconClose />
-          </button>
+          {(onExit || window.opener) && (
+            <button
+              className="pres-icon"
+              onClick={() => {
+                window.close();
+                window.setTimeout(() => {
+                  if (window.closed) return;
+                  if (onExit) onExit(slide);
+                }, 0);
+              }}
+              data-tip={onExit ? 'Back to editor' : 'Close presenter'}
+              aria-label={
+                onExit ? 'Back to the editor' : 'Close presenter view'
+              }
+            >
+              <IconClose />
+            </button>
+          )}
         </div>
       </header>
 
