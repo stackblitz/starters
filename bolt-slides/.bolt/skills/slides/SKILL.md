@@ -31,7 +31,8 @@ that function is for the editor and share links.
 
 1. **Don't touch the app.** Off-limits: `src/edit/`, `src/deck/`,
    `src/present/`, `src/slide/`, `src/layouts/`, `src/components/`,
-   `src/styles/base.css`, `src/styles/editor.css`, `src/data/`,
+   `src/styles/base.css`, `src/styles/editor.css`,
+   `src/styles/chrome-tokens.css`, `src/data/`,
    `supabase/functions/deck-api/`, `.bolt/config.json`, `index.html`,
    `vite.config.ts`. After bootstrap, touch only `src/styles/tokens.css`
    (`:root` values) and the `deck` / `slides` tables. Colors, fonts,
@@ -295,4 +296,4 @@ tokens. For deeper theming: all color/type/radius/motion live in
 `--fg` in tokens.css. Fonts: set the deck-level `font` pairing (Google Fonts,
 loaded automatically; `playfair`/`fraunces` for editorial serifs, `space`/
 `sora`/`outfit` for technical, `manrope`/`dm` for friendly). Do not edit
-`base.css`.
+`base.css`, `editor.css`, or `chrome-tokens.css`.

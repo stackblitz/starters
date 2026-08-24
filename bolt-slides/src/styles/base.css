@@ -2043,7 +2043,7 @@ strong {
   z-index: 97;
   opacity: 0.35;
   transition: opacity 0.35s ease;
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
 }
 .noir-dock:hover {
   opacity: 1;
@@ -2053,28 +2053,28 @@ strong {
   align-items: center;
   gap: 4px;
   padding: 7px 9px;
-  border-radius: 999px;
-  background: rgba(28, 28, 30, 0.66);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgb(23 23 25 / 0.92);
+  border: 1px solid var(--ed-border);
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
-  box-shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.8);
+  box-shadow: var(--ed-shadow-lg);
 }
 .noir-icon-btn {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
-  color: #e8e8ea;
-  font-size: 19px;
+  color: var(--ed-text);
+  font-size: 18px;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 .noir-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--ed-util-hover);
 }
 .noir-tip {
   display: grid;
@@ -2084,19 +2084,19 @@ strong {
   pointer-events: none;
 }
 .noir-icon-btn:disabled {
-  opacity: 0.28;
-  cursor: default;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .noir-icon-btn:disabled:hover {
   background: transparent;
 }
 .noir-icon-btn.on {
-  color: var(--accent-ink, #04140e);
-  background: var(--accent, linear-gradient(115deg, #c8f56e, #34dcd8));
+  color: var(--ed-on-brand);
+  background: var(--ed-brand);
 }
 .noir-icon-btn.sm {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   font-size: 16px;
 }
 .noir-icon-btn svg {
@@ -2106,7 +2106,7 @@ strong {
 .noir-sep {
   width: 1px;
   height: 22px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--ed-divider);
   margin: 0 4px;
 }
 .noir-counter {
@@ -2122,11 +2122,11 @@ strong {
 .noir-counter-now {
   font-size: 16px;
   font-weight: 600;
-  color: #f5f5f7;
+  color: var(--ed-text);
 }
 .noir-counter-tot {
   font-size: 13px;
-  color: #8e8e93;
+  color: var(--ed-text-faint);
 }
 
 /* Left thumbnail rail */
@@ -2139,11 +2139,11 @@ strong {
   z-index: 95;
   padding: 0 14px 26px;
   overflow-y: auto;
-  background: rgba(18, 18, 20, 0.82);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(17 17 20 / 0.92);
+  border-right: 1px solid var(--ed-border);
   backdrop-filter: blur(26px) saturate(180%);
   -webkit-backdrop-filter: blur(26px) saturate(180%);
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
   transform: translateX(-100%);
   transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -2171,7 +2171,7 @@ strong {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.16s ease-out;
-  background: rgba(18, 18, 20, 0.44);
+  background: rgb(17 17 20 / 0.44);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
@@ -2187,7 +2187,7 @@ strong {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8e8e93;
+  color: var(--ed-text-faint);
 }
 .noir-rail-head .noir-icon-btn.sm {
   width: 26px;
@@ -2214,7 +2214,7 @@ strong {
   width: 18px;
   font-size: 12px;
   font-feature-settings: 'tnum' 1;
-  color: #6e6e73;
+  color: var(--ed-icon-faint);
   flex-shrink: 0;
 }
 .noir-thumb-frame {
@@ -2229,13 +2229,13 @@ strong {
   background: var(--bg);
 }
 .noir-thumb:hover .noir-thumb-frame {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--ed-border);
 }
 .noir-thumb.active .noir-thumb-no {
-  color: var(--primary);
+  color: var(--ed-brand);
 }
 .noir-thumb.active .noir-thumb-frame {
-  border-color: var(--primary);
+  border-color: var(--ed-brand);
 }
 /* the live slide rendered at true viewport size, then scaled into the frame
    (so responsive vw/vh units stay faithful). width/height/transform set inline. */
@@ -2260,10 +2260,10 @@ strong {
   z-index: 94;
   overflow-y: auto;
   padding: 0 clamp(18px, 4vw, 54px) 96px;
-  background: rgba(12, 12, 14, 0.86);
+  background: rgb(17 17 20 / 0.92);
   backdrop-filter: blur(26px) saturate(180%);
   -webkit-backdrop-filter: blur(26px) saturate(180%);
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
 }
 .noir-grid::-webkit-scrollbar {
   width: 0;
@@ -2289,7 +2289,7 @@ strong {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.16s ease-out;
-  background: rgba(12, 12, 14, 0.42);
+  background: rgb(17 17 20 / 0.42);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
@@ -2335,9 +2335,9 @@ strong {
   z-index: 99;
   display: flex;
   flex-direction: column;
-  background: #0b0b0d;
-  color: #e8e8ea;
-  font-family: var(--font-body);
+  background: var(--ed-bg);
+  color: var(--ed-text);
+  font-family: var(--font-ui);
 }
 .pres-top {
   display: flex;
@@ -2345,8 +2345,8 @@ strong {
   justify-content: space-between;
   gap: 18px;
   padding: 12px clamp(14px, 2vw, 26px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--ed-border);
+  background: var(--ed-bg-secondary);
 }
 .pres-timer,
 .pres-right {
@@ -2360,11 +2360,11 @@ strong {
   line-height: 1;
   letter-spacing: -0.02em;
   font-feature-settings: 'tnum' 1;
-  color: #f5f5f7;
+  color: var(--ed-text);
   margin-right: 4px;
 }
 .pres-time.paused {
-  color: #8e8e93;
+  color: var(--ed-text-faint);
 }
 .pres-center {
   display: flex;
@@ -2373,45 +2373,45 @@ strong {
 }
 .pres-count {
   font-size: 15px;
-  color: #8e8e93;
+  color: var(--ed-text-faint);
   font-feature-settings: 'tnum' 1;
 }
 .pres-count b {
   font-size: 22px;
   font-weight: 600;
-  color: #f5f5f7;
+  color: var(--ed-text);
 }
 .pres-builds {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--primary);
+  color: var(--ed-brand);
   padding: 3px 9px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  background: var(--ed-brand-bg-subtle);
 }
 .pres-clock {
   font-size: 15px;
-  color: #8e8e93;
+  color: var(--ed-text-faint);
   font-feature-settings: 'tnum' 1;
 }
 .pres-sep {
   width: 1px;
   height: 20px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--ed-divider);
   margin: 0 6px;
 }
 .pres-icon {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   background: transparent;
-  color: #c7c7cc;
+  color: var(--ed-icon-muted);
   cursor: pointer;
   transition: background 0.18s ease, color 0.18s ease, opacity 0.18s ease;
 }
@@ -2420,12 +2420,12 @@ strong {
   height: 17px;
 }
 .pres-icon:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--ed-util-hover);
+  color: var(--ed-text);
 }
 .pres-icon:disabled {
-  opacity: 0.3;
-  cursor: default;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .pres-icon-sub {
   position: absolute;
@@ -2436,7 +2436,7 @@ strong {
   line-height: 1;
 }
 .pres :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ed-brand);
   outline-offset: 2px;
 }
 
@@ -2468,10 +2468,10 @@ strong {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8e8e93;
+  color: var(--ed-text-faint);
 }
 .pres-next-name {
-  color: #c7c7cc;
+  color: var(--ed-text-muted);
   letter-spacing: 0.06em;
   text-transform: none;
   font-weight: 500;
@@ -2482,11 +2482,11 @@ strong {
 }
 .pres-now,
 .pres-next {
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--bg);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 50px -28px rgba(0, 0, 0, 0.9);
+  border: 1px solid var(--ed-border);
+  box-shadow: var(--ed-shadow-lg);
 }
 .pres-now {
   flex: 1 1 auto;
@@ -2520,16 +2520,16 @@ strong {
 }
 .pres-next:hover {
   opacity: 1;
-  border-color: rgba(255, 255, 255, 0.24);
+  border-color: var(--ed-border);
 }
 .pres-next-end {
   display: grid;
   place-items: center;
   aspect-ratio: 16 / 9;
   cursor: default;
-  color: #6e6e73;
+  color: var(--ed-text-faint);
   font-size: 13px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--ed-bg-secondary);
 }
 
 /* label above the box, exactly like "On screen now" — so both columns start
@@ -2545,9 +2545,9 @@ strong {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid var(--ed-border);
+  background: var(--ed-bg-secondary);
   padding: 14px clamp(14px, 1.6vw, 22px);
 }
 .pres-notes-head {
@@ -2557,7 +2557,7 @@ strong {
 .pres-edit-inline {
   border: none;
   background: transparent;
-  color: var(--primary);
+  color: var(--ed-brand);
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -2576,10 +2576,10 @@ strong {
   min-height: 0;
   overflow-y: auto;
   line-height: 1.55;
-  color: #e4e4e7;
+  color: var(--ed-text);
   padding-bottom: 14px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--ed-border) transparent;
 }
 .pres-notes::-webkit-scrollbar,
 .pres-wyg .note-wyg::-webkit-scrollbar {
@@ -2587,11 +2587,11 @@ strong {
 }
 .pres-notes::-webkit-scrollbar-thumb,
 .pres-wyg .note-wyg::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--ed-border);
   border-radius: 3px;
 }
 .pres-notes-empty {
-  color: #6e6e73;
+  color: var(--ed-text-faint);
 }
 /* ── notes typography + WYSIWYG (shared: presenter console + editor) ──
    The same marks the deck speaks, rendered as prose. Both the read view and
@@ -4830,7 +4830,7 @@ strong {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: var(--bg, #0b0b0d);
+  background: var(--ed-bg);
 }
 .gate-card {
   width: min(400px, 100%);
@@ -4838,15 +4838,16 @@ strong {
   flex-direction: column;
   gap: 10px;
   padding: 26px;
-  border-radius: 18px;
-  font-family: var(--font-body);
-  color: var(--fg, #e8e8ea);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-family: var(--font-ui);
+  color: var(--ed-text);
+  background: var(--ed-bg-secondary);
+  border: 1px solid var(--ed-border);
+  box-shadow: var(--ed-shadow-lg);
 }
 .gate-title {
   margin: 0;
-  font-family: var(--font-head);
+  font-family: var(--font-ui);
   font-size: 20px;
   font-weight: 650;
   letter-spacing: -0.01em;
@@ -4855,38 +4856,38 @@ strong {
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--fg-muted, #8e8e93);
+  color: var(--ed-text-muted);
 }
 .gate-label {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--fg-muted, #8e8e93);
+  color: var(--ed-text-muted);
   margin-top: 6px;
 }
 .gate-input {
-  height: 38px;
+  height: 40px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   font: inherit;
   font-size: 14px;
-  color: var(--fg, #e8e8ea);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--hair, rgba(255, 255, 255, 0.12));
+  color: var(--ed-text);
+  background: transparent;
+  border: 1px solid var(--ed-border);
 }
 .gate-input:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
-  border-color: transparent;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ed-brand);
+  border-color: var(--ed-border);
 }
 .gate-error {
   margin: 0;
   font-size: 12.5px;
-  color: #f87171;
+  color: var(--ed-danger);
 }
 .gate-submit {
   margin-top: 6px;
-  height: 38px;
+  height: 32px;
   justify-content: center;
 }
