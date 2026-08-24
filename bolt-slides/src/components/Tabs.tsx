@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
-/* Tabbed content with a sliding accent pill (layoutId, scoped per
+/* Tabbed content with a sliding accent pill (framer layoutId, scoped per
    instance so multiple Tabs coexist) and a cross-fade between panels. The bar
    is keyboard-navigable (←/→) and the block self-centers when standalone.
    <Tabs tabs={[{ label: 'Overview', content: <…/> }, …]} /> */
@@ -10,9 +10,12 @@ export type Tab = { label: string; content: ReactNode };
 export default function Tabs({
   tabs,
   defaultTab = 0,
+  onAdd,
 }: {
   tabs: Tab[];
   defaultTab?: number;
+  /** editor affordance: renders a "+" tab that calls this */
+  onAdd?: () => void;
 }) {
   const pillId = useId();
   const reduce = useReducedMotion();
@@ -58,6 +61,11 @@ export default function Tabs({
               <span className="tab-label">{t.label}</span>
             </button>
           ))}
+          {onAdd && (
+            <button className="tab tab-add" title="Add tab" onClick={onAdd}>
+              +
+            </button>
+          )}
         </div>
       </div>
       <div className="tabs-panel">

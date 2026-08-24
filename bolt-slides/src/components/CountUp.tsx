@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useDeck } from '@/deck/DeckContext';
+import { useDeck } from '../deck/DeckContext';
 
 /* A number that animates 0 → to when its slide becomes active, with a
    quintic ease-out so the last digits settle gently. Inherits color, so

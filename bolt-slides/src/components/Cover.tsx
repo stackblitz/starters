@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Reveal from '@/deck/Reveal';
+import Reveal from '../deck/Reveal';
 
 /* The standardized opening slide: kicker → display title → subtitle cascade,
    an optional full-bleed background image under a theme-correct scrim, and an
@@ -12,11 +12,13 @@ export default function Cover({
   subtitle,
   image,
   foot,
+  dim,
 }: {
   kicker?: string;
   title: ReactNode;
   subtitle?: ReactNode;
   image?: string;
+  dim?: number;
   foot?: string;
   nav?: string;
   notes?: string;
@@ -26,7 +28,11 @@ export default function Cover({
       {image && (
         <>
           <img className="cover-img" src={image} alt="" aria-hidden />
-          <div className="cover-scrim" aria-hidden />
+          <div
+            className="cover-scrim"
+            aria-hidden
+            style={dim ? { ['--dim' as string]: dim } : undefined}
+          />
         </>
       )}
       <Reveal>

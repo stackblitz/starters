@@ -1,3 +1,5 @@
 Import project modules with the `@/` path alias, which maps to `src/` (e.g. `@/components/Foo` == `src/components/Foo`), instead of deep relative paths like `../../components/Foo`.
 
 This template uses Vite 8. `resolve.tsconfigPaths: true` is a valid built-in Vite option. Preserve it for the `@/` alias; do not claim it is invalid or add the `vite-tsconfig-paths` plugin.
+
+Decks are rows in `deck` and `slides`. Follow `.bolt/skills/slides/SKILL.md`. Before authoring: apply `supabase/migrations/create_deck_tables.sql` (writing the file does not create the tables) and deploy `supabase/functions/deck-api` as-is — the editor needs it. Do not call `deck-api` to author. Do not rewrite the app.

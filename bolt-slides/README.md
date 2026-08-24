@@ -1,36 +1,61 @@
-# Bolt slides skill
+# Bolt Slides
 
-A Bolt skill that builds a premium, **responsive React presentation deck** — classic
-paged slides you present one at a time, with a Slidev-style floating dock + thumbnail
-rail, grid overview, click-builds, annotation, and presenter mode — but each slide is a
-responsive web layout (no fixed canvas, no clipping) built from a rich component
-library.
+A Pitch-style slide studio for [Bolt](https://bolt.new): a deck **editor**, a
+premium **presentation engine**, and a bundled **skill** so Bolt's AI can
+prompt entire decks into existence — which you then refine by hand.
 
-## The skill
+Decks are structured data stored in **Postgres**. Prompted decks write
+`deck` / `slides` rows. The visual editor reads and writes through the
+`deck-api` edge function (share links, speaker notes), so both share one
+store.
 
-This repo **is** the running app. The authoring guide lives at
-[`.bolt/skills/slides/SKILL.md`](./.bolt/skills/slides/SKILL.md); the app itself sits
-at the repo root — a complete Vite + React deck: the paged engine + chrome
-(`src/deck/`), fourteen slide layouts (`src/components/`: Cover, BigNumber,
-Contrast, Chat, Globe, Bento, Split, StatGrid, Section, Quote, Pricing, Steps,
-Agenda, Team) plus a dozen building blocks (Table, Comparison, Tabs, Accordion, Timeline,
-CodeWindow, BrowserFrame, SpotlightCard, charts, CountUp, TiltCard, Marquee, …),
-and the token-driven theme (`src/styles/`). The engine is left as-is; only the
-`:root` token block and the slides in `src/App.tsx` are authored per deck.
-
-## Add it in Bolt
-
-1. In Bolt's **Add skill from GitHub**, paste this repo's URL —
-   `https://github.com/inkko44/bolt-slides-skill`.
-2. The `slides` skill auto-discovers at `.bolt/skills/slides.md`.
-3. Tell Bolt to use the `slides` skill and build a deck about your topic/brand.
-
-## Run it locally
+## Quick start
 
 ```bash
 npm install
-npm run dev
+npm run dev        # editor at http://localhost:5173 — Present swaps this view
 ```
 
-`npm run dev` opens the deck at `/`. Re-theme everything by editing one `:root` block
-in `src/styles/tokens.css`.
+On first use in Bolt the agent must apply
+`supabase/migrations/create_deck_tables.sql` and deploy
+`supabase/functions/deck-api` (the instance is already provisioned; the
+schema and function are not). After that, add slides in the editor or prompt
+a deck with the `slides` skill.
+
+## What's inside
+
+- `/` — Editor: thumbnail rail, click-to-edit text, speaker notes. The
+  bottom bar pages the deck and holds Export PDF, Present, and Share
+  (one link per mode: presentation, presenter console, or editor; optional
+  password). Share is disabled in Bolt preview until the project is
+  published. Present replaces the editor in place (Esc or the dock close
+  control returns to editing). From local Vite or the published site, **P**
+  opens a presenter console in a second window. In an embedded preview that
+  control stays disabled (it would open the preview's own URL); use Share
+  after publishing.
+- `/present` — Same presentation engine, used by share links on the
+  published origin.
+
+## The skill
+
+`.bolt/skills/slides/SKILL.md` covers bootstrap (apply the shipped
+migration, deploy `deck-api` as-is) and authoring `deck` / `slides` rows.
+Do not rewrite the app or call `deck-api` to author.
+
+## Architecture
+
+```
+src/data/               types + zustand store (optimistic writes via deck-api)
+src/layouts/            layout registry
+src/components/         section components (locked)
+src/deck/               presentation engine
+src/edit/               editor
+src/styles/tokens.css   theme: edit :root values only
+supabase/functions/deck-api    edge function — browser / share backend
+supabase/migrations/           schema (apply; writing the file is not enough)
+```
+
+## Theming
+
+Everything visual derives from the `:root` tokens in `src/styles/tokens.css`.
+`--accent` must stay a solid color.

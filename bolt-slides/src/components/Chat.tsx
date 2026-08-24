@@ -1,5 +1,5 @@
-import Build from '@/deck/Build';
-import Reveal from '@/deck/Reveal';
+import Build from '../deck/Build';
+import Reveal from '../deck/Reveal';
 
 /* A chat-conversation slide — user bubbles on the accent, assistant bubbles on
    the surface, inside a titled window. Each message is a click-build beat:

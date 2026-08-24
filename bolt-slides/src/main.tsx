@@ -1,11 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import '@/styles/tokens.css';
-import '@/styles/base.css';
-import App from '@/App';
+import EditorApp from './edit/EditorApp';
+import PresentApp from './present/PresentApp';
+import './styles/tokens.css';
+import './styles/base.css';
+import './styles/editor.css';
+
+/*  /          the editor (sidebar · canvas · bottom bar)
+               Present swaps this view in place — no new URL
+    /present   same engine, used by share links (often broken in Bolt preview) */
+const isPresent = window.location.pathname.startsWith('/present');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    {isPresent ? <PresentApp /> : <EditorApp />}
   </React.StrictMode>
 );

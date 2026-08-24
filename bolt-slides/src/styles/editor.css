@@ -1,0 +1,2038 @@
+/* ── Editor chrome — same token vocabulary as the deck (tokens.css).
+   Chrome surfaces are LIGHTER than the canvas so the three zones read
+   clearly: canvas (darkest) · rails/panels · raised menus/inputs. ── */
+:root {
+  /* editor chrome always uses Inter — the deck-level font pairing only
+     restyles slide content (canvas, thumbnails, present mode) */
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  /* chrome accent is FIXED — the deck-level accent only recolors slides */
+  --ui-accent: #1688fc;
+  --ed-chrome: color-mix(
+    in srgb,
+    var(--bg) 88%,
+    white
+  ); /* bars, rails, panels */
+  --ed-chrome-2: color-mix(
+    in srgb,
+    var(--bg) 80%,
+    white
+  ); /* inputs, cards, hover */
+  --ed-pop: color-mix(in srgb, var(--bg) 72%, white); /* menus, modals */
+}
+
+/* chrome containers stay Inter regardless of the deck font pairing;
+   slide content (.slide) re-asserts the deck fonts inside the canvas/thumbs */
+.ed-side,
+.ed-canvas-nav,
+.ctx-menu,
+.modal,
+.fmt-menu,
+.fmt-pop,
+.color-pop {
+  font-family: var(--font-ui);
+}
+
+.boot-screen {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ed-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.ed-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* ── bottom-bar actions (Export PDF · Play · Share live with the pager) ── */
+.nav-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--hair-2);
+  flex-shrink: 0;
+}
+/* live region: always in the DOM so announcements are heard, but it takes
+   no space until it has something to say */
+.nav-status {
+  color: var(--fg-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.nav-status:empty {
+  display: none;
+}
+.nav-status.busy::before {
+  content: '● ';
+  color: var(--ui-accent);
+}
+.ed-canvas-nav .ghost-btn,
+.ed-canvas-nav .solid-btn {
+  height: 30px;
+}
+.ed-canvas-nav .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+.ed-tip {
+  display: grid;
+  place-items: center;
+}
+.ed-tip .solid-btn:disabled {
+  pointer-events: none;
+}
+/* Share is white-on-dark, not accent-coloured */
+.ed-canvas-nav .solid-btn {
+  background: #fff;
+  color: #10141c;
+  box-shadow: 0 6px 18px -10px rgba(255, 255, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.ed-canvas-nav .solid-btn:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+.ed-canvas-nav .icon-btn.on {
+  background: var(--ed-chrome-2);
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* speaker-notes popover, docked above the bottom bar. Centered with auto
+   margins, NOT a transform — a transformed ancestor would re-anchor the
+   note editor's position:fixed colour palette and strand it off-screen. */
+.notes-pop {
+  position: absolute;
+  z-index: 45;
+  bottom: 62px;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: min(620px, 92vw);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: color-mix(in srgb, var(--bg) 93%, white);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-ui);
+}
+.notes-pop .note-wyg {
+  --note-pad-x: 12px;
+  --note-pad-y: 10px;
+  flex: none;
+  min-height: 150px;
+  max-height: 38vh;
+  font-size: 13px;
+  color: var(--fg);
+  border-radius: 10px;
+  background: var(--ed-chrome-2);
+  border: 1px solid var(--hair);
+}
+.notes-pop .note-wyg:focus {
+  background: var(--ed-chrome-2);
+  border-color: transparent;
+}
+.notes-pop .note-wyg h3 {
+  color: var(--fg);
+}
+.notes-pop .note-wyg blockquote {
+  color: var(--fg);
+}
+.notes-pop-hint {
+  color: var(--fg-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* buttons + inputs */
+.ghost-btn,
+.solid-btn {
+  font: 500 12.5px/1 var(--font-ui);
+  letter-spacing: 0;
+  border-radius: 9px;
+  padding: 1.5px 12px 0;
+  height: 31px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.ghost-btn {
+  background: none;
+  border: 1px solid var(--hair);
+  color: var(--fg-muted);
+}
+.ghost-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--fg);
+  background: var(--ed-chrome-2);
+}
+.ghost-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ghost-btn.xs {
+  padding: 0 7px;
+  height: 23px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+.ghost-btn.danger:hover {
+  border-color: #f87171;
+  color: #f87171;
+}
+/* inline icons in text buttons: undo the label's optical top padding so the glyph sits centered */
+.btn-glyph {
+  flex: none;
+  margin-top: -1.5px;
+}
+.solid-btn {
+  background: var(--ui-accent);
+  border: none;
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.solid-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.solid-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ed-root select,
+.ed-root input:not([type='checkbox']):not([type='range']):not([type='color']),
+.ed-root textarea {
+  background: var(--ed-chrome-2);
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  color: var(--fg);
+  font: 400 13px/1.45 var(--font-ui);
+  padding: 7px 9px;
+  width: 100%;
+  min-width: 0;
+}
+.ed-root select {
+  width: auto;
+  cursor: pointer;
+}
+.ed-root input:focus,
+.ed-root textarea:focus,
+.ed-root select:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ui-accent) 55%, var(--hair));
+}
+.ed-root textarea {
+  resize: vertical;
+}
+
+/* ── sidebar (slide rail) ── */
+.ed-side {
+  width: 208px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--hair);
+  background: var(--ed-chrome);
+}
+.ed-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px;
+  color: var(--fg-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.ed-side-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.side-row {
+  display: flex;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+}
+.side-row-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 3px;
+  width: 16px;
+  flex-shrink: 0;
+}
+.side-no {
+  color: var(--fg-faint);
+  font: 500 10.5px/1 var(--font-mono, monospace);
+}
+.side-status {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.side-thumb {
+  position: relative;
+  flex: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid var(--hair-2);
+  background: var(--bg);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.side-row:hover .side-thumb {
+  border-color: var(--hair);
+}
+.side-row.active .side-thumb {
+  border-color: color-mix(in srgb, var(--ui-accent) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
+}
+
+.mini-frame {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+}
+.mini-scale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+
+/* ── canvas ── */
+.ed-canvas {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+      90% 70% at 50% 0%,
+      color-mix(in srgb, var(--surface) 60%, transparent),
+      transparent 70%
+    ),
+    var(--bg);
+}
+.ed-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--hair-2);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7);
+}
+.ed-frame-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+.ed-empty {
+  color: var(--fg-faint);
+  font-size: 14px;
+}
+
+.ed-canvas-nav {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border: 1px solid var(--hair-2);
+  border-radius: 10px;
+  padding: 5px 8px;
+  backdrop-filter: blur(12px);
+}
+.ed-counter {
+  color: var(--fg-muted);
+  font: 500 12px/1 var(--font-mono, monospace);
+}
+
+/* inline editing affordances — quiet: a hairline underline on hover, a soft
+   tint + underline while editing (no boxy outline blobs on wrapped lines) */
+.t-edit {
+  cursor: text;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  box-shadow: 0 calc(2px * var(--inv, 1)) 0 transparent;
+  transition: box-shadow 0.12s ease, background 0.12s ease;
+}
+.t-edit:hover {
+  box-shadow: 0 calc(2px * var(--inv, 1)) 0
+    color-mix(in srgb, var(--ui-accent) 40%, transparent);
+}
+.t-edit.focused {
+  outline: none;
+  background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+  box-shadow: 0 calc(2px * var(--inv, 1)) 0
+    color-mix(in srgb, var(--ui-accent) 65%, transparent);
+}
+/* empty fields keep an intrinsic size and a ghost placeholder — even while
+   focused (otherwise empty table columns/cells collapse mid-edit) */
+.t-edit.empty {
+  position: relative;
+  display: inline-block;
+  min-width: 3ch;
+  min-height: 1em;
+}
+.t-edit.empty::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  text-align: inherit; /* centered layouts keep their ghost text centered */
+  color: var(--fg-faint);
+  opacity: 0.7;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.t-edit.empty.focused::before {
+  opacity: 0.4;
+}
+
+.fld {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fld label {
+  color: var(--fg-muted);
+  font-size: 11.5px;
+}
+.fld.row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.fld input[type='color'] {
+  width: 34px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--hair-2);
+  border-radius: 7px;
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.fld input.angle {
+  width: 64px;
+  flex-shrink: 0;
+}
+.fld-hint {
+  color: var(--fg-faint);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.seg {
+  display: flex;
+  border: 1px solid var(--hair-2);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.seg-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fg-faint);
+  font-size: 11.5px;
+  padding: 7px 0;
+  text-transform: capitalize;
+}
+.seg-btn + .seg-btn {
+  border-left: 1px solid var(--hair-2);
+}
+.seg-btn.on {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+.bg-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.swatches {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.swatch {
+  width: 34px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--hair-2);
+  cursor: pointer;
+}
+.swatch:hover {
+  border-color: var(--hair);
+}
+
+/* ── context menu / modals ── */
+.ctx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+.ctx-menu {
+  position: fixed;
+  z-index: 91;
+  min-width: 176px;
+  padding: 5px;
+  background: var(--ed-pop);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+}
+.ctx-item {
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--fg);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.ctx-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.ctx-item.danger {
+  color: #f87171;
+}
+.ctx-sep {
+  height: 1px;
+  background: var(--hair-2);
+  margin: 4px 6px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal {
+  background: var(--ed-pop);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 40px 120px -20px rgba(0, 0, 0, 0.8);
+  width: min(680px, 94vw);
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: 18px;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.modal-head h3 {
+  margin: 0;
+  font: 600 16px/1 var(--font-ui);
+}
+
+.add-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+.add-card {
+  background: var(--surface);
+  border: 1px solid var(--hair-2);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.add-card:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 55%, var(--hair));
+  background: var(--surface-2);
+}
+.add-card-name {
+  color: var(--fg);
+  font: 600 13.5px/1 var(--font-ui);
+}
+.add-card-hint {
+  color: var(--fg-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* ══ Polish pass — glassy controls, matched heights, canvas tooling ══ */
+
+/* chrome surfaces get a subtle vertical sheen instead of flat fills */
+.ed-side {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 86%, white),
+    color-mix(in srgb, var(--bg) 91%, white)
+  );
+}
+
+/* glassy fields — inputs, textareas, selects */
+.ed-root select,
+.ed-root input:not([type='checkbox']):not([type='range']):not([type='color']),
+.ed-root textarea {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.075),
+    rgba(255, 255, 255, 0.035)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+  border-radius: 7px;
+}
+.ed-root input:focus,
+.ed-root textarea:focus,
+.ed-root select:focus {
+  border-color: color-mix(in srgb, var(--ui-accent) 70%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
+}
+.ed-root select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239aa3b2' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.075),
+      rgba(255, 255, 255, 0.035)
+    );
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 9px center, 0 0;
+}
+.ghost-btn {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.solid-btn {
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--ui-accent) 70%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* floating text-format menu — Pitch-style: icon buttons, active states,
+   grouped with separators, springs in above (or below) the selection */
+@keyframes fmt-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(5px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) translateY(0) scale(1);
+  }
+}
+@keyframes fmt-pop-below {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0) translateY(-5px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) translateY(0) scale(1);
+  }
+}
+.fmt-menu {
+  position: fixed;
+  z-index: 120;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  background: rgba(13, 17, 25, 0.86);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 11px;
+  box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: fmt-pop 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fmt-menu.below {
+  transform: translate(-50%, 0);
+  animation-name: fmt-pop-below;
+}
+.fmt-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 3px;
+}
+.fmt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  padding: 0;
+  background: none;
+  color: #dde4ee;
+  font: 600 14px/1 var(--font-ui);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.fmt-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.fmt-btn.on {
+  background: color-mix(in srgb, var(--ui-accent) 28%, transparent);
+  color: #fff;
+}
+.fmt-btn.fmt-a {
+  color: var(--ui-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
+.fmt-btn.fmt-a.on {
+  color: #fff;
+}
+.fmt-btn.fmt-up {
+  font-size: 16.5px;
+}
+.fmt-btn.fmt-dn {
+  font-size: 11.5px;
+}
+
+/* text selection + caret inside the editable canvas */
+.ed-frame-inner ::selection {
+  background: color-mix(in srgb, var(--ui-accent) 38%, transparent);
+}
+.t-edit {
+  caret-color: var(--ui-accent);
+}
+
+/* on-canvas list-item controls — a compact cluster in the LEFT gutter,
+   vertically centered on its item (so ownership is unambiguous and nothing
+   overlaps the next row): [×][+][⠿] with ⠿ nearest the text. While dragging,
+   an accent insertion line shows exactly where the item will land. All
+   dimensions ×--inv (1/canvas-zoom) to stay at true screen size. */
+.li {
+  position: relative;
+}
+.li-tools {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  /* hoverable bridge between the text and the cluster — no dead gap */
+  padding-right: calc(8px * var(--inv, 1));
+  display: flex;
+  align-items: center;
+  gap: calc(3px * var(--inv, 1));
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease 0.35s, visibility 0s linear 0.55s;
+}
+.li:hover > .li-tools,
+.li-tools:hover {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s, 0s;
+}
+.li-h,
+.li-b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(22px * var(--inv, 1));
+  height: calc(22px * var(--inv, 1));
+  border: none;
+  border-radius: calc(6px * var(--inv, 1));
+  padding: 0;
+  background: rgba(13, 17, 25, 0.72);
+  color: color-mix(in srgb, var(--fg) 62%, transparent);
+  font: 600 calc(15px * var(--inv, 1)) / 1 var(--font-ui);
+  box-shadow: inset 0 0 0 calc(1px * var(--inv, 1)) rgba(255, 255, 255, 0.1);
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.li-h {
+  cursor: grab;
+  font-size: calc(12px * var(--inv, 1));
+  letter-spacing: -0.08em;
+}
+.li-h:active {
+  cursor: grabbing;
+}
+.li-b {
+  cursor: pointer;
+}
+.li-h:hover,
+.li-b:hover {
+  color: var(--fg);
+  background: rgba(30, 38, 52, 0.9);
+}
+.li-b.li-x:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.16);
+}
+
+/* drop indicator: the accent line marks the exact landing slot */
+.li-over-before::after,
+.li-over-after::after {
+  content: '';
+  position: absolute;
+  left: calc(-4px * var(--inv, 1));
+  right: 0;
+  height: calc(3px * var(--inv, 1));
+  border-radius: calc(2px * var(--inv, 1));
+  background: var(--ui-accent);
+  box-shadow: 0 0 calc(10px * var(--inv, 1))
+    color-mix(in srgb, var(--ui-accent) 60%, transparent);
+  pointer-events: none;
+}
+.li-over-before::after {
+  top: calc(-6px * var(--inv, 1));
+}
+.li-over-after::after {
+  bottom: calc(-6px * var(--inv, 1));
+}
+
+/* ── item add: an inline chip flowing right after the LAST list item —
+   in-flow, so cards/tab panels can never clip or overlap it. Shows on hover
+   and STAYS while the list is being edited. ── */
+.li-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-inline-start: calc(8px * var(--inv, 1));
+  min-width: calc(24px * var(--inv, 1));
+  height: calc(24px * var(--inv, 1));
+  padding: 0 calc(6px * var(--inv, 1));
+  border: calc(1px * var(--inv, 1)) dashed
+    color-mix(in srgb, var(--ui-accent) 45%, transparent);
+  border-radius: calc(7px * var(--inv, 1));
+  background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--fg) 75%, transparent);
+  font: 600 calc(15px * var(--inv, 1)) / 1 var(--font-ui);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease 0.35s, visibility 0s linear 0.55s,
+    background 0.12s ease, color 0.12s ease;
+}
+.li:hover > .li-add,
+.li.list-active > .li-add,
+.li-add:hover,
+.li-add:focus {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s, 0s, 0s, 0s;
+}
+.li-add:hover {
+  background: color-mix(in srgb, var(--ui-accent) 20%, transparent);
+  color: var(--fg);
+}
+
+/* ── drag smoothness ── */
+.li-src {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+/* while a drag is live: generous drop zones around every item, and no
+   competing hover chrome */
+body.li-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+body.li-dragging .li::before {
+  content: '';
+  position: absolute;
+  inset: calc(-14px * var(--inv, 1)) calc(-10px * var(--inv, 1));
+}
+body.li-dragging .li-tools,
+body.li-dragging .li-add {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+body.li-dragging .t-edit {
+  pointer-events: none;
+}
+@keyframes li-line-in {
+  from {
+    transform: scaleX(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+.li-over-before::after,
+.li-over-after::after {
+  transform-origin: left center;
+  animation: li-line-in 0.14s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── add-slide modal: darker, with live layout previews ── */
+.modal.add-slide {
+  width: min(1080px, 96vw);
+  background: color-mix(in srgb, var(--bg) 96%, white);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.add-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.add-card {
+  padding: 0 0 11px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 88%, white);
+}
+.add-card-preview {
+  display: block;
+  width: 100%;
+  pointer-events: none;
+  border-bottom: 1px solid var(--hair-2);
+  background: var(--bg);
+}
+.add-card-name {
+  padding: 10px 12px 0;
+}
+.add-card-hint {
+  padding: 0 12px;
+}
+
+/* ── table editor: grips outside the table edges + add strips ── */
+.tbl-wrap {
+  position: relative;
+}
+.tbl-grip {
+  position: absolute;
+  z-index: 41;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(20px * var(--inv, 1));
+  height: calc(20px * var(--inv, 1));
+  border-radius: calc(6px * var(--inv, 1));
+  background: rgba(13, 17, 25, 0.8);
+  color: color-mix(in srgb, var(--fg) 65%, transparent);
+  font: 600 calc(11px * var(--inv, 1)) / 1 var(--font-ui);
+  letter-spacing: -0.08em;
+  box-shadow: inset 0 0 0 calc(1px * var(--inv, 1)) rgba(255, 255, 255, 0.12);
+  cursor: grab;
+  user-select: none;
+}
+.tbl-grip:active {
+  cursor: grabbing;
+}
+.tbl-grip:hover {
+  color: var(--fg);
+  background: rgba(30, 38, 52, 0.95);
+}
+.tbl-grip-col {
+  transform: translate(-50%, calc(-100% - 5px * var(--inv, 1)));
+}
+.tbl-grip-row {
+  transform: translate(calc(-100% - 5px * var(--inv, 1)), -50%);
+}
+
+.tbl-add {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: calc(1px * var(--inv, 1)) dashed
+    color-mix(in srgb, var(--ui-accent) 45%, transparent);
+  border-radius: calc(6px * var(--inv, 1));
+  background: color-mix(in srgb, var(--ui-accent) 7%, transparent);
+  color: color-mix(in srgb, var(--fg) 70%, transparent);
+  font: 600 calc(14px * var(--inv, 1)) / 1 var(--font-ui);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s ease, background 0.12s ease;
+}
+.tbl-wrap:hover .tbl-add {
+  opacity: 1;
+}
+.tbl-add:hover {
+  background: color-mix(in srgb, var(--ui-accent) 18%, transparent);
+  color: var(--fg);
+}
+.tbl-add-row {
+  height: calc(20px * var(--inv, 1));
+  transform: translateY(calc(7px * var(--inv, 1)));
+}
+.tbl-add-col {
+  width: calc(20px * var(--inv, 1));
+  transform: translateX(calc(7px * var(--inv, 1)));
+}
+
+/* insertion indicators — the full row / column lights up on the landing edge */
+tr.tr-before > td,
+.tbl-wrap th.tr-before {
+  box-shadow: inset 0 calc(3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+tr.tr-after > td {
+  box-shadow: inset 0 calc(-3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+.tbl-wrap .tc-before {
+  box-shadow: inset calc(3px * var(--inv, 1)) 0 0 var(--ui-accent);
+}
+.tbl-wrap .tc-after {
+  box-shadow: inset calc(-3px * var(--inv, 1)) 0 0 var(--ui-accent);
+}
+
+/* ── the text bar variant: anchored under (or above) the text block,
+   left-aligned and stable — not floating at the selection midpoint ── */
+@keyframes bar-in-below {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes bar-in-above {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-100% + 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-100%);
+  }
+}
+.fmt-menu.fmt-bar.below {
+  transform: none;
+  animation: bar-in-below 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fmt-menu.fmt-bar:not(.below) {
+  transform: translateY(-100%);
+  animation: bar-in-above 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fmt-size {
+  min-width: 18px;
+  text-align: center;
+  color: var(--fg-muted);
+  font: 600 11px/1 var(--font-mono, monospace);
+}
+.fmt-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.fmt-btn:disabled:hover {
+  background: none;
+  color: #dde4ee;
+}
+
+/* ── color popover on the text bar ── */
+.color-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 121;
+  min-width: 232px;
+  padding: 10px 11px 11px;
+  background: rgba(13, 17, 25, 0.94);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.fmt-menu:not(.below) .color-pop {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.color-row-label {
+  color: #7d8794;
+  font: 600 9.5px/1 var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 4px 0 7px;
+}
+.color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.color-row + .color-row-label {
+  margin-top: 11px;
+}
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.color-swatch:hover {
+  transform: scale(1.14);
+}
+.color-swatch.on {
+  box-shadow: 0 0 0 2px rgba(13, 17, 25, 1), 0 0 0 3.5px var(--ui-accent);
+}
+.color-custom {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.07);
+  color: #dde4ee;
+  font: 600 13px/1 var(--font-ui);
+  overflow: hidden;
+}
+.color-custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* table cells in the editor never collapse and are click-to-edit anywhere */
+.tbl-wrap th,
+.tbl-wrap td {
+  min-width: 64px;
+}
+.tbl-wrap th .t-edit,
+.tbl-wrap td .t-edit {
+  display: block;
+  min-height: 1.2em;
+}
+.tbl-wrap th .t-edit.empty,
+.tbl-wrap td .t-edit.empty {
+  display: block;
+}
+
+/* ── code editor: transparent textarea glued over the highlighted code.
+   The selector must outrank the generic .ed-root textarea styling or the
+   overlay renders its own visible, padded copy of the code. ── */
+.code-edit {
+  position: relative;
+}
+.ed-root textarea.code-ta,
+.code-ta {
+  position: absolute;
+  z-index: 5;
+  width: auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  border-radius: 0;
+  box-shadow: none;
+  resize: none;
+  overflow: hidden;
+  color: transparent;
+  caret-color: var(--ui-accent);
+  white-space: pre;
+  padding: 0;
+  margin: 0;
+  letter-spacing: normal;
+}
+.code-ta::selection {
+  background: color-mix(in srgb, var(--ui-accent) 30%, transparent);
+}
+
+/* ── chart editor: drag a bar vertically to change its value ── */
+.chart-edit {
+  position: relative;
+}
+.chart-drag {
+  position: absolute;
+  z-index: 5;
+  cursor: ns-resize;
+  border-radius: 6px;
+}
+.chart-drag:hover {
+  background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+  box-shadow: inset 0 2px 0
+    color-mix(in srgb, var(--ui-accent) 70%, transparent);
+}
+
+/* gradient controls stay inside the panel */
+.bg-editor .fld.row {
+  flex-wrap: nowrap;
+}
+.ed-root .bg-editor input.angle {
+  width: 58px;
+  flex: 0 0 58px;
+}
+.bg-editor .swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.bg-editor .swatch {
+  width: 100%;
+  height: 26px;
+}
+
+/* ── dim slider: full width, filled track, value on the right ── */
+.dim-fld {
+  gap: 7px;
+}
+.dim-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.dim-value {
+  font: 500 11px/1 var(--font-mono, monospace);
+  color: var(--fg);
+  font-feature-settings: 'tnum' 1;
+}
+.dim-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+.dim-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  /* the track fills as the image darkens, so the control reads like the effect */
+  background: linear-gradient(
+    90deg,
+    var(--ui-accent) var(--fill, 50%),
+    var(--ed-chrome-2) var(--fill, 50%)
+  );
+  border: 1px solid var(--hair-2);
+}
+.dim-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ed-chrome-2);
+  border: 1px solid var(--hair-2);
+}
+.dim-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ui-accent);
+}
+.dim-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  transition: transform 0.12s ease;
+}
+.dim-range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.dim-range:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.dim-range:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+/* ── toggle fields: label left, switch right (no naked checkboxes) ── */
+.toggle-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.toggle-row span {
+  color: var(--fg-muted);
+  font-size: 11.5px;
+}
+.toggle-row:hover span {
+  color: var(--fg);
+}
+.ed-root .toggle-row input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  margin: 0;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--hair);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.ed-root .toggle-row input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #aeb7c2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.16s ease;
+}
+.ed-root .toggle-row input[type='checkbox']:checked {
+  background: var(--ui-accent);
+  border-color: transparent;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--ui-accent) 40%, transparent);
+}
+.ed-root .toggle-row input[type='checkbox']:checked::after {
+  transform: translateX(14px);
+  background: #fff;
+}
+
+/* ── rich text fields in the inspector — same editable as the canvas ── */
+.rich-input {
+  background: var(--ed-chrome-2);
+  border: 1px solid var(--hair);
+  border-radius: 7px;
+  padding: 7px 9px;
+  cursor: text;
+  min-height: 33px;
+  font: 400 13px/1.5 var(--font-ui);
+  color: var(--fg);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.075),
+    rgba(255, 255, 255, 0.035)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.rich-input:focus-within {
+  border-color: color-mix(in srgb, var(--ui-accent) 70%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
+}
+.rich-input.multi {
+  min-height: 64px;
+}
+.rich-input .t-edit {
+  display: block;
+  min-height: 1.2em;
+  outline: none;
+  box-shadow: none !important;
+  background: none !important; /* ring lives on the box */
+}
+.rich-input .accent-text {
+  -webkit-text-fill-color: initial;
+}
+
+/* ── inline toolbar variant: lives INSIDE the sidebar field while editing ── */
+.fmt-menu.fmt-inline {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  animation: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  padding: 3px;
+  margin-top: 7px;
+  width: 100%;
+  background: rgba(10, 14, 21, 0.55);
+  backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  box-shadow: none;
+}
+.fmt-inline .fmt-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+.fmt-inline .fmt-btn svg {
+  width: 12px;
+  height: 12px;
+}
+.fmt-inline .fmt-size {
+  min-width: 30px;
+  font-size: 10px;
+}
+.fmt-inline .fmt-sep {
+  height: 14px;
+  margin: 0 1px;
+}
+.fmt-inline .color-pop {
+  left: 0;
+  right: 0;
+  min-width: 0;
+  top: calc(100% + 6px);
+  bottom: auto;
+}
+
+/* ── flyout inside the toolbar (alignment) ── */
+.fmt-drop {
+  position: relative;
+  display: inline-flex;
+}
+.fmt-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 121;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(13, 17, 25, 0.94);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  box-shadow: 0 14px 40px -10px rgba(0, 0, 0, 0.7);
+}
+.fmt-menu.fmt-bar:not(.below) .fmt-pop {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.fmt-inline .fmt-pop {
+  left: 0;
+  transform: none;
+}
+
+/* comparison editor bits */
+.tbl-wrap .cmp-row.tr-before > .cmp-cell {
+  box-shadow: inset 0 calc(3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+.tbl-wrap .cmp-row.tr-after > .cmp-cell {
+  box-shadow: inset 0 calc(-3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+.cmp-chip-btn {
+  cursor: pointer;
+  border: none;
+}
+.cmp-chip-btn:hover {
+  transform: scale(1.12);
+}
+
+/* "+" tab in the tab bar (editor only) */
+.tab.tab-add {
+  color: color-mix(in srgb, var(--fg) 55%, transparent);
+  font-weight: 600;
+}
+.tab.tab-add:hover {
+  color: var(--fg);
+}
+
+/* chart bar labels: the add chip floats beside the last label instead of
+   stretching its column (bars must stay bottom-aligned and equal) */
+.chart-edit .ch-x {
+  position: relative;
+}
+.chart-edit .ch-x .li-add {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin: 0;
+  transform: translate(calc(4px * var(--inv, 1)), -50%);
+}
+
+/* add-slide modal grouping */
+.add-group + .add-group {
+  margin-top: 18px;
+}
+.add-group-title {
+  color: var(--fg-faint);
+  font: 600 10.5px/1 var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin: 0 0 9px 2px;
+}
+
+/* add-slide filter pills */
+.add-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.add-pill {
+  background: none;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  color: var(--fg-muted);
+  font: 500 12px/1 var(--font-ui);
+  padding: 7px 13px;
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+}
+.add-pill:hover {
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.add-pill.on {
+  background: var(--ui-accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+/* ── freeform canvas editing chrome (sizes counter the canvas scale) ── */
+.cnv-item.edit:hover {
+  outline: calc(var(--inv, 1) * 1px) solid
+    color-mix(in srgb, var(--ui-accent) 45%, transparent);
+}
+.cnv-item.edit.sel {
+  outline: calc(var(--inv, 1) * 1.5px) solid var(--ui-accent);
+}
+.cnv-item.edit .cnv-text [contenteditable] {
+  cursor: inherit;
+}
+.cnv-shield {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+.cnv-shield:active {
+  cursor: grabbing;
+}
+.cnv-handle {
+  position: absolute;
+  z-index: 5;
+  width: calc(var(--inv, 1) * 9px);
+  height: calc(var(--inv, 1) * 9px);
+  background: #fff;
+  border: calc(var(--inv, 1) * 1.5px) solid var(--ui-accent);
+  border-radius: calc(var(--inv, 1) * 2.5px);
+  transform: translate(-50%, -50%);
+}
+.cnv-handle.nw {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.cnv-handle.n {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+.cnv-handle.ne {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+.cnv-handle.e {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+.cnv-handle.se {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+.cnv-handle.s {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+.cnv-handle.sw {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+.cnv-handle.w {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}
+.cnv-guide {
+  position: absolute;
+  z-index: 4;
+  background: var(--ui-accent);
+  pointer-events: none;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ui-accent) 55%, transparent);
+}
+.cnv-guide.v {
+  top: 0;
+  bottom: 0;
+  width: calc(var(--inv, 1) * 1px);
+}
+.cnv-guide.h {
+  left: 0;
+  right: 0;
+  height: calc(var(--inv, 1) * 1px);
+}
+
+/* freeform insert bar + flyout galleries (chrome inside the scaled canvas) */
+.cnv-toolwrap {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: calc(var(--inv, 1) * 14px);
+  transform: translateX(-50%) scale(var(--inv, 1));
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+}
+.cnv-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 8px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border: 1px solid var(--hair-2);
+  border-radius: 10px;
+  backdrop-filter: blur(12px);
+}
+.cnv-toolbar button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 50px;
+  padding: 6px 0 5px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--fg-muted);
+}
+.cnv-toolbar button span {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.cnv-toolbar button:hover {
+  background: var(--ed-chrome-2);
+  color: var(--fg);
+}
+.cnv-toolbar button.on {
+  background: var(--ed-chrome-2);
+  color: var(--ui-accent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--ui-accent) 45%, transparent);
+}
+.cnv-flyout {
+  width: 316px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  border: 1px solid var(--hair-2);
+  border-radius: 12px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  animation: fly-in 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes fly-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cnv-fly-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  margin: 2px 0 8px;
+}
+.cnv-fly-label + .cnv-fly-label,
+.cnv-fly-grid + .cnv-fly-label {
+  margin-top: 14px;
+}
+.cnv-fly-grid {
+  display: grid;
+  gap: 4px;
+}
+.cnv-fly-grid.s6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+.cnv-fly-grid.s3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.cnv-fly-grid button {
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.cnv-fly-grid button:hover {
+  background: var(--ed-chrome-2);
+}
+.cnv-fly-shp {
+  width: 26px;
+  height: 26px;
+}
+/* gallery swatches use fixed-px strokes/bars, not vw */
+.cnv-fly-shp .cnv-shp.outline {
+  border-width: 1.5px;
+}
+.cnv-fly-line {
+  width: 84px;
+  height: 16px;
+  position: relative;
+}
+.cnv-fly-line .cnv-line2-bar {
+  height: 2px;
+}
+.cnv-fly-line .cnv-arr {
+  width: 7px;
+  height: 7px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.cnv-fly-line .cnv-line2-bar[style*='repeating'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ui-accent) 0 6px,
+    transparent 6px 11px
+  ) !important;
+}
+.cnv-fly-chart {
+  width: 64px;
+  height: 44px;
+}
+
+/* Edit-data drawer for freeform chart items (portaled — true screen px) */
+.cnv-data {
+  position: fixed;
+  z-index: 95;
+  left: 50%;
+  bottom: 16px;
+  width: min(780px, 94vw);
+  max-height: 44vh;
+  overflow: auto;
+  padding: 14px 20px 18px;
+  background: color-mix(in srgb, var(--bg) 93%, white);
+  border: 1px solid var(--hair);
+  border-radius: 18px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-ui);
+  animation: data-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes data-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.cnv-data-body {
+  width: 100%;
+}
+.cnv-data-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cnv-data-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cnv-data-actions {
+  display: flex;
+  gap: 8px;
+}
+.cnv-data-grid.table {
+  display: grid;
+  gap: 4px 8px;
+  align-items: center;
+}
+.cnv-data-colhead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cnv-data-colhead input {
+  font-weight: 600;
+}
+.cnv-data-title {
+  font: 600 13.5px/1 var(--font-ui);
+  color: var(--fg);
+}
+.cnv-data-grid {
+  display: grid;
+  gap: 4px 8px;
+  align-items: center;
+}
+.cnv-data-grid.bars {
+  grid-template-columns: 22px 1fr 110px 26px;
+}
+.cnv-data-grid.line {
+  grid-template-columns: 22px 1fr 26px;
+}
+.cnv-data-grid.donut {
+  grid-template-columns: 130px 1fr;
+}
+.cnv-data-row {
+  display: contents;
+}
+.cnv-data-th {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding-bottom: 2px;
+}
+.cnv-data-no {
+  font-size: 11px;
+  color: var(--fg-faint);
+  text-align: right;
+  padding-right: 2px;
+  font-feature-settings: 'tnum' 1;
+}
+.cnv-data-grid input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--ed-chrome-2);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  color: var(--fg);
+  font: 400 12.5px/1.2 var(--font-ui);
+}
+.cnv-data-grid input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ui-accent) 55%, transparent);
+}
+.cnv-data-x {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--fg-faint);
+  font-size: 14px;
+}
+.cnv-data-x:hover:not(:disabled) {
+  background: var(--ed-chrome-2);
+  color: #ff6b6b;
+}
+.cnv-data-x:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.cnv-data-add {
+  margin-top: 10px;
+}
+
+/* color swatch chips (chart color row in the Edit-data sheet) */
+.cnvp-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.cnvp-sw {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid var(--hair);
+  padding: 0;
+}
+.cnvp-sw.on {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ui-accent);
+}
+.cnvp-sw.none {
+  background: linear-gradient(
+      to top right,
+      transparent 44%,
+      #ff6b6b 46%,
+      #ff6b6b 54%,
+      transparent 56%
+    ),
+    var(--surface-2);
+}
+.cnvp-sw.pick {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+.cnv-rot {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: calc(var(--inv, 1) * -30px);
+  width: calc(var(--inv, 1) * 20px);
+  height: calc(var(--inv, 1) * 20px);
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--ui-accent);
+  border: calc(var(--inv, 1) * 1.5px) solid var(--ui-accent);
+  border-radius: 50%;
+  cursor: grab;
+}
+.cnv-rot:active {
+  cursor: grabbing;
+}
+.cnv-rot svg {
+  width: 60%;
+  height: 60%;
+}
+.cnv-rot::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: calc(var(--inv, 1) * 1.5px);
+  height: calc(var(--inv, 1) * 10px);
+  background: var(--ui-accent);
+  transform: translateX(-50%);
+}
+
+/* while a freeform drag is live, nothing on the page may text-select */
+body.cnv-dragging,
+body.cnv-dragging * {
+  user-select: none !important;
+}
+
+/* comparison sheet cells: toggle chips + text mode */
+.cmp-cellwrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.cmp-cellwrap input {
+  flex: 1;
+  min-width: 0;
+}
+.cmp-tgl {
+  flex: 1;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--hair);
+  font-size: 13px;
+  line-height: 1;
+}
+.cmp-tgl.yes {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ed-chrome-2));
+  color: var(--ui-accent);
+}
+.cmp-tgl.no {
+  background: var(--ed-chrome-2);
+  color: var(--fg-faint);
+}
+.cmp-tgl:hover {
+  filter: brightness(1.15);
+}
+.cmp-mode {
+  flex-shrink: 0;
+  width: 26px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--fg-faint);
+  font-size: 10px;
+  cursor: pointer;
+}
+.cmp-mode:hover {
+  background: var(--ed-chrome-2);
+  color: var(--fg);
+}
+
+/* icon-only pill action (the Present play button) */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border-radius: 9px;
+  background: none; /* <button> would otherwise keep the UA's grey fill */
+  color: var(--fg-muted);
+  border: 1px solid var(--hair);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.icon-btn:hover {
+  background: var(--ed-chrome-2);
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
