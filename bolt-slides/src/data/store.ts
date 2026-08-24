@@ -133,7 +133,8 @@ interface Store extends AppState {
   bootError: string | null;
   /** set when the API refuses us — drives the gate screens */
   denied: Denial;
-  /** false for share links that may not write (present / presenter) */
+  /** advisory: false for present/presenter share links. Mutators do not
+   *  consult this — the API is the real gate. Do not trust it in UI. */
   canEdit: boolean;
   /** what kind of visitor this browser is */
   mode: ShareMode;

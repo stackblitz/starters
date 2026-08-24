@@ -69,7 +69,9 @@ The function uses the service role. Do not add `anon` CRUD policies.
 - `edit` share link — everything
 - `presenter` — read, plus writing `notes` on a slide
 - `present` — read, with `notes` stripped from the response
-- export / import / share management — owner or `edit` only
+- export — any reader (notes stripped unless `edit`)
+- import — owner or `edit`
+- share management — owner only
 
 A request carrying a share token is judged **by that token**, even from the
 owner's own browser.
