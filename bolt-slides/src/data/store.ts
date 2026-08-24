@@ -111,7 +111,7 @@ function flushPendingRefresh() {
   void useStore.getState().refresh();
 }
 
-function trackPut(p: Promise<unknown>) {
+function trackPut<T>(p: Promise<T>): Promise<T> {
   inFlight++;
   return p.finally(() => {
     inFlight--;
@@ -334,18 +334,20 @@ export const useStore = create<Store>((set, getState) => ({
   async addSlide(layout, props, position, background) {
     bumpWrite();
     const pos = position ?? getState().current + 1;
-    const s = await api<AppState>('/slides', 'POST', {
-      layout,
-      props,
-      position: pos,
-      background,
-    });
+    const s = await trackPut(
+      api<AppState>('/slides', 'POST', {
+        layout,
+        props,
+        position: pos,
+        background,
+      })
+    );
     set({ ...s, current: pos });
   },
 
   async duplicateSlide(id) {
     bumpWrite();
-    const s = await api<AppState>(`/slides/${id}/duplicate`, 'POST');
+    const s = await trackPut(api<AppState>(`/slides/${id}/duplicate`, 'POST'));
     const idx = getState().slides.findIndex((sl) => sl.id === id);
     set({ ...s, current: idx + 1 });
   },
@@ -353,7 +355,7 @@ export const useStore = create<Store>((set, getState) => ({
   async deleteSlide(id) {
     bumpWrite();
     const cur = getState().current;
-    const s = await api<AppState>('/slides/' + id, 'DELETE');
+    const s = await trackPut(api<AppState>('/slides/' + id, 'DELETE'));
     set({ ...s, current: Math.min(cur, s.slides.length - 1) });
   },
 
@@ -374,7 +376,7 @@ export const useStore = create<Store>((set, getState) => ({
 
   async importDeck(json) {
     bumpWrite();
-    const s = await api<AppState>('/import', 'POST', json);
+    const s = await trackPut(api<AppState>('/import', 'POST', json));
     set({ ...s, current: 0 });
   },
 }));
