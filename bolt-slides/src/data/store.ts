@@ -94,14 +94,32 @@ bus?.addEventListener('message', (e) => {
 
 const saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 let pendingRefresh = false;
+let writeGen = 0;
+let inFlight = 0;
+
+function bumpWrite() {
+  writeGen++;
+}
+
+function writesPending() {
+  return Object.keys(saveTimers).length > 0 || inFlight > 0;
+}
 
 function flushPendingRefresh() {
-  if (!pendingRefresh || Object.keys(saveTimers).length) return;
+  if (!pendingRefresh || writesPending()) return;
   pendingRefresh = false;
   void useStore.getState().refresh();
 }
 
-function debounceSave(id: string, fn: () => void, ms = 500) {
+function trackPut(p: Promise<unknown>) {
+  inFlight++;
+  return p.finally(() => {
+    inFlight--;
+    flushPendingRefresh();
+  });
+}
+
+function debounceSave(id: string, fn: () => void | Promise<unknown>, ms = 500) {
   clearTimeout(saveTimers[id]);
   saveTimers[id] = setTimeout(() => {
     delete saveTimers[id];
@@ -128,8 +146,9 @@ interface Store extends AppState {
   setPresenting(v: boolean): void;
 
   load(): Promise<void>;
-  /** Re-read /state without resetting ephemeral editor UI. Skips if a
-   *  debounced save is in flight so we don't clobber in-progress edits. */
+  /** Re-read /state without resetting ephemeral editor UI. Skips while a
+   *  debounce or PUT is in flight, and drops the snapshot if a write started
+   *  after the GET. */
   refresh(): Promise<void>;
   setCurrent(i: number): void;
 
@@ -184,9 +203,22 @@ export const useStore = create<Store>((set, getState) => ({
 
   async load() {
     try {
-      // a visitor arriving on a link is only allowed what that link grants
-      const link = shareToken ? await shareInfo().catch(() => null) : null;
-      const mode: ShareMode = link?.mode ?? 'edit';
+      // a visitor arriving on a link is only allowed what that link grants.
+      // never default a ?k= tab to editor if /share fails — that would show
+      // the editor chrome for a present/presenter token.
+      let mode: ShareMode = 'edit';
+      if (shareToken) {
+        const link = await shareInfo().catch(() => null);
+        if (!link) {
+          set({
+            denied: 'share-required',
+            canEdit: false,
+            loaded: false,
+          });
+          return;
+        }
+        mode = link.mode;
+      }
       const s = await api<AppState>('/state');
       set({
         ...s,
@@ -208,14 +240,20 @@ export const useStore = create<Store>((set, getState) => ({
   },
 
   async refresh() {
-    if (Object.keys(saveTimers).length) {
+    if (writesPending()) {
       pendingRefresh = true;
       return;
     }
     pendingRefresh = false;
     if (getState().denied) return;
+    const gen = writeGen;
     try {
       const s = await api<AppState>('/state');
+      if (gen !== writeGen || writesPending()) {
+        pendingRefresh = true;
+        flushPendingRefresh();
+        return;
+      }
       const cur = getState().current;
       set({
         ...s,
@@ -234,19 +272,45 @@ export const useStore = create<Store>((set, getState) => ({
   },
 
   updateDeck(patch) {
+    bumpWrite();
     set((s) => ({ deck: { ...s.deck, ...patch } }));
-    debounceSave('deck', () => api('/deck', 'PUT', patch));
+    debounceSave('deck', () => {
+      const deck = getState().deck;
+      return trackPut(
+        api('/deck', 'PUT', {
+          title: deck.title,
+          transition: deck.transition,
+          font: deck.font,
+          accent: deck.accent,
+        })
+      );
+    });
   },
 
   patchSlide(id, patch) {
+    bumpWrite();
     set((s) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, ...patch } : sl)),
     }));
-    api('/slides/' + id, 'PUT', patch);
     bus?.postMessage({ type: 'patch', id, patch });
+    const keys = Object.keys(patch);
+    const notesOnly = keys.length > 0 && keys.every((k) => k === 'notes');
+    const send = () =>
+      trackPut(
+        api(
+          '/slides/' + id,
+          'PUT',
+          notesOnly
+            ? { notes: getState().slides.find((s) => s.id === id)?.notes }
+            : patch
+        )
+      );
+    if (notesOnly) debounceSave('notes:' + id, send);
+    else void send();
   },
 
   setProp(id, path, value) {
+    bumpWrite();
     const slide = getState().slides.find((s) => s.id === id);
     if (!slide) return;
     const props = setPath(slide.props, path, value);
@@ -254,9 +318,11 @@ export const useStore = create<Store>((set, getState) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, props } : sl)),
     }));
     debounceSave(id, () =>
-      api('/slides/' + id, 'PUT', {
-        props: getState().slides.find((s) => s.id === id)?.props,
-      })
+      trackPut(
+        api('/slides/' + id, 'PUT', {
+          props: getState().slides.find((s) => s.id === id)?.props,
+        })
+      )
     );
   },
 
@@ -265,6 +331,7 @@ export const useStore = create<Store>((set, getState) => ({
   },
 
   async addSlide(layout, props, position, background) {
+    bumpWrite();
     const pos = position ?? getState().current + 1;
     const s = await api<AppState>('/slides', 'POST', {
       layout,
@@ -276,18 +343,21 @@ export const useStore = create<Store>((set, getState) => ({
   },
 
   async duplicateSlide(id) {
+    bumpWrite();
     const s = await api<AppState>(`/slides/${id}/duplicate`, 'POST');
     const idx = getState().slides.findIndex((sl) => sl.id === id);
     set({ ...s, current: idx + 1 });
   },
 
   async deleteSlide(id) {
+    bumpWrite();
     const cur = getState().current;
     const s = await api<AppState>('/slides/' + id, 'DELETE');
     set({ ...s, current: Math.min(cur, s.slides.length - 1) });
   },
 
   reorder(ids) {
+    bumpWrite();
     const cur = getState().slides[getState().current]?.id;
     set((s) => ({
       slides: ids
@@ -298,10 +368,11 @@ export const useStore = create<Store>((set, getState) => ({
         .filter(Boolean),
       current: Math.max(0, ids.indexOf(cur ?? '')),
     }));
-    api('/order', 'PUT', { ids });
+    void trackPut(api('/order', 'PUT', { ids }));
   },
 
   async importDeck(json) {
+    bumpWrite();
     const s = await api<AppState>('/import', 'POST', json);
     set({ ...s, current: 0 });
   },
