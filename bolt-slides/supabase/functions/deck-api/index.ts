@@ -247,9 +247,8 @@ Deno.serve(async (req: Request) => {
     }
 
     return json(404, { error: 'no such route' });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    return json(500, { error: message });
+  } catch {
+    return json(500, { error: 'internal' });
   }
 });
 
@@ -349,8 +348,21 @@ function token(): string {
 }
 
 function clientIp(req: Request): string {
+  // prefer platform-provided client IPs. x-forwarded-for's first hop is
+  // client-controlled; the last hop is what the trusted proxy appended.
+  const cf = req.headers.get('cf-connecting-ip')?.trim();
+  if (cf) return cf;
+  const real = req.headers.get('x-real-ip')?.trim();
+  if (real) return real;
   const fwd = req.headers.get('x-forwarded-for');
-  return (fwd ? fwd.split(',')[0].trim() : '') || 'unknown';
+  if (fwd) {
+    const hops = fwd
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (hops.length) return hops[hops.length - 1];
+  }
+  return 'unknown';
 }
 
 function may(

@@ -15,7 +15,11 @@
       function talks to Postgres with the service role; the browser only
       talks to that function.
   3. Notes
-    - Single-tenant, no auth. Owner = a request with no share token.
+    - Single-tenant, no auth. Owner is NOT "a request with no share token".
+      deck-api access() order: share token (that token's mode, even from the
+      owner browser) → Authorization/apikey equals SUPABASE_SERVICE_ROLE_KEY
+      → X-Deck-Owner matching DECK_OWNER_SECRET → deny. If the function
+      secret is unset, no-token is still owner (local Vite / first deploy).
     - Apply this SQL as a migration. Writing this file to disk does not
       create the tables.
 */
