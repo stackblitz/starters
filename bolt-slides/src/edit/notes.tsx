@@ -222,7 +222,8 @@ function inlineText(node: Node): string {
   if (node.classList.contains('accent-text')) return `==${inner}==`;
   if (node.dataset.hl && HEX.test(node.dataset.hl))
     return `{hl:${node.dataset.hl}}${inner}{/hl}`;
-  if (node.dataset.color) return `{c:${node.dataset.color}}${inner}{/c}`;
+  if (node.dataset.color && HEX.test(node.dataset.color))
+    return `{c:${node.dataset.color}}${inner}{/c}`;
   return inner;
 }
 const prefixLines = (s: string, p: string) =>
@@ -451,7 +452,12 @@ export function NotesEditor({
   const code = () => {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed) return;
-    document.execCommand('insertHTML', false, `<code>${sel.toString()}</code>`);
+    const t = sel
+      .toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    document.execCommand('insertHTML', false, `<code>${t}</code>`);
     commit();
   };
 
@@ -701,6 +707,15 @@ export function NotesEditor({
         data-placeholder={placeholder}
         spellCheck
         onInput={() => setEmpty(!ref.current?.innerText.trim())}
+        onPaste={(e) => {
+          e.preventDefault(); // plain text only — same rule as EditableText
+          document.execCommand(
+            'insertText',
+            false,
+            e.clipboardData.getData('text/plain')
+          );
+          setEmpty(!ref.current?.innerText.trim());
+        }}
         onBlur={commit}
         onKeyDown={(e) => {
           e.stopPropagation(); // never let slide navigation see typing

@@ -989,6 +989,8 @@ export default function FreeformCanvas({ slide }: { slide: SlideData }) {
   } | null>(null);
   const [dataEdit, setDataEdit] = useState<number | null>(null);
   const dragging = useRef(false);
+  const stopDrag = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopDrag.current?.(), []);
 
   /* the right panel shows the selected item's settings via the store */
   const setCnvSel = useStore((s) => s.setCnvSel);
@@ -1232,8 +1234,10 @@ export default function FreeformCanvas({ slide }: { slide: SlideData }) {
       );
     };
     const onUp = () => {
+      stopDrag.current = null;
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
       document.body.classList.remove('cnv-dragging');
       setGuides({ v: [], h: [] });
       if (!moved && onTap) onTap();
@@ -1241,8 +1245,11 @@ export default function FreeformCanvas({ slide }: { slide: SlideData }) {
         dragging.current = false;
       }, 0);
     };
+    stopDrag.current?.();
+    stopDrag.current = onUp;
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
   };
 
   /* ── rotate: drag the halo handle; snaps every 45° ───────────────── */
@@ -1268,15 +1275,20 @@ export default function FreeformCanvas({ slide }: { slide: SlideData }) {
       );
     };
     const onUp = () => {
+      stopDrag.current = null;
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
       document.body.classList.remove('cnv-dragging');
       setTimeout(() => {
         dragging.current = false;
       }, 0);
     };
+    stopDrag.current?.();
+    stopDrag.current = onUp;
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
   };
 
   /* ── keyboard: delete / nudge / deselect ─────────────────────────── */
