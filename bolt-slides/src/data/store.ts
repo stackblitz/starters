@@ -2,12 +2,7 @@
    Mutations are optimistic: state updates instantly, the API call persists to
    the database in the background (text edits are debounced per slide). */
 import { create } from 'zustand';
-import type {
-  AppState,
-  Background,
-  DeckMeta,
-  SlideData,
-} from './types';
+import type { AppState, Background, DeckMeta, SlideData } from './types';
 import { deckUrl, supabaseAuthHeaders } from './api';
 import { shareHeaders, shareInfo, shareToken, type ShareMode } from './share';
 import { ownerHeaders } from './owner';

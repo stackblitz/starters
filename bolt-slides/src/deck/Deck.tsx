@@ -128,8 +128,8 @@ export default function Deck({
   const presenterTip = canOpenPresenter
     ? 'Presenter — new tab (P)'
     : canCopy
-      ? 'Use Share for a presenter link'
-      : 'Publish to open presenter';
+    ? 'Use Share for a presenter link'
+    : 'Publish to open presenter';
 
   const [slide, setSlide] = useState(() => {
     if (initialSlide != null)

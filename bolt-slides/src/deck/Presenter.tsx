@@ -224,13 +224,9 @@ export default function Presenter({
                 }
                 onExit?.(slide);
               }}
-              data-tip={
-                window.opener ? 'Close presenter' : 'Back to editor'
-              }
+              data-tip={window.opener ? 'Close presenter' : 'Back to editor'}
               aria-label={
-                window.opener
-                  ? 'Close presenter view'
-                  : 'Back to the editor'
+                window.opener ? 'Close presenter view' : 'Back to the editor'
               }
             >
               <IconClose />

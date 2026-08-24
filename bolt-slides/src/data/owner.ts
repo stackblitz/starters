@@ -24,9 +24,7 @@ export function ownerHeaders(): Record<string, string> {
 
 export function applyOwnerProof(token: string | null): void {
   window.__BOLT_OWNER_PROOF = token;
-  window.dispatchEvent(
-    new CustomEvent(OWNER_PROOF_EVENT, { detail: token })
-  );
+  window.dispatchEvent(new CustomEvent(OWNER_PROOF_EVENT, { detail: token }));
 }
 
 /** Wait for Bolt's preview inject. Local Vite / published origin (no parent)

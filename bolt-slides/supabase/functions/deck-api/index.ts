@@ -27,7 +27,10 @@
  * an empty Bearer is rejected before this function runs.
  * Tables have RLS and no policies; the function uses the service role.
  */
-import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.57.4';
+import {
+  createClient,
+  type SupabaseClient,
+} from 'npm:@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -83,9 +86,7 @@ Deno.serve(async (req: Request) => {
     if (seg[0] === 'share') {
       if (m === 'GET' && seg.length === 1) {
         const info = await shareInfo(supabase, url.searchParams.get('token'));
-        return info
-          ? json(200, info)
-          : json(404, { error: 'no such link' });
+        return info ? json(200, info) : json(404, { error: 'no such link' });
       }
       if (m === 'POST' && seg[1] === 'unlock') {
         const ip = clientIp(req);
@@ -188,7 +189,10 @@ Deno.serve(async (req: Request) => {
         for (const k of SLIDE_FIELDS) {
           if (b[k] !== undefined) patch[k] = b[k];
         }
-        const { error } = await supabase.from('slides').update(patch).eq('id', id);
+        const { error } = await supabase
+          .from('slides')
+          .update(patch)
+          .eq('id', id);
         if (error) throw error;
         return written(200, { ok: true });
       }
@@ -392,7 +396,11 @@ async function access(req: Request, supabase: SupabaseClient): Promise<Acc> {
     if (share.pass_hash) {
       const key = req.headers.get('x-share-grant');
       const { data: grant } = key
-        ? await supabase.from('share_grants').select('*').eq('key', key).maybeSingle()
+        ? await supabase
+            .from('share_grants')
+            .select('*')
+            .eq('key', key)
+            .maybeSingle()
         : { data: null };
       const fresh =
         grant &&
@@ -472,7 +480,11 @@ function visibleDeck(deck: {
 }
 
 async function ensureDeck(supabase: SupabaseClient) {
-  const { data } = await supabase.from('deck').select('id').eq('id', 1).maybeSingle();
+  const { data } = await supabase
+    .from('deck')
+    .select('id')
+    .eq('id', 1)
+    .maybeSingle();
   if (!data) {
     const { error } = await supabase.from('deck').insert({
       id: 1,
@@ -536,7 +548,9 @@ async function shiftFrom(
   slides: Array<{ id: string; position: number }>,
   pos: number
 ) {
-  const movers = slides.filter((s) => s.position >= pos).sort((a, b) => b.position - a.position);
+  const movers = slides
+    .filter((s) => s.position >= pos)
+    .sort((a, b) => b.position - a.position);
   for (const s of movers) {
     const { error } = await supabase
       .from('slides')
@@ -550,7 +564,10 @@ async function renumber(supabase: SupabaseClient) {
   const slides = await loadSlides(supabase);
   for (let i = 0; i < slides.length; i++) {
     if (slides[i].position !== i) {
-      await supabase.from('slides').update({ position: i }).eq('id', slides[i].id);
+      await supabase
+        .from('slides')
+        .update({ position: i })
+        .eq('id', slides[i].id);
     }
   }
 }
@@ -563,7 +580,13 @@ async function exportDeck(supabase: SupabaseClient) {
     font: state.deck.font,
     accent: state.deck.accent ?? undefined,
     slides: state.slides.map(
-      ({ id: _id, position: _position, created_at: _c, updated_at: _u, ...rest }) => rest
+      ({
+        id: _id,
+        position: _position,
+        created_at: _c,
+        updated_at: _u,
+        ...rest
+      }) => rest
     ),
   };
 }
@@ -646,7 +669,10 @@ async function saveShare(
     if (error) throw error;
   } else if (patch.rotate) {
     share = { ...share, token: token() };
-    await supabase.from('shares').update({ token: share.token }).eq('mode', mode);
+    await supabase
+      .from('shares')
+      .update({ token: share.token })
+      .eq('mode', mode);
   }
   if (patch.password === null || patch.password === '') {
     await supabase
@@ -696,7 +722,11 @@ async function unlock(
     .maybeSingle();
   const ok =
     !!share &&
-    (await verifyPassword(String(password ?? ''), share.pass_hash, share.pass_salt));
+    (await verifyPassword(
+      String(password ?? ''),
+      share.pass_hash,
+      share.pass_salt
+    ));
   await noteAttempt(supabase, ip, ok);
   if (!ok) return null;
   const cutoff = new Date(Date.now() - GRANT_DAYS * 86_400_000).toISOString();
@@ -711,7 +741,10 @@ async function unlock(
   return { key, mode: share.mode };
 }
 
-async function throttledFor(supabase: SupabaseClient, ip: string): Promise<number> {
+async function throttledFor(
+  supabase: SupabaseClient,
+  ip: string
+): Promise<number> {
   const { data } = await supabase
     .from('unlock_attempts')
     .select('*')
@@ -768,7 +801,10 @@ function bytesToHex(bytes: Uint8Array): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function hashPassword(password: string, saltHexStr: string): Promise<string> {
+async function hashPassword(
+  password: string,
+  saltHexStr: string
+): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(password),
@@ -799,6 +835,7 @@ async function verifyPassword(
   const got = await hashPassword(password, passSalt);
   if (got.length !== passHash.length) return false;
   let out = 0;
-  for (let i = 0; i < got.length; i++) out |= got.charCodeAt(i) ^ passHash.charCodeAt(i);
+  for (let i = 0; i < got.length; i++)
+    out |= got.charCodeAt(i) ^ passHash.charCodeAt(i);
   return out === 0;
 }
