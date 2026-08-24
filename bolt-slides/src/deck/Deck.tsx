@@ -118,8 +118,10 @@ export default function Deck({
   );
   const total = slides.length;
   const isPresenter = useMemo(
-    () => new URLSearchParams(window.location.search).has('presenter'),
-    []
+    () =>
+      allowPresenter &&
+      new URLSearchParams(window.location.search).has('presenter'),
+    [allowPresenter]
   );
   const { canCopy } = useShareOrigin();
   const canOpenPresenter = allowPresenter && isShareablePage();
@@ -215,12 +217,12 @@ export default function Deck({
     else document.documentElement.requestFullscreen?.();
   }, []);
   const openPresenter = useCallback(() => {
-    if (isPresenter || !isShareablePage()) return;
+    if (isPresenter || !canOpenPresenter) return;
     const params = new URLSearchParams(window.location.search);
     params.set('presenter', '1');
     const url = `${window.location.pathname}?${params}#${slide + 1}`;
     window.open(url, 'deck-presenter');
-  }, [isPresenter, slide]);
+  }, [isPresenter, canOpenPresenter, slide]);
 
   // keyboard
   useEffect(() => {
@@ -260,19 +262,22 @@ export default function Deck({
         // are ellipse / pen / highlighter there) — D and Escape still exit
         case 'o':
         case 'O':
-          if (drawing) break;
+          if (isPresenter || drawing) break;
           toggleRail();
           break;
         case 's':
         case 'S':
+          if (isPresenter) break;
           toggleRail();
           break;
         case 'g':
         case 'G':
+          if (isPresenter) break;
           toggleGrid();
           break;
         case 'f':
         case 'F':
+          if (isPresenter) break;
           toggleFs();
           break;
         case 'd':
@@ -287,10 +292,15 @@ export default function Deck({
           break;
         case 'h':
         case 'H':
-          if (drawing) break;
+          if (isPresenter || drawing) break;
           setUiHidden((v) => !v);
           break;
         case 'Escape':
+          if (isPresenter) {
+            e.preventDefault();
+            if (window.opener) window.close();
+            break;
+          }
           if (browse !== 'none' || drawing || uiHidden) {
             closeBrowse();
             setDrawing(false);
@@ -333,45 +343,55 @@ export default function Deck({
     return () => clearTimeout(t);
   }, [slide]);
 
-  // URL hash sync — skipped in-place (no new URL). Share /present still uses it.
+  // URL hash sync — skipped in-place (no new URL). Presenter consoles and
+  // /present share links still use it so a P popup can open on the live slide.
+  const skipHash = !!onExit && !isPresenter;
   useEffect(() => {
-    if (onExit) return;
+    if (skipHash) return;
     const want = String(slide + 1);
     if (window.location.hash.slice(1) !== want)
       history.replaceState(null, '', '#' + want);
-  }, [slide, onExit]);
+  }, [slide, skipHash]);
   useEffect(() => {
-    if (onExit) return;
+    if (skipHash) return;
     const onHash = () => {
       const h = parseInt(window.location.hash.slice(1), 10);
       if (h >= 1 && h <= total && h - 1 !== slide) go(h - 1);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, [slide, total, go, onExit]);
+  }, [slide, total, go, skipHash]);
 
-  // cross-tab sync (audience ⇄ presenter), via BroadcastChannel
+  // cross-tab sync (audience ⇄ presenter), via BroadcastChannel.
+  // Only the presenter console (or in-place owner Present) publishes;
+  // audience tabs subscribe. The P popup reads the hash before this
+  // effect, so the first publish is the live slide, not 0.
   const chan = useRef<BroadcastChannel | null>(null);
   const applyingRemote = useRef(false);
+  const isLeader = isPresenter || !!onExit;
   useEffect(() => {
     const c = new BroadcastChannel('deck-sync');
     chan.current = c;
     c.onmessage = (e) => {
-      if (e.data?.type === 'state') {
-        applyingRemote.current = true;
-        setSlide(e.data.slide);
-        setClicks(e.data.clicks);
-      }
+      if (e.data?.type !== 'state') return;
+      const n = e.data.slide;
+      const k = e.data.clicks;
+      if (!Number.isInteger(n) || !Number.isInteger(k) || n < 0 || k < 0)
+        return;
+      applyingRemote.current = true;
+      setSlide(n);
+      setClicks(k);
     };
     return () => c.close();
   }, []);
   useEffect(() => {
+    if (!isLeader) return;
     if (applyingRemote.current) {
       applyingRemote.current = false;
       return;
     }
     chan.current?.postMessage({ type: 'state', slide, clicks });
-  }, [slide, clicks]);
+  }, [slide, clicks, isLeader]);
 
   // fullscreen flag, presenter timer, idle auto-hide
   useEffect(() => {

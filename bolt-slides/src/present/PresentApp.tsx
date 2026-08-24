@@ -61,14 +61,18 @@ export default function PresentApp({
     <Deck
       transition={deck.transition}
       allowPresenter={mode !== 'present'}
-      initialSlide={embedded ? current : undefined}
+      initialSlide={embedded && onExit ? current : undefined}
       onExit={onExit}
-      /* the presenter console edits the deck's real notes — same rows the
-         editor's Notes tab writes, through the deck API */
-      onNotes={(i, text) => {
-        const s = slides[i];
-        if (s) patchSlide(s.id, { notes: text });
-      }}
+      /* notes writes are owner / edit / presenter only — present-share
+         must not PATCH even if someone mounts the console */
+      onNotes={
+        mode === 'present'
+          ? undefined
+          : (i, text) => {
+              const s = slides[i];
+              if (s) patchSlide(s.id, { notes: text });
+            }
+      }
       navLabel={(i) => {
         const s = slides[i];
         if (!s) return undefined;

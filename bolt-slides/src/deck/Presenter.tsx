@@ -218,15 +218,19 @@ export default function Presenter({
             <button
               className="pres-icon"
               onClick={() => {
-                window.close();
-                window.setTimeout(() => {
-                  if (window.closed) return;
-                  if (onExit) onExit(slide);
-                }, 0);
+                if (window.opener) {
+                  window.close();
+                  return;
+                }
+                onExit?.(slide);
               }}
-              data-tip={onExit ? 'Back to editor' : 'Close presenter'}
+              data-tip={
+                window.opener ? 'Close presenter' : 'Back to editor'
+              }
               aria-label={
-                onExit ? 'Back to the editor' : 'Close presenter view'
+                window.opener
+                  ? 'Close presenter view'
+                  : 'Back to the editor'
               }
             >
               <IconClose />

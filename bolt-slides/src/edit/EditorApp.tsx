@@ -1,7 +1,7 @@
 /* The editor — persistent slide rail · scaled live canvas with in-place
    editing; the canvas's bottom bar carries the deck actions
    (Export PDF / Play / Share). */
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '../data/store';
 import { useDeckSync } from '../data/useDeckSync';
 import { applyFont, applyAccent } from '../data/fonts';
@@ -23,8 +23,8 @@ export default function EditorApp() {
 
   const font = useStore((s) => s.deck.font);
   const accent = useStore((s) => s.deck.accent);
-  const [presenterQuery, setPresenterQuery] = useState(() =>
-    new URLSearchParams(window.location.search).has('presenter')
+  const presenterQuery = new URLSearchParams(window.location.search).has(
+    'presenter'
   );
   useDeckSync();
   useEffect(() => {
@@ -47,26 +47,18 @@ export default function EditorApp() {
   if (denied) return <Gate />;
   if (bootError) return <div className="boot-screen">{bootError}</div>;
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
-  // Present from the editor is in-place (no /present). A presenter console
-  // opened with P still uses ?presenter=1 on this same path.
-  if (presenting || presenterQuery)
+  // A P popup is a real presenter console: no onExit (Esc must close, not
+  // become the editor) and no initialSlide from this tab's current (fresh
+  // store is slide 0 — the hash is the source of truth).
+  if (presenterQuery) return <PresentApp embedded />;
+  // Present from the editor is in-place (no /present).
+  if (presenting)
     return (
       <PresentApp
         embedded
         onExit={(i) => {
           setCurrent(i);
           setPresenting(false);
-          if (presenterQuery) {
-            const params = new URLSearchParams(window.location.search);
-            params.delete('presenter');
-            const q = params.toString();
-            history.replaceState(
-              null,
-              '',
-              window.location.pathname + (q ? '?' + q : '')
-            );
-            setPresenterQuery(false);
-          }
         }}
       />
     );
