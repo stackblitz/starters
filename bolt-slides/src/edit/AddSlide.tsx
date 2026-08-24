@@ -1,10 +1,11 @@
 /* "New slide" picker — every layout in the registry, each card showing a live
    preview rendered from the layout's default content. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../data/store';
 import { LAYOUT_LIST, LAYOUT_GROUPS, LAYOUTS } from '../layouts/registry';
 import type { LayoutDef } from '../layouts/registry';
 import type { SlideData } from '../data/types';
+import { IconClose } from '../deck/icons';
 import MiniSlide from './MiniSlide';
 
 /* varied blue/black backgrounds cycle through the preview cards so the grid
@@ -44,13 +45,30 @@ export default function AddSlide({
   const addSlide = useStore((s) => s.addSlide);
   const [filter, setFilter] = useState<string | null>(null);
   const groups = LAYOUT_GROUPS.filter((g) => !filter || g.title === filter);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onClose();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal add-slide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h3>New slide</h3>
-          <button className="ghost-btn" onClick={onClose}>
-            Esc
+          <button
+            type="button"
+            className="icon-btn"
+            data-tip="Close"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <IconClose />
           </button>
         </div>
         <div className="add-pills">

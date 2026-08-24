@@ -4678,6 +4678,10 @@ strong {
   flex-direction: column;
   gap: 10px;
 }
+.share-item {
+  display: flex;
+  flex-direction: column;
+}
 .share-row {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -4811,10 +4815,13 @@ strong {
   align-self: flex-start;
 }
 .share-live {
-  margin: 14px 0 0;
-  min-height: 1.2em;
+  margin: 0 2px;
+  min-height: 0;
   font-size: 12px;
   color: var(--primary);
+}
+.share-live.on {
+  margin-top: 6px;
 }
 
 .gate {

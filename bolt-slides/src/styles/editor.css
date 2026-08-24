@@ -577,6 +577,23 @@
   margin: 0;
   font: 600 16px/1 var(--font-ui);
 }
+.modal-head .icon-btn svg,
+.share-head .icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+/* close sits at the top of the dialog — drop the tooltip below so it is not
+   clipped by the modal's overflow */
+.modal-head [data-tip]::after,
+.share-head [data-tip]::after {
+  bottom: auto;
+  top: calc(100% + 9px);
+  transform: translateX(-50%) translateY(-4px);
+}
+.modal-head [data-tip]:hover::after,
+.share-head [data-tip]:hover::after {
+  transform: translateX(-50%) translateY(0);
+}
 
 .add-grid {
   display: grid;
