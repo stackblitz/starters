@@ -30,7 +30,7 @@ export function useDeckSync({ enabled = true }: { enabled?: boolean } = {}) {
     const onProof = () => {
       if (!hasOwnerProof()) return;
       const s = useStore.getState();
-      if (s.denied !== 'share-required' && s.loaded) return;
+      if (s.mode === 'edit' && s.loaded && !s.denied) return;
       useStore.setState({ denied: null });
       load().catch(() => {
         /* still gated */

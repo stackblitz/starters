@@ -22,7 +22,8 @@
  * X-Deck-Owner matches DECK_OWNER_SECRET (Bolt injects a preview owner
  * token into the iframe and, when `.bolt/config.json` names this secret,
  * copies it to the function env; it is not in the workspace .env or the
- * published JS) → deny. If the function secret is unset, no-token is still
+ * published JS) → no token and no proof is the audience deck (`present`,
+ * notes stripped). If the function secret is unset, no-token is still
  * owner (local Vite / legacy). The functions gateway requires a real JWT;
  * an empty Bearer is rejected before this function runs.
  * Tables have RLS and no policies; the function uses the service role.
@@ -419,7 +420,8 @@ async function access(req: Request, supabase: SupabaseClient): Promise<Acc> {
     /* not on Bolt yet (local Vite) — keep "bare URL is owner" */
     return { mode: 'edit', owner: true };
   }
-  return null;
+  /* published origin / cover capture / any top-level tab: the audience deck */
+  return { mode: 'present', owner: false };
 }
 
 /** Service role may arrive on Authorization or apikey. Match the function
@@ -453,14 +455,14 @@ function visible(
   },
   acc: { mode: ShareMode }
 ) {
-  if (acc.mode !== 'present') return state;
-  return {
-    ...state,
-    slides: state.slides.map(({ notes: _notes, ...rest }) => ({
-      ...rest,
-      notes: '',
-    })),
-  };
+  const slides =
+    acc.mode === 'present'
+      ? state.slides.map(({ notes: _notes, ...rest }) => ({
+          ...rest,
+          notes: '',
+        }))
+      : state.slides;
+  return { deck: state.deck, slides, mode: acc.mode };
 }
 
 function visibleDeck(deck: {

@@ -3,7 +3,8 @@
    A shared link carries ?k=<token>. The token is remembered for this origin,
    sent on every API call, and — when the link has a password — exchanged once
    for a grant key that is remembered too. Owner access is X-Deck-Owner from
-   Bolt preview, not "no token". */
+   Bolt preview, not "no token". The published origin without a token is the
+   audience deck. */
 import { deckUrl, supabaseAuthHeaders } from './api';
 
 export type ShareMode = 'edit' | 'presenter' | 'present';

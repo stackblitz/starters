@@ -10,7 +10,8 @@ import { useDialogTrap } from './useDialogTrap';
    The dialog is a focus trap with Escape to close, every control labelled,
    and each row announcing its result in a live region below the card. The
    Share button is disabled until a public origin exists, so this dialog
-   always has one. */
+   always has one. The published origin itself is the audience deck — these
+   links are only the presenter console and the editor. */
 
 const MODES: {
   id: ShareMode;
@@ -18,12 +19,6 @@ const MODES: {
   body: string;
   path: (t: string) => string;
 }[] = [
-  {
-    id: 'present',
-    title: 'Presentation',
-    body: 'The deck, full screen. Read only: no editing, no notes.',
-    path: (t) => `/present?k=${t}`,
-  },
   {
     id: 'presenter',
     title: 'Presenter console',
@@ -269,8 +264,8 @@ export default function ShareModal({
           </button>
         </div>
         <p className="share-intro">
-          Links open on the published site. The editor in Bolt does not need a
-          link. Share links grant a specific mode (and optional password).
+          The published site is the audience deck. Use these links for the
+          presenter console or to let someone else edit. Optional password.
         </p>
 
         {links === null ? (

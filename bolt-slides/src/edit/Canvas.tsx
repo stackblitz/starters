@@ -28,7 +28,7 @@ export default function Canvas() {
   const [notesOpen, setNotesOpen] = useState(false);
   const { origin, canCopy } = useShareOrigin();
   const shareTip = canCopy
-    ? 'Share links for presenting, the presenter console or editing'
+    ? 'Share a presenter console or editor link'
     : 'Publish to share';
   const note = (msg: string) => {
     setFlash(msg);

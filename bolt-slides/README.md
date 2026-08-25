@@ -24,17 +24,18 @@ a deck with the `slides` skill.
 
 ## What's inside
 
-- `/` — Editor: thumbnail rail, click-to-edit text, speaker notes. The
-  bottom bar pages the deck and holds Export PDF, Present, and Share
-  (one link per mode: presentation, presenter console, or editor; optional
-  password). Share is disabled in Bolt preview until the project is
-  published. Present replaces the editor in place (Esc or the dock close
-  control returns to editing). From local Vite or the published site, **P**
-  opens a presenter console in a second window. In an embedded preview that
-  control stays disabled (it would open the preview's own URL); use Share
-  after publishing.
-- `/present` — Same presentation engine, used by share links on the
-  published origin.
+- `/` — In the Bolt preview iframe this is the editor: thumbnail rail,
+  click-to-edit text, speaker notes. The bottom bar pages the deck and
+  holds Export PDF, Present, and Share (presenter console or editor;
+  optional password). Share is disabled in Bolt preview until the
+  project is published. Present replaces the editor in place (Esc or
+  the dock close control returns to editing). The published origin is
+  the audience deck (no notes, no editor). From local Vite, **P** opens
+  a presenter console in a second window. On the published audience
+  deck that control stays off; use a presenter-console share link. In
+  an embedded preview that control stays disabled; use Share after
+  publishing.
+- `/present` — Presenter console and leftover presentation share links.
 
 ## The skill
 

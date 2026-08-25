@@ -13,15 +13,15 @@ description: >-
 
 This repo is a complete slide **studio**. Do not rebuild it.
 
-- `/` — editor: thumbnail rail (drag to reorder, right-click to
-  duplicate/delete), click-to-edit text, speaker notes, Export PDF /
-  Present / Share on the bottom bar. Share needs a published URL.
-  Present replaces the editor in this view (Esc or the dock close
-  control returns to editing).
+- `/` — in the Bolt preview iframe: editor (thumbnail rail, click-to-edit,
+  speaker notes, Export PDF / Present / Share). Present replaces the
+  editor in this view. Share needs a published URL and mints presenter-
+  console or editor links — the published site itself is the audience
+  deck (no notes).
 - Present — floating dock, side panel (S), grid (G), click-builds,
-  presenter view (P, a second window on the published site or local
-  Vite — use Share in an embedded preview), annotator (D), fullscreen
-  (F).
+  presenter view (P, a second window on local Vite or a presenter-
+  console share link — use Share in an embedded preview), annotator (D),
+  fullscreen (F).
 
 **Your job is CONTENT, not code.** A deck is rows in `deck` and
 `slides`. Never write JSX slides. Never call `deck-api` to author —

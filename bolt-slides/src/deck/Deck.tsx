@@ -101,7 +101,7 @@ export default function Deck({
 }: {
   children: ReactNode;
   transition?: string;
-  /** false on an audience share link — the console shows speaker notes */
+  /** false in audience present — the console would show speaker notes */
   allowPresenter?: boolean;
   /** persist a slide's speaker notes (presenter console edits) */
   onNotes?: (index: number, text: string) => void;
@@ -343,8 +343,9 @@ export default function Deck({
     return () => clearTimeout(t);
   }, [slide]);
 
-  // URL hash sync — skipped in-place (no new URL). Presenter consoles and
-  // /present share links still use it so a P popup can open on the live slide.
+  // URL hash sync — skipped in-place from the editor (no new URL). Presenter
+  // consoles, the published audience deck, and leftover /present share links
+  // still use it so a P popup can open on the live slide.
   const skipHash = !!onExit && !isPresenter;
   useEffect(() => {
     if (skipHash) return;

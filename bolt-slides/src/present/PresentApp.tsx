@@ -1,5 +1,6 @@
 /* Present mode — full-screen engine. Opened in-place from the editor (no
-   URL change) or at /present for share links. */
+   URL change), at `/` on the published origin (audience deck), or at
+   /present for presenter-console and leftover present share links. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import SlideView from '../slide/SlideView';

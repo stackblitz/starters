@@ -8,7 +8,7 @@ const fmtWait = (s: number) => {
 };
 
 /* What a visitor sees instead of the deck: a password prompt when they hold a
-   protected link, and a dead end when they hold no link at all. Both are
+   protected link, and a dead end when that link is gone. Both are
    plain, focusable forms — this is the first thing a screen reader meets. */
 export default function Gate() {
   const denied = useStore((s) => s.denied);
@@ -37,7 +37,7 @@ export default function Gate() {
           <p className="gate-body">
             {shareToken
               ? 'It was turned off, or replaced with a new one. Ask whoever owns the deck for a current link.'
-              : 'This deck is private. Ask whoever owns it for a share link: the presentation, the presenter console, or the editor.'}
+              : 'This link is not a share link. The published site is the audience deck; ask the owner for an editor or presenter-console link.'}
           </p>
         </div>
       </main>

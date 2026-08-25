@@ -25,9 +25,10 @@ decides which Bearer:
   iframe, and (because `.bolt/config.json` sets `previewOwnerSecret`)
   copies the same value to the `DECK_OWNER_SECRET` edge-function secret.
   It is not in workspace `.env` and never a `VITE_` var.
-- **Share links / published `bolt.host`** — anon key + `X-Share-Token` (and
-  `X-Share-Grant` after a password unlock). The bare published URL is not
-  the editor.
+- **Published `bolt.host` / cover capture** — anon key, no owner header.
+  That is the audience deck (`present`, notes stripped).
+- **Share links** — anon key + `X-Share-Token` (and `X-Share-Grant` after
+  a password unlock) for the presenter console or the editor.
 
 Custom headers `X-Share-Token`, `X-Share-Grant`, and `X-Deck-Owner` must be
 allowed in CORS (the shipped function already does this). `GET /health` is
@@ -64,8 +65,9 @@ The function uses the service role. Do not add `anon` CRUD policies.
   preview owner token into the iframe and syncs it to this secret when
   `previewOwnerSecret` is set in `.bolt/config.json`. Top-level published
   `bolt.host` does not get the header.
-- no share token, no service role, no owner proof — **401** once the secret
-  is configured (legacy: owner if the secret is unset, e.g. local Vite)
+- no share token, no service role, no owner proof — **`present`** (read,
+  notes stripped) once the secret is configured; **owner** if the secret
+  is unset (local Vite)
 - `edit` share link — everything
 - `presenter` — read, plus writing `notes` on a slide
 - `present` — read, with `notes` stripped from the response

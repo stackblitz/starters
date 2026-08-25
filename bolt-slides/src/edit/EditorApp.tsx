@@ -36,13 +36,13 @@ export default function EditorApp() {
   useEffect(() => {
     applyAccent(accent);
   }, [accent]);
-  // a presentation or presenter link opened at / belongs in present mode
+  // a presenter share opened at / belongs on the console URL. Audience
+  // present stays on `/` so published origin and cover capture need no
+  // extra hop.
   useEffect(() => {
-    if (!loaded || mode === 'edit') return;
-    window.location.replace(
-      withShare(mode === 'presenter' ? '/present?presenter=1' : '/present')
-    );
-  }, [loaded, mode]);
+    if (!loaded || mode !== 'presenter' || presenterQuery) return;
+    window.location.replace(withShare('/present?presenter=1'));
+  }, [loaded, mode, presenterQuery]);
 
   if (denied) return <Gate />;
   if (bootError) return <div className="boot-screen">{bootError}</div>;
@@ -50,7 +50,7 @@ export default function EditorApp() {
   // A P popup is a real presenter console: no onExit (Esc must close, not
   // become the editor) and no initialSlide from this tab's current (fresh
   // store is slide 0 — the hash is the source of truth).
-  if (presenterQuery) return <PresentApp embedded />;
+  if (presenterQuery && mode !== 'present') return <PresentApp embedded />;
   // Present from the editor is in-place (no /present).
   if (presenting)
     return (
@@ -62,6 +62,7 @@ export default function EditorApp() {
         }}
       />
     );
+  if (mode === 'present') return <PresentApp embedded />;
 
   return (
     <div className="ed-root">

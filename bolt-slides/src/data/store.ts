@@ -201,7 +201,9 @@ export const useStore = create<Store>((set, getState) => ({
     try {
       // a visitor arriving on a link is only allowed what that link grants.
       // never default a ?k= tab to editor if /share fails — that would show
-      // the editor chrome for a present/presenter token.
+      // the editor chrome for a present/presenter token. No-token tabs take
+      // mode from /state (present on the published origin; edit in local Vite
+      // when DECK_OWNER_SECRET is unset).
       let mode: ShareMode = 'edit';
       if (shareToken) {
         const link = await shareInfo().catch(() => null);
@@ -215,7 +217,10 @@ export const useStore = create<Store>((set, getState) => ({
         }
         mode = link.mode;
       }
-      const s = await api<AppState>('/state');
+      const s = await api<AppState & { mode?: ShareMode }>('/state');
+      if (!shareToken && (s.mode === 'present' || s.mode === 'presenter')) {
+        mode = s.mode;
+      }
       set({
         ...s,
         loaded: true,
@@ -244,15 +249,18 @@ export const useStore = create<Store>((set, getState) => ({
     if (getState().denied) return;
     const gen = writeGen;
     try {
-      const s = await api<AppState>('/state');
+      const s = await api<AppState & { mode?: ShareMode }>('/state');
       if (gen !== writeGen || writesPending()) {
         pendingRefresh = true;
         flushPendingRefresh();
         return;
       }
       const cur = getState().current;
+      const mode = s.mode ?? getState().mode;
       set({
         ...s,
+        mode,
+        canEdit: mode === 'edit',
         current: Math.max(0, Math.min(cur, Math.max(0, s.slides.length - 1))),
         loaded: true,
         bootError: null,

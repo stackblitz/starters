@@ -1,6 +1,7 @@
 /* Preview owner proof for deck-api. Not a VITE_ var — those bake into the
    published bundle. Bolt injects it into the preview iframe. Top-level
-   bolt.host has no parent, so the API sees no header and requires ?k=. */
+   bolt.host has no parent: that origin is the audience deck (present,
+   notes stripped). Editor and presenter-console links still use ?k=. */
 
 declare global {
   interface Window {
