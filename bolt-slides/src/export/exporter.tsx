@@ -15,6 +15,15 @@ import { api } from '../data/store';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/* html-to-image and jsPDF run on the window thread (they need the live
+   DOM). Yield after progress so React can paint the toast instead of
+   freezing through the whole deck. */
+function yieldToUi() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 function opaqueColor(c: string): string | null {
   if (!c || c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return null;
   const m = c.match(
@@ -132,11 +141,13 @@ export async function exportPdf(
   });
   for (let i = 0; i < slides.length; i++) {
     onProgress(`Rendering slide ${i + 1} / ${slides.length}…`);
+    await yieldToUi();
     const png = await renderSlidePng(slides[i], W, H, 2);
     if (i > 0) pdf.addPage([W, H], 'landscape');
     pdf.addImage(png, 'PNG', 0, 0, W, H);
   }
   onProgress('Writing PDF…');
+  await yieldToUi();
   pdf.save(
     `${(title || 'deck').replace(/[^\w\- ]+/g, '').trim() || 'deck'}.pdf`
   );
