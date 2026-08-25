@@ -166,6 +166,13 @@ export default function Canvas() {
         </AnimatePresence>
       </div>
       <div className="ed-canvas-nav">
+        <span
+          className={'nav-toast' + (busy ? ' busy' : '')}
+          role="status"
+          aria-live="polite"
+        >
+          {busy ?? flash}
+        </span>
         <button
           className="ghost-btn"
           data-tip="Previous slide"
@@ -211,16 +218,10 @@ export default function Canvas() {
           </svg>
         </button>
         <span className="nav-sep" aria-hidden />
-        <span
-          className={'nav-status' + (busy ? ' busy' : '')}
-          role="status"
-          aria-live="polite"
-        >
-          {busy ?? flash}
-        </span>
         <button
           className="ghost-btn"
           data-tip="Download the deck as a PDF"
+          disabled={!!busy}
           onClick={onPdf}
         >
           Export PDF

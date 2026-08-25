@@ -46,17 +46,26 @@
   background: var(--ed-divider);
   flex-shrink: 0;
 }
-/* live region: always in the DOM so announcements are heard, but it takes
-   no space until it has something to say */
-.nav-status {
+/* live region: parked above the bar so progress never resizes the controls */
+.nav-toast {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(23 23 25 / 0.92);
+  border: 1px solid var(--ed-border);
+  box-shadow: var(--ed-shadow-lg);
   color: var(--ed-text-muted);
   font-size: 12px;
   white-space: nowrap;
+  pointer-events: none;
 }
-.nav-status:empty {
+.nav-toast:empty {
   display: none;
 }
-.nav-status.busy::before {
+.nav-toast.busy::before {
   content: '● ';
   color: var(--ed-brand);
 }
@@ -1028,10 +1037,31 @@ tr.tr-after > td {
   animation: bar-in-above 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .fmt-size {
-  min-width: 18px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
   color: var(--ed-text-muted);
   font: 600 11px/1 var(--font-mono, monospace);
+}
+.fmt-size-input {
+  width: 3.2ch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  outline: none;
+  appearance: textfield;
+}
+.fmt-size-input:focus {
+  color: var(--ed-text);
+  box-shadow: 0 1px 0 var(--ed-text-muted);
+}
+.fmt-size-unit {
+  flex: none;
 }
 .fmt-btn:disabled {
   opacity: 0.3;
@@ -1371,8 +1401,10 @@ tr.tr-after > td {
   height: 12px;
 }
 .fmt-inline .fmt-size {
-  min-width: 30px;
   font-size: 10px;
+}
+.fmt-inline .fmt-size-input {
+  width: 3ch;
 }
 .fmt-inline .fmt-sep {
   height: 14px;

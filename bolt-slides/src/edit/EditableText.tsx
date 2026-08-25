@@ -179,6 +179,95 @@ const alignIcon = (kind: 'l' | 'c' | 'r') => {
   );
 };
 
+/* Percent of this field's layout size (1em = 100%). Typed values commit on
+   Enter/blur and clamp to the same 40–400% range as − / +. */
+function SizeField({
+  sizeEm,
+  menuHeld,
+  onSize,
+  onLeaveField,
+  onRestoreFocus,
+}: {
+  sizeEm: number;
+  menuHeld: { current: boolean };
+  onSize: (em: number) => void;
+  onLeaveField: () => void;
+  onRestoreFocus: () => void;
+}) {
+  const pct = Math.round(sizeEm * 100);
+  const [draft, setDraft] = useState<string | null>(null);
+  const skipCommit = useRef(false);
+  const returnToField = useRef(false);
+  const shown = draft ?? String(pct);
+
+  const apply = (raw: string | null) => {
+    setDraft(null);
+    if (raw === null) return;
+    const n = parseInt(raw.replace(/%/g, ''), 10);
+    if (!Number.isFinite(n)) return;
+    onSize(clampEm(n / 100));
+  };
+
+  return (
+    <span className="fmt-size">
+      <input
+        className="fmt-size-input"
+        type="text"
+        inputMode="numeric"
+        aria-label="Font size as a percent of this field’s layout size"
+        title="Relative to this field’s layout size"
+        value={shown}
+        onChange={(e) =>
+          setDraft(e.target.value.replace(/[^\d]/g, '').slice(0, 3))
+        }
+        onFocus={(e) => {
+          setDraft(String(pct));
+          e.currentTarget.select();
+        }}
+        onBlur={() => {
+          if (skipCommit.current) {
+            skipCommit.current = false;
+            setDraft(null);
+          } else {
+            apply(draft);
+          }
+          const stay = returnToField.current;
+          returnToField.current = false;
+          requestAnimationFrame(() => {
+            const a = document.activeElement;
+            if (menuHeld.current || a?.closest('.fmt-menu')) return;
+            if (a?.closest('.t-edit')) return;
+            if (stay) {
+              onRestoreFocus();
+              return;
+            }
+            onLeaveField();
+          });
+        }}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            returnToField.current = true;
+            e.currentTarget.blur();
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            skipCommit.current = true;
+            returnToField.current = true;
+            setDraft(null);
+            e.currentTarget.blur();
+          }
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+      />
+      <span className="fmt-size-unit" aria-hidden>
+        %
+      </span>
+    </span>
+  );
+}
+
 /* The text bar — anchored under the text block (stable while you select and
    type, like Pitch/Framer), visible the whole time the block is focused.
    [ − 100% + | A color ▾ | B I | clear ]. With nothing selected, actions
@@ -192,6 +281,8 @@ function FormatMenu({
   onSize,
   onColor,
   onAlign,
+  onLeaveField,
+  onRestoreFocus,
 }: {
   bar: Bar;
   /** called the instant the bar is touched, while the selection is still live */
@@ -203,10 +294,12 @@ function FormatMenu({
   onSize: (em: number) => void;
   onColor: (color: string | null) => void;
   onAlign: (a: 'l' | 'c' | 'r' | null) => void;
+  onLeaveField: () => void;
+  onRestoreFocus: () => void;
 }) {
   const [colorOpen, setColorOpen] = useState(false);
   const [alignOpen, setAlignOpen] = useState(false);
-  const pct = Math.round(bar.sizeEm * 100);
+  const menuHeld = useRef(false);
   const step = (dir: 1 | -1) =>
     onSize(clampEm(Math.round((bar.sizeEm + dir * 0.1) * 10) / 10));
   const btn = (props: {
@@ -240,8 +333,20 @@ function FormatMenu({
       contentEditable={false}
       /* bank the live selection before anything here can disturb it, then
          keep focus alive; both must happen on the way DOWN */
-      onPointerDownCapture={() => onBeforeAction?.()}
-      onMouseDown={(e) => e.preventDefault()} // keep focus + selection alive
+      onPointerDownCapture={() => {
+        onBeforeAction?.();
+        menuHeld.current = true;
+      }}
+      onPointerUp={() => {
+        menuHeld.current = false;
+      }}
+      onPointerCancel={() => {
+        menuHeld.current = false;
+      }}
+      onMouseDown={(e) => {
+        if ((e.target as HTMLElement).closest('input')) return;
+        e.preventDefault();
+      }}
     >
       {btn({
         title: 'Smaller (−10%)',
@@ -249,7 +354,13 @@ function FormatMenu({
         disabled: bar.sizeEm <= 0.4,
         children: '−',
       })}
-      <span className="fmt-size">{pct}%</span>
+      <SizeField
+        sizeEm={bar.sizeEm}
+        menuHeld={menuHeld}
+        onSize={onSize}
+        onLeaveField={onLeaveField}
+        onRestoreFocus={onRestoreFocus}
+      />
       {btn({
         title: 'Larger (+10%)',
         act: () => step(1),
@@ -769,7 +880,12 @@ export default function T({
           setFocused(true);
           setDomEmpty(!ref.current?.textContent);
         }}
-        onBlur={commit}
+        onBlur={() => {
+          requestAnimationFrame(() => {
+            if (document.activeElement?.closest('.fmt-menu')) return;
+            commit();
+          });
+        }}
         onInput={() => setDomEmpty(!ref.current?.textContent)}
         onKeyDown={onKeyDown}
         onKeyUp={rememberSelection}
@@ -796,6 +912,8 @@ export default function T({
           onSize={setSize}
           onColor={setColor}
           onAlign={setAlign}
+          onLeaveField={commit}
+          onRestoreFocus={() => ref.current?.focus()}
         />
       )}
     </>
