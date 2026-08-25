@@ -2042,10 +2042,11 @@ strong {
   transform: translateX(-50%);
   z-index: 97;
   opacity: 0.35;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.35s ease, transform 0.35s ease;
   font-family: var(--font-ui);
 }
-.noir-dock:hover {
+.noir-dock:hover,
+.noir-dock:focus-within {
   opacity: 1;
 }
 .noir-bar {
@@ -2075,13 +2076,6 @@ strong {
 }
 .noir-icon-btn:hover {
   background: var(--ed-util-hover);
-}
-.noir-tip {
-  display: grid;
-  place-items: center;
-}
-.noir-tip .noir-icon-btn:disabled {
-  pointer-events: none;
 }
 .noir-icon-btn:disabled {
   opacity: 0.5;
@@ -3266,12 +3260,23 @@ strong {
 .pres-top .pres-timer > [data-tip]:first-of-type:hover::after {
   transform: translateY(0);
 }
+/* disabled controls keep aria-label; the hover chip sits on dimmed chrome
+   and is unreadable, so do not paint one */
+[data-tip]:disabled::after,
+[data-tip]:has(> :disabled)::after {
+  content: none;
+}
 
 /* Hide / dim the UI (H key, or auto on idle in fullscreen) */
 .noir-dock.hidden {
   opacity: 0 !important;
   pointer-events: none;
   transform: translateX(-50%) translateY(18px);
+}
+.noir-dock.hidden:focus-within {
+  opacity: 1 !important;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
 }
 .deck.nocursor,
 .deck.nocursor * {

@@ -1086,7 +1086,7 @@ export default function Annotator({
 
           <button
             className="ann-btn"
-            data-tip="Undo (⌘Z)"
+            data-tip={canUndo ? 'Undo (⌘Z)' : undefined}
             aria-label="Undo"
             disabled={!canUndo}
             onClick={undo}
@@ -1095,7 +1095,7 @@ export default function Annotator({
           </button>
           <button
             className="ann-btn"
-            data-tip="Redo (⇧⌘Z)"
+            data-tip={canRedo ? 'Redo (⇧⌘Z)' : undefined}
             aria-label="Redo"
             disabled={!canRedo}
             onClick={redo}
@@ -1104,7 +1104,7 @@ export default function Annotator({
           </button>
           <button
             className="ann-btn"
-            data-tip="Clear slide (⌫)"
+            data-tip={strokes.current.length ? 'Clear slide (⌫)' : undefined}
             aria-label="Clear this slide"
             disabled={!strokes.current.length}
             onClick={clear}

@@ -176,7 +176,7 @@ export default function Canvas() {
         </span>
         <button
           className="ghost-btn"
-          data-tip="Previous slide"
+          data-tip={current === 0 ? undefined : 'Previous slide'}
           disabled={current === 0}
           onClick={() => setCurrent(current - 1)}
         >
@@ -187,7 +187,7 @@ export default function Canvas() {
         </span>
         <button
           className="ghost-btn"
-          data-tip="Next slide"
+          data-tip={current >= slides.length - 1 ? undefined : 'Next slide'}
           disabled={current >= slides.length - 1}
           onClick={() => setCurrent(current + 1)}
         >
@@ -221,7 +221,7 @@ export default function Canvas() {
         <span className="nav-sep" aria-hidden />
         <button
           className="ghost-btn"
-          data-tip="Download the deck as a PDF"
+          data-tip={busy ? undefined : 'Download the deck as a PDF'}
           disabled={!!busy}
           onClick={onPdf}
         >
@@ -229,7 +229,7 @@ export default function Canvas() {
         </button>
         <button
           className="icon-btn"
-          data-tip="Present"
+          data-tip={slides.length ? 'Present' : undefined}
           type="button"
           aria-label="Present this deck"
           disabled={!slides.length}
@@ -245,18 +245,17 @@ export default function Canvas() {
             <path d="M7 4.5v15c0 0.9 1 1.45 1.77 0.97l11.5-7.5a1.15 1.15 0 0 0 0-1.94L8.77 3.53C8 3.05 7 3.6 7 4.5Z" />
           </svg>
         </button>
-        <span className="ed-tip" data-tip={shareTip}>
-          <button
-            className="solid-btn"
-            aria-label={shareTip}
-            aria-haspopup="dialog"
-            aria-expanded={share}
-            disabled={!canCopy}
-            onClick={() => setShare(true)}
-          >
-            Share
-          </button>
-        </span>
+        <button
+          className="solid-btn"
+          data-tip={canCopy ? shareTip : undefined}
+          aria-label={shareTip}
+          aria-haspopup="dialog"
+          aria-expanded={share}
+          disabled={!canCopy}
+          onClick={() => setShare(true)}
+        >
+          Share
+        </button>
       </div>
       {share && origin && (
         <ShareModal origin={origin} onClose={() => setShare(false)} />

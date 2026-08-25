@@ -77,13 +77,6 @@
   width: 32px;
   height: 32px;
 }
-.ed-tip {
-  display: grid;
-  place-items: center;
-}
-.ed-tip .solid-btn:disabled {
-  pointer-events: none;
-}
 /* Share — DS inverse (white on dark chrome) */
 .ed-canvas-nav .solid-btn {
   background: var(--ed-inverse-bg);
@@ -925,15 +918,32 @@ body.li-dragging .t-edit {
 .add-card-preview {
   display: block;
   width: 100%;
+  /* reserve the thumbnail box so category switches do not jump as MiniSlide
+     measures or layout images load */
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  position: relative;
   pointer-events: none;
   border-bottom: 1px solid var(--ed-border-subtle);
   background: var(--bg);
+}
+.add-card-preview .mini-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto !important;
 }
 .add-card-name {
   padding: 10px 12px 0;
 }
 .add-card-hint {
   padding: 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(11.5px * 1.45 * 2);
 }
 
 /* ── table editor: grips outside the table edges + add strips ── */

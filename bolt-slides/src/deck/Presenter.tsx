@@ -196,7 +196,7 @@ export default function Presenter({
             className="pres-icon"
             onClick={() => setSizeIdx((i) => Math.max(0, i - 1))}
             disabled={sizeIdx === 0}
-            data-tip="Smaller notes (−)"
+            data-tip={sizeIdx === 0 ? undefined : 'Smaller notes (−)'}
             aria-label="Smaller notes"
           >
             <IconType />
@@ -208,7 +208,9 @@ export default function Presenter({
               setSizeIdx((i) => Math.min(NOTE_SIZES.length - 1, i + 1))
             }
             disabled={sizeIdx === NOTE_SIZES.length - 1}
-            data-tip="Bigger notes (+)"
+            data-tip={
+              sizeIdx === NOTE_SIZES.length - 1 ? undefined : 'Bigger notes (+)'
+            }
             aria-label="Bigger notes"
           >
             <IconType />

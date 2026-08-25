@@ -400,8 +400,8 @@ export default function Deck({
     document.addEventListener('fullscreenchange', h);
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
-  // mouse-driven only: keyboard nav keeps the UI hidden; the dock returns when
-  // the pointer nears the bottom (where it lives); the cursor hides on idle.
+  // the dock returns on pointer near the bottom (where it lives) or when
+  // keyboard focus lands in it (:focus-within); the cursor hides on idle.
   useEffect(() => {
     let t = 0;
     const onMove = (e: MouseEvent) => {
@@ -626,7 +626,7 @@ export default function Deck({
             <span className="noir-sep" />
             <button
               className="noir-icon-btn"
-              data-tip="Previous"
+              data-tip={hasPrev ? 'Previous' : undefined}
               aria-label="Previous slide"
               disabled={!hasPrev}
               onClick={prev}
@@ -639,7 +639,7 @@ export default function Deck({
             </div>
             <button
               className="noir-icon-btn"
-              data-tip="Next"
+              data-tip={hasNext ? 'Next' : undefined}
               aria-label="Next slide"
               disabled={!hasNext}
               onClick={next}
@@ -665,16 +665,15 @@ export default function Deck({
               {fs ? <IconShrink /> : <IconExpand />}
             </button>
             {allowPresenter && (
-              <span className="noir-tip" data-tip={presenterTip}>
-                <button
-                  className="noir-icon-btn noir-optional"
-                  aria-label={presenterTip}
-                  disabled={!canOpenPresenter}
-                  onClick={openPresenter}
-                >
-                  <IconPresent />
-                </button>
-              </span>
+              <button
+                className="noir-icon-btn noir-optional"
+                data-tip={canOpenPresenter ? presenterTip : undefined}
+                aria-label={presenterTip}
+                disabled={!canOpenPresenter}
+                onClick={openPresenter}
+              >
+                <IconPresent />
+              </button>
             )}
           </div>
         </div>

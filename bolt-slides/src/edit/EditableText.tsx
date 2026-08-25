@@ -312,7 +312,7 @@ function FormatMenu({
   }) => (
     <button
       className={'fmt-btn ' + (props.cls ?? '') + (props.on ? ' on' : '')}
-      title={props.title}
+      title={props.disabled ? undefined : props.title}
       disabled={props.disabled}
       onMouseDown={(e) => {
         e.preventDefault();

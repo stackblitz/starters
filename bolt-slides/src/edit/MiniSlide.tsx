@@ -6,7 +6,11 @@ import SlideView from '../slide/SlideView';
 
 export default function MiniSlide({ slide }: { slide: SlideData }) {
   const frameRef = useRef<HTMLDivElement>(null);
-  const [d, setD] = useState({ vw: 1280, vh: 720, scale: 0.14 });
+  const [d, setD] = useState(() => ({
+    vw: typeof window === 'undefined' ? 1280 : window.innerWidth,
+    vh: typeof window === 'undefined' ? 720 : window.innerHeight,
+    scale: 0.14,
+  }));
 
   useEffect(() => {
     const el = frameRef.current;
