@@ -106,10 +106,27 @@ function renderLine(line: string): ReactNode {
    so a wrapper straddling one leaves an unmatched half on each side and the
    markers show up as literal text ("{c:#4fe5b0}A headline.{/c}"). Splitting it
    into one wrapper per line means the same thing and always renders. Applied
-   when writing AND when reading, so strings already broken repair themselves. */
+   when writing AND when reading, so strings already broken repair themselves.
+
+   Nested `{s:}` (whole-field wrap over an existing size span) also leaks:
+   the tokenizer stops at the inner `{/s}` and the leftover `{s:…}` / `{/s}`
+   render as text. Collapse those before splitting lines. */
 const WRAPPED = /\{([cs]):([^}]+)\}([\s\S]*?)\{\/\1\}/g;
+const NESTED_SIZE = /\{s:([^}]+)\}\{s:[^}]+\}([\s\S]*?)\{\/s\}\{\/s\}/g;
+
+function flattenNestedSize(text: string): string {
+  let prev = '';
+  let cur = text;
+  while (cur !== prev) {
+    prev = cur;
+    cur = cur.replace(NESTED_SIZE, '{s:$1}$2{/s}');
+    cur = cur.replace(/\{\/s\}\{\/s\}/g, '{/s}');
+  }
+  return cur;
+}
+
 export function balanceLines(text: string): string {
-  let out = text;
+  let out = flattenNestedSize(text);
   for (let pass = 0; pass < 3; pass++) {
     const next = out.replace(
       WRAPPED,

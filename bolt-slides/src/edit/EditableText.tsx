@@ -600,6 +600,7 @@ export default function T({
     lastRange.current = null;
     const el = ref.current;
     if (!el) return;
+    unwrapNestedSize(el);
     let raw = balanceLines(
       Array.from(el.childNodes)
         .map(serialize)
@@ -687,7 +688,12 @@ export default function T({
     const el = ref.current;
     const s = document.getSelection();
     if (!el || !s || s.rangeCount === 0) return null;
-    let n: Node | null = s.anchorNode;
+    const range = s.getRangeAt(0);
+    /* selectNodeContents(el) sets the anchor to el itself, so walking
+       parentNodes would never see a wrapper inside the field. */
+    let n: Node | null = range.commonAncestorContainer;
+    if (n === el) n = range.startContainer;
+    if (n === el) n = el.firstChild;
     while (n && n !== el) {
       if (n instanceof HTMLElement && test(n)) return n;
       n = n.parentNode;
@@ -700,6 +706,13 @@ export default function T({
     while (target.firstChild) parent.insertBefore(target.firstChild, target);
     parent.removeChild(target);
     if (parent instanceof HTMLElement) parent.normalize();
+  };
+  /* A whole-field wrap over an existing size span nests `{s:}` markers; the
+     parser then leaks the inner `{s:…}` / leftover `{/s}` as visible text. */
+  const unwrapNestedSize = (root: HTMLElement) => {
+    root.querySelectorAll('[data-fs] [data-fs]').forEach((inner) => {
+      if (inner instanceof HTMLElement) unwrapEl(inner);
+    });
   };
   const wrapSelection = (make: () => HTMLElement) => {
     ensureRange();
@@ -720,11 +733,25 @@ export default function T({
 
   /* granular font size — updates the wrapper in place when one exists */
   const setSize = (em: number) => {
+    const el = ref.current;
+    if (!el) return;
     ensureRange();
-    const cur = findAncestor((n) => !!n.dataset.fs);
+    let cur = findAncestor((n) => !!n.dataset.fs);
+    if (!cur) {
+      const kids = Array.from(el.childNodes).filter(
+        (n) => n.nodeType !== Node.TEXT_NODE || (n.nodeValue ?? '').trim()
+      );
+      if (
+        kids.length === 1 &&
+        kids[0] instanceof HTMLElement &&
+        kids[0].dataset.fs
+      )
+        cur = kids[0];
+    }
     if (cur) {
       if (Math.abs(em - 1) < 0.05) {
         unwrapEl(cur);
+        setBar((b) => (b ? { ...b, sizeEm: 1 } : b));
         return;
       }
       cur.dataset.fs = String(em);
@@ -738,12 +765,25 @@ export default function T({
     );
     if (legacy) unwrapEl(legacy);
     if (Math.abs(em - 1) < 0.05) return;
-    wrapSelection(() => {
+    const make = () => {
       const sp = document.createElement('span');
       sp.dataset.fs = String(em);
       sp.style.fontSize = `${em}em`;
       return sp;
-    });
+    };
+    const s = document.getSelection();
+    const range = s && s.rangeCount > 0 ? s.getRangeAt(0) : null;
+    const useSel =
+      range && !range.collapsed && el.contains(range.commonAncestorContainer);
+    if (useSel) {
+      wrapSelection(make);
+    } else {
+      const wrap = make();
+      while (el.firstChild) wrap.appendChild(el.firstChild);
+      el.appendChild(wrap);
+    }
+    unwrapNestedSize(el);
+    setBar((b) => (b ? { ...b, sizeEm: em } : b));
   };
 
   /* text color — hex, 'accent', or null to clear */
