@@ -8,18 +8,15 @@ import { coreLayouts } from './core';
 import { gridLayouts } from './grids';
 import { blockLayouts } from './blocks';
 import { mediaLayouts } from './media';
-import { freeformLayouts } from './freeform';
+/* freeformLayouts (type 'canvas') is intentionally omitted — the files
+   stay in the repo for a future rework. Do not wire it back in here. */
 
 export type { LayoutDef, FieldSpec } from './shared';
 
 export const LAYOUTS: Record<string, LayoutDef> = Object.fromEntries(
-  [
-    ...coreLayouts,
-    ...gridLayouts,
-    ...mediaLayouts,
-    ...blockLayouts,
-    ...freeformLayouts,
-  ].map((l) => [l.type, l])
+  [...coreLayouts, ...gridLayouts, ...mediaLayouts, ...blockLayouts].map(
+    (l) => [l.type, l]
+  )
 );
 
 export const LAYOUT_LIST = Object.values(LAYOUTS);
@@ -59,7 +56,7 @@ export const LAYOUT_GROUPS: { title: string; types: string[] }[] = [
       'tabs',
     ],
   },
-  { title: 'Extras', types: ['canvas', 'team', 'pricing', 'logos', 'code'] },
+  { title: 'Extras', types: ['team', 'pricing', 'logos', 'code'] },
 ];
 
 export function RenderLayout({ slide }: { slide: SlideData }) {

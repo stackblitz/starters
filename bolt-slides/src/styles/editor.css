@@ -1524,7 +1524,8 @@ tr.tr-after > td {
   font-weight: 500;
 }
 
-/* ── freeform canvas editing chrome (sizes counter the canvas scale) ── */
+/* ── freeform canvas editing chrome (sizes counter the canvas scale) ──
+   Intentionally kept with the unregistered canvas layout — future rework. */
 .cnv-item.edit:hover {
   outline: calc(var(--inv, 1) * 1px) solid
     color-mix(in srgb, var(--ui-accent) 45%, transparent);

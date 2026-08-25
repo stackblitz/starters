@@ -4486,7 +4486,7 @@ strong {
   white-space: nowrap;
 }
 
-/* ── freeform 'canvas' layout ─────────────────────────────────────── */
+/* ── freeform 'canvas' layout (unregistered; kept for a future rework) ── */
 .cnv {
   position: absolute;
   inset: 0;

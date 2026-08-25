@@ -6,7 +6,10 @@
    flyout galleries; click to select, drag to move, handles to resize — all
    with snap-to-guides against the slide edges/center and every other
    item's edges/centers. Double-click text/tables to edit. Right-click for
-   layering, duplicate, delete, image URL and chart data. */
+   layering, duplicate, delete, image URL and chart data.
+
+   Intentionally unregistered (see src/layouts/freeform.tsx). Kept for a
+   future rework — do not delete. */
 import {
   useEffect,
   useRef,

@@ -249,25 +249,6 @@ Visual:
 - `chat` — `kicker?`, `title?`, `name`, `messages: [{from: user|ai, text}]`.
   Messages reveal per click. AI-product decks.
 - `code` — `kicker?`, `title?`, `filename`, `code`, `highlight: "2,3"`.
-- `canvas` — freeform positioning: `items: [{type, x, y, w, h, …}]`,
-  coordinates in PERCENT of the slide (x/w of width, y/h of height; array
-  order = stacking order, later = on top; every item takes `rot?` degrees).
-  Types: `text` `{text, font?: head|body}` (rich markers work — size with
-  `{s:…}`; default = the deck's HEADING font; `head` adds title weight,
-  `body` = the body font — use it for paragraph copy) · `image` `{url, radius?}` (empty url → themed gradient wash) ·
-  `shape` `{shape: rect|rounded|circle|triangle|diamond|star, variant:
-  fill|outline, fill?, stroke?, strokeW?, radius?}` (colors = any CSS color;
-  empty → subtle accent glass) · `line` `{strokeW?, dash?, arrows:
-  none|end|both, fill?}` (thin divider/arrow — give it a small h like 2.5) ·
-  `chart` `{kind: bars|line|donut, bars/points/donutValue+donutLabel,
-  fill?}` (fill recolors the chart) · `table` `{columns: [], rows: [[]],
-  highlightCol?}` (themed data table) · `compare` `{cols: ["", "Us",
-  "Them"], cmpRows: [{label, values: [true, false]}], highlight?}` (the
-  ✓/✗ comparison matrix). The user edits everything visually (insert bar,
-  snap-drag, rotate, per-element settings panel, Edit-data sheet). Reach
-  for a structured layout FIRST — canvas is for the rare bespoke
-  arrangement no layout covers, and it's on you to place things with real
-  care (align edges, use the 50% center line, leave breathing room).
 
 ## Deck design discipline
 

@@ -1,7 +1,10 @@
 /* The freeform 'canvas' layout — free positioning with snap guides.
    All real logic lives in src/edit/FreeformEditor.tsx; items are percent-
    positioned so editor / present / thumbnails / PDF render identically.
-   No inspector field schema: items are edited directly on the canvas. */
+   No inspector field schema: items are edited directly on the canvas.
+
+   Intentionally unregistered: not in LAYOUTS / LAYOUT_GROUPS and not in
+   the skill catalog. Kept for a future rework — do not delete. */
 import Slide from '../deck/Slide';
 import FreeformCanvas from '../edit/FreeformEditor';
 import { type LayoutDef } from './shared';

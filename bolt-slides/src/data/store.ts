@@ -165,9 +165,9 @@ interface Store extends AppState {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   importDeck(json: any): Promise<void>;
-  /* freeform canvas: selected item index on the current slide (ephemeral,
-     mirrors the canvas selection so the right panel can show its settings)
-     + a one-shot request to open the chart data drawer */
+  /* freeform canvas (unregistered; kept for a future rework): selected
+     item index on the current slide + a one-shot request to open the
+     chart data drawer. Used only by FreeformEditor. */
   cnvSel: number | null;
   setCnvSel(i: number | null): void;
   cnvDataReq: boolean;
