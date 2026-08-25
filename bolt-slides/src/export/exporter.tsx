@@ -2,12 +2,10 @@
    Slides are responsive (vw/vh-driven type), so each one is rendered inside
    an off-screen IFRAME at the exact target size, then rasterized.
 
-   html-to-image reads styles via the PARENT window.getComputedStyle, which
-   drops styling on iframe nodes, and SVG foreignObject cannot paint
-   background-clip:text (accent / figures). We inline the iframe's computed
-   styles, flatten clipped text to a solid color, move the tree into the
-   parent document, then snapshot. */
-import { flushSync } from 'react-dom';
+   SVG foreignObject cannot paint background-clip:text (accent, figures),
+   so those runs compute to transparent and vanish. Flatten them to a solid
+   color in the iframe before snapshot. Do not inline all computed styles or
+   move the tree into the parent — that produced empty black pages. */
 import { createRoot } from 'react-dom/client';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -34,61 +32,30 @@ function paintColor(cs: CSSStyleDeclaration): string | null {
   );
 }
 
-/* SVG foreignObject skips background-clip:text; the computed color is
-   transparent so those runs vanish. Use the clipped fill as a real color. */
-function flattenClipText(el: HTMLElement, cs: CSSStyleDeclaration) {
-  const clip = `${cs.getPropertyValue('-webkit-background-clip')} ${
-    cs.backgroundClip
-  }`;
-  if (!clip.includes('text')) return;
-  const fill = paintColor(cs);
-  if (!fill) return;
-  el.style.setProperty('background-image', 'none');
-  el.style.setProperty('background-color', 'transparent');
-  el.style.setProperty('-webkit-background-clip', 'border-box');
-  el.style.setProperty('background-clip', 'border-box');
-  el.style.setProperty('color', fill);
-  el.style.setProperty('-webkit-text-fill-color', fill);
-}
-
-function inlineComputed(root: HTMLElement, view: Window) {
+function flattenClipText(root: HTMLElement, view: Window) {
   const Html = (view as unknown as { HTMLElement: typeof HTMLElement })
     .HTMLElement;
   const walk = (node: Element) => {
     if (node instanceof Html) {
       const cs = view.getComputedStyle(node);
-      if (cs.cssText) node.style.cssText = cs.cssText;
-      else {
-        for (let i = 0; i < cs.length; i++) {
-          const name = cs.item(i);
-          node.style.setProperty(
-            name,
-            cs.getPropertyValue(name),
-            cs.getPropertyPriority(name)
-          );
+      const clip = `${cs.getPropertyValue('-webkit-background-clip')} ${
+        cs.backgroundClip
+      }`;
+      if (clip.includes('text')) {
+        const fill = paintColor(cs);
+        if (fill) {
+          node.style.backgroundImage = 'none';
+          node.style.backgroundColor = 'transparent';
+          node.style.setProperty('-webkit-background-clip', 'border-box');
+          node.style.backgroundClip = 'border-box';
+          node.style.color = fill;
+          node.style.setProperty('-webkit-text-fill-color', fill);
         }
       }
-      flattenClipText(node, view.getComputedStyle(node));
     }
     Array.from(node.children).forEach(walk);
   };
   walk(root);
-}
-
-function bakeCanvases(root: HTMLElement, doc: Document) {
-  for (const canvas of Array.from(root.querySelectorAll('canvas'))) {
-    try {
-      const img = doc.createElement('img');
-      img.src = canvas.toDataURL();
-      img.alt = '';
-      img.style.cssText = canvas.style.cssText;
-      img.style.width = `${canvas.offsetWidth}px`;
-      img.style.height = `${canvas.offsetHeight}px`;
-      canvas.replaceWith(img);
-    } catch {
-      /* tainted canvas — leave it */
-    }
-  }
 }
 
 async function renderSlidePng(
@@ -100,7 +67,6 @@ async function renderSlidePng(
   const iframe = document.createElement('iframe');
   iframe.style.cssText = `position:fixed;left:-100000px;top:0;width:${w}px;height:${h}px;border:0;`;
   document.body.appendChild(iframe);
-  let host: HTMLElement | null = null;
   try {
     const doc = iframe.contentDocument!;
     const view = iframe.contentWindow!;
@@ -116,9 +82,8 @@ async function renderSlidePng(
     doc.body.appendChild(mount);
 
     const root = createRoot(mount);
-    flushSync(() => {
-      root.render(<SlideView slide={slide} />); // default contexts → fully static
-    });
+    root.render(<SlideView slide={slide} />); // default contexts → fully static
+    await sleep(60);
     try {
       await (doc as Document & { fonts?: { ready: Promise<unknown> } }).fonts
         ?.ready;
@@ -136,18 +101,10 @@ async function renderSlidePng(
     );
     await sleep(240); // let canvases (globe) and charts paint
 
-    bakeCanvases(mount, doc);
-    inlineComputed(mount, view);
+    flattenClipText(mount, view);
 
-    host = document.createElement('div');
-    host.style.cssText = `position:fixed;left:-100000px;top:0;width:${w}px;height:${h}px;overflow:hidden;`;
-    host.appendChild(document.importNode(mount, true));
-    document.body.appendChild(host);
-
-    const bg =
-      opaqueColor(view.getComputedStyle(doc.body).backgroundColor) ||
-      getComputedStyle(document.body).backgroundColor;
-    const png = await toPng(host, {
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const png = await toPng(mount, {
       width: w,
       height: h,
       pixelRatio,
@@ -156,7 +113,6 @@ async function renderSlidePng(
     root.unmount();
     return png;
   } finally {
-    host?.remove();
     iframe.remove();
   }
 }
