@@ -895,11 +895,23 @@ body.li-dragging .t-edit {
   animation: li-line-in 0.14s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ── add-slide modal: darker, with live layout previews ── */
+/* ── add-slide modal: darker, with live layout previews ──
+   Height stays at the viewport max so category filters do not jump the
+   chrome; the card grid scrolls inside. */
 .modal.add-slide {
   width: min(1080px, 96vw);
+  height: min(84vh, calc(100vh - 48px));
+  max-height: min(84vh, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--ed-bg);
   border-color: var(--ed-border);
+}
+.add-slide-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .add-grid {
   grid-template-columns: repeat(3, 1fr);

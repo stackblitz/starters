@@ -98,6 +98,7 @@ export default function Canvas() {
           t.isContentEditable)
       )
         return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (
         e.key === 'ArrowDown' ||
         e.key === 'ArrowRight' ||

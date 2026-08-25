@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShareLink, ShareMode } from '../data/share';
 import { api } from '../data/store';
 import { IconClose } from '../deck/icons';
+import { useDialogTrap } from './useDialogTrap';
 
 /* Share links, one per mode. Each row makes a link, optionally behind a
    password, and copies it. Turning a link off kills it everywhere at once.
@@ -220,46 +221,12 @@ export default function ShareModal({
 }) {
   const [links, setLinks] = useState<ShareLink[] | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const opener = useRef<Element | null>(
-    typeof document !== 'undefined' ? document.activeElement : null
-  );
+  useDialogTrap(ref, onClose);
 
   const refresh = useCallback(async () => setLinks(await api('/shares')), []);
   useEffect(() => {
     refresh().catch(() => setLinks([]));
   }, [refresh]);
-
-  // focus trap + Escape, and focus returns to the button that opened this
-  useEffect(() => {
-    const root = ref.current;
-    root?.querySelector<HTMLElement>('button, input')?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab' || !root) return;
-      const f = Array.from(
-        root.querySelectorAll<HTMLElement>('button, input, [href]')
-      ).filter((el) => !el.hasAttribute('disabled'));
-      if (!f.length) return;
-      const first = f[0],
-        last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey, true);
-    return () => {
-      document.removeEventListener('keydown', onKey, true);
-      (opener.current as HTMLElement | null)?.focus?.();
-    };
-  }, [onClose]);
 
   const onSave = async (
     mode: ShareMode,
