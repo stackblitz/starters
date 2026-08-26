@@ -11,18 +11,41 @@ import { IconClose } from '../deck/icons';
 import MiniSlide from './MiniSlide';
 import { useDialogTrap } from './useDialogTrap';
 
-/* varied blue/black backgrounds cycle through the preview cards so the grid
-   reads dynamic — all within the theme's family */
+/* Picker-only: cycle token mixes so unused layouts preview in the generated
+   theme. Inserted slides stay `{ type: 'none' }` (tokens.css atmosphere) —
+   CSS variables are not valid <input type="color"> values in the bg picker. */
 import type { Background } from '../data/types';
+const NONE_BG: Background = { type: 'none' };
 const PREVIEW_BGS: Background[] = [
-  { type: 'none' },
-  { type: 'gradient', from: '#0d1b3d', to: '#1688fc', angle: 150 },
-  { type: 'color', color: '#0a0f1e' },
-  { type: 'gradient', from: '#0b1026', to: '#12325e', angle: 135 },
-  { type: 'none' },
-  { type: 'gradient', from: '#04121f', to: '#0e4f63', angle: 160 },
-  { type: 'color', color: '#10131a' },
-  { type: 'none' },
+  NONE_BG,
+  {
+    type: 'gradient',
+    from: 'var(--bg)',
+    to: 'color-mix(in srgb, var(--accent) 42%, var(--bg))',
+    angle: 150,
+  },
+  {
+    type: 'color',
+    color: 'color-mix(in srgb, var(--bg) 88%, var(--accent))',
+  },
+  {
+    type: 'gradient',
+    from: 'color-mix(in srgb, var(--bg) 70%, var(--accent))',
+    to: 'var(--bg)',
+    angle: 135,
+  },
+  NONE_BG,
+  {
+    type: 'gradient',
+    from: 'var(--bg)',
+    to: 'color-mix(in srgb, var(--accent) 18%, var(--bg))',
+    angle: 160,
+  },
+  {
+    type: 'color',
+    color: 'color-mix(in srgb, var(--surface) 80%, var(--bg))',
+  },
+  NONE_BG,
 ];
 
 const previewSlide = (l: LayoutDef, i: number): SlideData => ({
@@ -50,6 +73,10 @@ export default function AddSlide({
   const groups = LAYOUT_GROUPS.filter((g) => !filter || g.title === filter);
   const ref = useRef<HTMLDivElement>(null);
   useDialogTrap(ref, onClose);
+  const pick = (l: LayoutDef) => {
+    addSlide(l.type, structuredClone(l.defaults), at, { type: 'none' });
+    onClose();
+  };
 
   return (
     <div
@@ -113,27 +140,9 @@ export default function AddSlide({
                         className="add-card"
                         role="button"
                         tabIndex={0}
-                        onClick={() => {
-                          addSlide(
-                            l.type,
-                            structuredClone(l.defaults),
-                            at,
-                            structuredClone(PREVIEW_BGS[i % PREVIEW_BGS.length])
-                          );
-                          onClose();
-                        }}
+                        onClick={() => pick(l)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            addSlide(
-                              l.type,
-                              structuredClone(l.defaults),
-                              at,
-                              structuredClone(
-                                PREVIEW_BGS[i % PREVIEW_BGS.length]
-                              )
-                            );
-                            onClose();
-                          }
+                          if (e.key === 'Enter') pick(l);
                         }}
                       >
                         <span className="add-card-preview">
