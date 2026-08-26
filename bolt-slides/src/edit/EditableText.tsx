@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MutableRefObject,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -191,12 +192,23 @@ const fieldBasePx = (el: HTMLElement | null) => {
 const emFromPx = (px: number, basePx: number) =>
   clampEm(Math.round((px / Math.max(basePx, 1)) * 1000) / 1000);
 
-/* Pixel size of this field (1em = the layout's computed size). Typed values
-   commit on Enter/blur and clamp to the same 0.4–4em range as − / +. */
+const pxOf = (sizeEm: number, basePx: number) => Math.round(sizeEm * basePx);
+
+/* Unwrap only when the shown pixel size is the field's layout 1em. The old
+   |em-1| < 0.05 band is ~5% — a 1px step on a title never left it, so − / +
+   looked dead until something else wrote a size far from 1em. */
+const isBaseSize = (em: number, basePx: number) =>
+  pxOf(em, basePx) === pxOf(1, basePx);
+
+/* Pixel size of this field (1em = the layout's computed size). − / + and
+   arrows apply immediately; typed digits wait 250ms so "14" is not "1". */
+const SIZE_TYPE_MS = 250;
+
 function SizeField({
   sizeEm,
   basePx,
   menuHeld,
+  stepRef,
   onSize,
   onLeaveField,
   onRestoreFocus,
@@ -204,19 +216,56 @@ function SizeField({
   sizeEm: number;
   basePx: number;
   menuHeld: { current: boolean };
+  stepRef: MutableRefObject<(dir: 1 | -1) => void>;
   onSize: (em: number) => void;
   onLeaveField: () => void;
   onRestoreFocus: () => void;
 }) {
-  const px = Math.round(sizeEm * basePx);
+  const px = pxOf(sizeEm, basePx);
   const [draft, setDraft] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const typeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipCommit = useRef(false);
   const returnToField = useRef(false);
+  const revertPx = useRef(px);
   const shown = draft ?? String(px);
 
-  const apply = (raw: string | null) => {
+  const clearTypeTimer = () => {
+    if (typeTimer.current) {
+      clearTimeout(typeTimer.current);
+      typeTimer.current = null;
+    }
+  };
+
+  useEffect(
+    () => () => {
+      if (typeTimer.current) clearTimeout(typeTimer.current);
+    },
+    []
+  );
+
+  const commitPx = (n: number) => {
+    if (!Number.isFinite(n)) return;
+    clearTypeTimer();
+    const em = emFromPx(n, basePx);
+    const next = String(pxOf(em, basePx));
+    /* only keep a draft while this input is focused — otherwise − / + would
+       pin the field and ignore caret moves to a different size */
+    if (document.activeElement === inputRef.current) setDraft(next);
+    else setDraft(null);
+    onSize(em);
+  };
+
+  const step = (dir: 1 | -1) => {
+    const cur = parseInt(shown, 10);
+    commitPx((Number.isFinite(cur) ? cur : px) + dir);
+  };
+  stepRef.current = step;
+
+  const applyDraft = (raw: string | null) => {
+    clearTypeTimer();
     setDraft(null);
-    if (raw === null) return;
+    if (raw === null || raw === '') return;
     const n = parseInt(raw.replace(/px/gi, ''), 10);
     if (!Number.isFinite(n)) return;
     onSize(emFromPx(n, basePx));
@@ -225,25 +274,36 @@ function SizeField({
   return (
     <span className="fmt-size">
       <input
+        ref={inputRef}
         className="fmt-size-input"
         type="text"
         inputMode="numeric"
         aria-label="Font size in pixels"
         title="Slide type size — stored as em so it stays responsive"
         value={shown}
-        onChange={(e) =>
-          setDraft(e.target.value.replace(/[^\d]/g, '').slice(0, 4))
-        }
+        onChange={(e) => {
+          const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 4);
+          setDraft(raw);
+          clearTypeTimer();
+          const n = parseInt(raw, 10);
+          if (!Number.isFinite(n)) return;
+          typeTimer.current = setTimeout(() => {
+            typeTimer.current = null;
+            onSize(emFromPx(n, basePx));
+          }, SIZE_TYPE_MS);
+        }}
         onFocus={(e) => {
+          revertPx.current = px;
           setDraft(String(px));
           e.currentTarget.select();
         }}
         onBlur={() => {
           if (skipCommit.current) {
             skipCommit.current = false;
+            clearTypeTimer();
             setDraft(null);
           } else {
-            apply(draft);
+            applyDraft(draft);
           }
           const stay = returnToField.current;
           returnToField.current = false;
@@ -260,6 +320,11 @@ function SizeField({
         }}
         onKeyDown={(e) => {
           e.stopPropagation();
+          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            step(e.key === 'ArrowUp' ? 1 : -1);
+            return;
+          }
           if (e.key === 'Enter') {
             e.preventDefault();
             returnToField.current = true;
@@ -269,6 +334,8 @@ function SizeField({
             e.preventDefault();
             skipCommit.current = true;
             returnToField.current = true;
+            clearTypeTimer();
+            onSize(emFromPx(revertPx.current, basePx));
             setDraft(null);
             e.currentTarget.blur();
           }
@@ -314,8 +381,7 @@ function FormatMenu({
   const [colorOpen, setColorOpen] = useState(false);
   const [alignOpen, setAlignOpen] = useState(false);
   const menuHeld = useRef(false);
-  const px = Math.round(bar.sizeEm * bar.basePx);
-  const step = (dir: 1 | -1) => onSize(emFromPx(px + dir, bar.basePx));
+  const stepRef = useRef<(dir: 1 | -1) => void>(() => {});
   const btn = (props: {
     title: string;
     cls?: string;
@@ -364,7 +430,7 @@ function FormatMenu({
     >
       {btn({
         title: 'Smaller (−1px)',
-        act: () => step(-1),
+        act: () => stepRef.current(-1),
         disabled: bar.sizeEm <= 0.4,
         children: '−',
       })}
@@ -372,13 +438,14 @@ function FormatMenu({
         sizeEm={bar.sizeEm}
         basePx={bar.basePx}
         menuHeld={menuHeld}
+        stepRef={stepRef}
         onSize={onSize}
         onLeaveField={onLeaveField}
         onRestoreFocus={onRestoreFocus}
       />
       {btn({
         title: 'Larger (+1px)',
-        act: () => step(1),
+        act: () => stepRef.current(1),
         disabled: bar.sizeEm >= 4,
         children: '+',
       })}
@@ -764,8 +831,9 @@ export default function T({
       )
         cur = kids[0];
     }
+    const basePx = fieldBasePx(el);
     if (cur) {
-      if (Math.abs(em - 1) < 0.05) {
+      if (isBaseSize(em, basePx)) {
         unwrapEl(cur);
         setBar((b) => (b ? { ...b, sizeEm: 1 } : b));
         return;
@@ -780,7 +848,7 @@ export default function T({
       (n) => n.dataset.size === 'up' || n.dataset.size === 'down'
     );
     if (legacy) unwrapEl(legacy);
-    if (Math.abs(em - 1) < 0.05) return;
+    if (isBaseSize(em, basePx)) return;
     const make = () => {
       const sp = document.createElement('span');
       sp.dataset.fs = String(em);
