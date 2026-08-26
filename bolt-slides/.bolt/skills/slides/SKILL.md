@@ -273,7 +273,9 @@ Visual:
 Prefer the deck-level `accent` and `font` (Deck JSON above) over editing
 tokens. For deeper theming: all color/type/radius/motion live in
 `src/styles/tokens.css`. Change VALUES, never names. `--accent` =
-`--primary` = one solid hex. Dark default; for a light deck set `--bg` /
+`--primary` = one solid hex. `--bg-grad-1`, `--bg-grad-2`, and `--glow`
+must stay `color-mix` of `--accent` so atmosphere follows the deck accent.
+Dark default; for a light deck set `--bg` /
 `--fg` in tokens.css. Fonts: set the deck-level `font` pairing (Google Fonts,
 loaded automatically; `playfair`/`fraunces` for editorial serifs, `space`/
 `sora`/`outfit` for technical, `manrope`/`dm` for friendly). Do not edit

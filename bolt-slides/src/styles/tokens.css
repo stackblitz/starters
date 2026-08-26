@@ -5,10 +5,11 @@
    "dark product" default — REPLACE them to match the brief or the brand.
    =================================================================== */
 :root {
-  /* Surfaces */
+  /* Surfaces — atmosphere / glow mix from --accent so a deck accent
+     override retints washes without rewriting these. */
   --bg: #06080d;
-  --bg-grad-1: rgba(22, 136, 252, 0.1);
-  --bg-grad-2: rgba(86, 140, 255, 0.06);
+  --bg-grad-1: color-mix(in srgb, var(--accent) 10%, transparent);
+  --bg-grad-2: color-mix(in srgb, var(--accent) 6%, transparent);
   --surface: rgba(255, 255, 255, 0.045);
   --surface-2: rgba(255, 255, 255, 0.07);
 
@@ -33,7 +34,7 @@
 
   /* Depth */
   --shadow: 0 50px 120px -50px rgba(0, 0, 0, 0.9);
-  --glow: 0 30px 80px -40px rgba(22, 136, 252, 0.45);
+  --glow: 0 30px 80px -40px color-mix(in srgb, var(--accent) 45%, transparent);
 
   /* Type */
   --font-head: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display',
