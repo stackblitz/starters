@@ -85,6 +85,10 @@ async function renderSlidePng(
       .forEach((n) => {
         doc.head.appendChild(n.cloneNode(true));
       });
+    /* applyAccent / applyFont write --accent, --primary, and the font tokens
+       onto the live <html> style. Cloned sheets only have tokens.css defaults,
+       so without this a themed deck exports as Bolt blue / Inter. */
+    doc.documentElement.style.cssText = document.documentElement.style.cssText;
     doc.body.style.margin = '0';
     const mount = doc.createElement('div');
     mount.style.cssText = `width:${w}px;height:${h}px;`;
