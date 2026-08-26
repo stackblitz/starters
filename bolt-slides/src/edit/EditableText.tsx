@@ -32,6 +32,8 @@ interface Bar {
   marks: string[];
   /** current font-size multiplier at the caret (1 = base) */
   sizeEm: number;
+  /** computed 1em of this field in layout px (canvas scale does not apply) */
+  basePx: number;
   /** current color at the caret: hex, 'accent', or null (theme default) */
   color: string | null;
   /** whole-field alignment override, or null (layout default) */
@@ -179,33 +181,45 @@ const alignIcon = (kind: 'l' | 'c' | 'r') => {
   );
 };
 
-/* Percent of this field's layout size (1em = 100%). Typed values commit on
-   Enter/blur and clamp to the same 40–400% range as − / +. */
+const fieldBasePx = (el: HTMLElement | null) => {
+  const n = el ? parseFloat(getComputedStyle(el).fontSize) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : 16;
+};
+
+/* px → em multiplier for this field. The bar shows layout pixels; the slide
+   keeps `font-size: N em` so type still follows the layout's responsive size. */
+const emFromPx = (px: number, basePx: number) =>
+  clampEm(Math.round((px / Math.max(basePx, 1)) * 1000) / 1000);
+
+/* Pixel size of this field (1em = the layout's computed size). Typed values
+   commit on Enter/blur and clamp to the same 0.4–4em range as − / +. */
 function SizeField({
   sizeEm,
+  basePx,
   menuHeld,
   onSize,
   onLeaveField,
   onRestoreFocus,
 }: {
   sizeEm: number;
+  basePx: number;
   menuHeld: { current: boolean };
   onSize: (em: number) => void;
   onLeaveField: () => void;
   onRestoreFocus: () => void;
 }) {
-  const pct = Math.round(sizeEm * 100);
+  const px = Math.round(sizeEm * basePx);
   const [draft, setDraft] = useState<string | null>(null);
   const skipCommit = useRef(false);
   const returnToField = useRef(false);
-  const shown = draft ?? String(pct);
+  const shown = draft ?? String(px);
 
   const apply = (raw: string | null) => {
     setDraft(null);
     if (raw === null) return;
-    const n = parseInt(raw.replace(/%/g, ''), 10);
+    const n = parseInt(raw.replace(/px/gi, ''), 10);
     if (!Number.isFinite(n)) return;
-    onSize(clampEm(n / 100));
+    onSize(emFromPx(n, basePx));
   };
 
   return (
@@ -214,14 +228,14 @@ function SizeField({
         className="fmt-size-input"
         type="text"
         inputMode="numeric"
-        aria-label="Font size as a percent of this field’s layout size"
-        title="Relative to this field’s layout size"
+        aria-label="Font size in pixels"
+        title="Slide type size — stored as em so it stays responsive"
         value={shown}
         onChange={(e) =>
-          setDraft(e.target.value.replace(/[^\d]/g, '').slice(0, 3))
+          setDraft(e.target.value.replace(/[^\d]/g, '').slice(0, 4))
         }
         onFocus={(e) => {
-          setDraft(String(pct));
+          setDraft(String(px));
           e.currentTarget.select();
         }}
         onBlur={() => {
@@ -262,7 +276,7 @@ function SizeField({
         onMouseDown={(e) => e.stopPropagation()}
       />
       <span className="fmt-size-unit" aria-hidden>
-        %
+        px
       </span>
     </span>
   );
@@ -270,7 +284,7 @@ function SizeField({
 
 /* The text bar — anchored under the text block (stable while you select and
    type, like Pitch/Framer), visible the whole time the block is focused.
-   [ − 100% + | A color ▾ | B I | clear ]. With nothing selected, actions
+   [ − 48px + | A color ▾ | B I | clear ]. With nothing selected, actions
    style the entire block. */
 function FormatMenu({
   bar,
@@ -300,8 +314,8 @@ function FormatMenu({
   const [colorOpen, setColorOpen] = useState(false);
   const [alignOpen, setAlignOpen] = useState(false);
   const menuHeld = useRef(false);
-  const step = (dir: 1 | -1) =>
-    onSize(clampEm(Math.round((bar.sizeEm + dir * 0.1) * 10) / 10));
+  const px = Math.round(bar.sizeEm * bar.basePx);
+  const step = (dir: 1 | -1) => onSize(emFromPx(px + dir, bar.basePx));
   const btn = (props: {
     title: string;
     cls?: string;
@@ -349,20 +363,21 @@ function FormatMenu({
       }}
     >
       {btn({
-        title: 'Smaller (−10%)',
+        title: 'Smaller (−1px)',
         act: () => step(-1),
         disabled: bar.sizeEm <= 0.4,
         children: '−',
       })}
       <SizeField
         sizeEm={bar.sizeEm}
+        basePx={bar.basePx}
         menuHeld={menuHeld}
         onSize={onSize}
         onLeaveField={onLeaveField}
         onRestoreFocus={onRestoreFocus}
       />
       {btn({
-        title: 'Larger (+10%)',
+        title: 'Larger (+1px)',
         act: () => step(1),
         disabled: bar.sizeEm >= 4,
         children: '+',
@@ -575,6 +590,7 @@ export default function T({
         below,
         marks,
         sizeEm,
+        basePx: fieldBasePx(el),
         color,
         align:
           ((el.querySelector('[data-align]') as HTMLElement | null)?.dataset

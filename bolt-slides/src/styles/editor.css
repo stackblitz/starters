@@ -1067,7 +1067,7 @@ tr.tr-after > td {
   font: 600 11px/1 var(--font-mono, monospace);
 }
 .fmt-size-input {
-  width: 3.2ch;
+  width: 4.2ch;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1426,7 +1426,7 @@ tr.tr-after > td {
   font-size: 10px;
 }
 .fmt-inline .fmt-size-input {
-  width: 3ch;
+  width: 4ch;
 }
 .fmt-inline .fmt-sep {
   height: 14px;
