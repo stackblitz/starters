@@ -1,4 +1,4 @@
-/* Export — PDF of the whole deck, and the first slide → public/og.png.
+/* Export — PDF of the whole deck.
    Slides are responsive (vw/vh-driven type), so each one is rendered inside
    an off-screen IFRAME at the exact target size, then rasterized.
 
@@ -11,7 +11,6 @@ import { toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import type { SlideData } from '../data/types';
 import SlideView from '../slide/SlideView';
-import { api } from '../data/store';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -99,15 +98,6 @@ function canvasPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
       (blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))),
       'image/png'
     );
-  });
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
   });
 }
 
@@ -221,12 +211,4 @@ export async function exportPdf(
   pdf.save(
     `${(title || 'deck').replace(/[^\w\- ]+/g, '').trim() || 'deck'}.pdf`
   );
-}
-
-/* First slide → /og.png (1200×630), wired to the OpenGraph tags in index.html. */
-export async function updateOgImage(first: SlideData): Promise<void> {
-  const canvas = await rasterSlide(first, 1200, 630, 1);
-  const blob = await canvasPngBlob(canvas);
-  const dataUrl = await blobToDataUrl(blob);
-  await api('/og', 'POST', { dataUrl });
 }

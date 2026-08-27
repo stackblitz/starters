@@ -1,43 +1,18 @@
-/* App state — one zustand store shared by the editor and present mode.
-   Mutations are optimistic: state updates instantly, the API call persists to
-   the database in the background (text edits are debounced per slide). */
+/* App state — one zustand store shared by the studio, audience deck, and
+   presenter console. Canonical store is repo-root deck.json. Studio
+   mutations (reorder / duplicate / delete) are optimistic, then POST
+   /__deck in Vite DEV. Agent writes land via a custom HMR event. */
 import { create } from 'zustand';
-import type { AppState, Background, DeckMeta, SlideData } from './types';
-import { deckUrl, supabaseAuthHeaders } from './api';
-import { shareHeaders, shareInfo, shareToken, type ShareMode } from './share';
-import { ownerHeaders } from './owner';
+import type {
+  AppState,
+  Background,
+  DeckFile,
+  DeckMeta,
+  SlideData,
+} from './types';
+import seedJson from '../../deck.json';
 
-/* Why a request was refused, when it was: the app shows a password gate for
-   'password-required' and a "ask for a link" screen for 'share-required'. */
-export type Denial = 'share-required' | 'password-required' | null;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function api<T = any>(
-  path: string,
-  method = 'GET',
-  body?: unknown
-): Promise<T> {
-  const res = await fetch(deckUrl(path), {
-    method,
-    headers: {
-      ...supabaseAuthHeaders(),
-      ...shareHeaders(),
-      ...ownerHeaders(),
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      const why = await res.json().catch(() => ({}));
-      if (why.error === 'share-required' || why.error === 'password-required') {
-        useStore.setState({ denied: why.error, canEdit: false });
-      }
-    }
-    throw new Error(`${method} ${path} → ${res.status}`);
-  }
-  return res.json();
-}
+const seed = seedJson as DeckFile;
 
 /* set a deep value in a plain-JSON object via "items.0.title" paths */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,105 +41,68 @@ export const getPath = (obj: any, path: string): any =>
       obj
     );
 
-/* Cross-window mirror: the editor tab and the presenter window run separate
-   copies of this store over the same deck, so a slide patch made in one
-   is echoed to the other (notes typed in the presenter console show up in the
-   editor's Notes tab live, and vice versa). The receiver only updates state —
-   the window that made the edit already persisted it. */
 const bus =
   typeof BroadcastChannel !== 'undefined'
-    ? new BroadcastChannel('deck-store')
+    ? new BroadcastChannel('bolt-slides-deck')
     : null;
-bus?.addEventListener('message', (e) => {
-  const m = e.data as {
-    type?: string;
-    id?: string;
-    patch?: Partial<SlideData>;
-  } | null;
-  if (m?.type !== 'patch' || !m.id || !m.patch) return;
-  useStore.setState((s) => ({
-    slides: s.slides.map((sl) => (sl.id === m.id ? { ...sl, ...m.patch } : sl)),
-  }));
-});
 
-const saveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
-let pendingRefresh = false;
-let writeGen = 0;
-let inFlight = 0;
-
-function bumpWrite() {
-  writeGen++;
+function newSlideId(): string {
+  return crypto.randomUUID().replace(/-/g, '').slice(0, 8);
 }
 
-function writesPending() {
-  return Object.keys(saveTimers).length > 0 || inFlight > 0;
+function parseDeckFile(raw: unknown): DeckFile {
+  if (!raw || typeof raw !== 'object') throw new Error('invalid-deck');
+  const f = raw as DeckFile;
+  if (!f.deck || typeof f.deck !== 'object' || !Array.isArray(f.slides)) {
+    throw new Error('invalid-deck');
+  }
+  return f;
 }
 
-function flushPendingRefresh() {
-  if (!pendingRefresh || writesPending()) return;
-  pendingRefresh = false;
-  void useStore.getState().refresh();
+function toFile(s: {
+  boltSlidesVersion: number;
+  boltSlidesId: string | null;
+  deck: DeckMeta;
+  slides: SlideData[];
+}): DeckFile {
+  const file: DeckFile = {
+    boltSlidesVersion: s.boltSlidesVersion || 1,
+    deck: s.deck,
+    slides: s.slides.map((sl, i) => ({ ...sl, position: i })),
+  };
+  if (s.boltSlidesId) file.boltSlidesId = s.boltSlidesId;
+  return file;
 }
 
-function trackPut<T>(p: Promise<T>): Promise<T> {
-  inFlight++;
-  return p.finally(() => {
-    inFlight--;
-    flushPendingRefresh();
-  });
-}
-
-function debounceSave(id: string, fn: () => void | Promise<unknown>, ms = 500) {
-  clearTimeout(saveTimers[id]);
-  saveTimers[id] = setTimeout(() => {
-    delete saveTimers[id];
-    Promise.resolve(fn()).finally(flushPendingRefresh);
-  }, ms);
-}
+let persistDirty = false;
+let persisting = false;
 
 interface Store extends AppState {
   loaded: boolean;
-  /** set when VITE_SUPABASE_* is missing or the edge function is down */
   bootError: string | null;
-  /** set when the API refuses us — drives the gate screens */
-  denied: Denial;
-  /** advisory: false for present/presenter share links. Mutators do not
-   *  consult this — the API is the real gate. Do not trust it in UI. */
-  canEdit: boolean;
-  /** what kind of visitor this browser is */
-  mode: ShareMode;
+  boltSlidesVersion: number;
+  boltSlidesId: string | null;
   current: number;
   /** "slideId|listPath" while a repeatable list is being edited (keeps its + visible) */
   activeList: string | null;
   setActiveList(v: string | null): void;
-  /** editor Present — in-place swap, no URL change */
+  /** studio Present — in-place swap, no URL change */
   presenting: boolean;
   setPresenting(v: boolean): void;
 
-  load(): Promise<void>;
-  /** Re-read /state without resetting ephemeral editor UI. Skips while a
-   *  debounce or PUT is in flight, and drops the snapshot if a write started
-   *  after the GET. */
-  refresh(): Promise<void>;
+  load(): void;
+  /** Replace deck/slides from disk or another window; keep current by id. */
+  applyFile(raw: unknown): void;
   setCurrent(i: number): void;
 
   updateDeck(patch: Partial<DeckMeta>): void;
   patchSlide(id: string, patch: Partial<SlideData>): void;
   setProp(id: string, path: string, value: unknown): void;
   setBackground(id: string, bg: Background): void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  addSlide(
-    layout: string,
-    props: any,
-    position?: number,
-    background?: Background
-  ): Promise<void>;
-  duplicateSlide(id: string): Promise<void>;
-  deleteSlide(id: string): Promise<void>;
+  duplicateSlide(id: string): void;
+  deleteSlide(id: string): void;
   reorder(ids: string[]): void;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  importDeck(json: any): Promise<void>;
   /* freeform canvas (unregistered; kept for a future rework): selected
      item index on the current slide + a one-shot request to open the
      chart data drawer. Used only by FreeformEditor. */
@@ -174,9 +112,38 @@ interface Store extends AppState {
   reqCnvData(v: boolean): void;
 }
 
+function applyEnvelope(
+  set: (partial: Partial<Store> | ((s: Store) => Partial<Store>)) => void,
+  getState: () => Store,
+  raw: unknown
+) {
+  const file = parseDeckFile(raw);
+  const slides = [...file.slides].sort((a, b) => a.position - b.position);
+  const prevId = getState().slides[getState().current]?.id;
+  const byId = prevId ? slides.findIndex((s) => s.id === prevId) : -1;
+  const current =
+    byId >= 0
+      ? byId
+      : Math.max(
+          0,
+          Math.min(getState().current, Math.max(0, slides.length - 1))
+        );
+  set({
+    boltSlidesVersion: file.boltSlidesVersion ?? 1,
+    boltSlidesId: file.boltSlidesId ?? null,
+    deck: file.deck,
+    slides,
+    current,
+    loaded: true,
+    bootError: null,
+  });
+}
+
 export const useStore = create<Store>((set, getState) => ({
   loaded: false,
   bootError: null,
+  boltSlidesVersion: 1,
+  boltSlidesId: null,
   cnvSel: null,
   setCnvSel: (i) => set({ cnvSel: i }),
   cnvDataReq: false,
@@ -193,80 +160,25 @@ export const useStore = create<Store>((set, getState) => ({
     set({ presenting: v });
   },
 
-  denied: null,
-  canEdit: true,
-  mode: 'edit',
-
-  async load() {
+  load() {
     try {
-      // a visitor arriving on a link is only allowed what that link grants.
-      // never default a ?k= tab to editor if /share fails — that would show
-      // the editor chrome for a present/presenter token. No-token tabs take
-      // mode from /state (present on the published origin; edit in local Vite
-      // when DECK_OWNER_SECRET is unset).
-      let mode: ShareMode = 'edit';
-      if (shareToken) {
-        const link = await shareInfo().catch(() => null);
-        if (!link) {
-          set({
-            denied: 'share-required',
-            canEdit: false,
-            loaded: false,
-          });
-          return;
-        }
-        mode = link.mode;
-      }
-      const s = await api<AppState & { mode?: ShareMode }>('/state');
-      if (!shareToken && (s.mode === 'present' || s.mode === 'presenter')) {
-        mode = s.mode;
-      }
-      set({
-        ...s,
-        loaded: true,
-        bootError: null,
-        denied: null,
-        mode,
-        canEdit: mode === 'edit',
-      });
+      applyEnvelope(set, getState, seed);
     } catch (err) {
-      if (getState().denied) return;
       const message = err instanceof Error ? err.message : String(err);
       set({
-        bootError: message.includes('missing-supabase')
-          ? 'This deck needs a Bolt Cloud database. Apply the slides schema and deploy the deck-api edge function (see .bolt/skills/slides/SKILL.md), then reload.'
-          : 'Could not reach the deck API. Apply the slides schema and deploy deck-api (see .bolt/skills/slides/SKILL.md), then reload.',
+        bootError:
+          message === 'invalid-deck'
+            ? 'deck.json is missing a deck or slides array.'
+            : 'Could not load deck.json.',
       });
     }
   },
 
-  async refresh() {
-    if (writesPending()) {
-      pendingRefresh = true;
-      return;
-    }
-    pendingRefresh = false;
-    if (getState().denied) return;
-    const gen = writeGen;
+  applyFile(raw) {
     try {
-      const s = await api<AppState & { mode?: ShareMode }>('/state');
-      if (gen !== writeGen || writesPending()) {
-        pendingRefresh = true;
-        flushPendingRefresh();
-        return;
-      }
-      const cur = getState().current;
-      const mode = s.mode ?? getState().mode;
-      set({
-        ...s,
-        mode,
-        canEdit: mode === 'edit',
-        current: Math.max(0, Math.min(cur, Math.max(0, s.slides.length - 1))),
-        loaded: true,
-        bootError: null,
-      });
+      applyEnvelope(set, getState, raw);
     } catch {
-      /* keep the last good state; the next focus/visibility pass retries */
+      /* keep the last good state */
     }
   },
 
@@ -276,110 +188,130 @@ export const useStore = create<Store>((set, getState) => ({
   },
 
   updateDeck(patch) {
-    bumpWrite();
     set((s) => ({ deck: { ...s.deck, ...patch } }));
-    debounceSave('deck', () => {
-      const deck = getState().deck;
-      return trackPut(
-        api('/deck', 'PUT', {
-          title: deck.title,
-          transition: deck.transition,
-          font: deck.font,
-          accent: deck.accent,
-        })
-      );
-    });
+    void persist();
   },
 
   patchSlide(id, patch) {
-    bumpWrite();
     set((s) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, ...patch } : sl)),
     }));
     bus?.postMessage({ type: 'patch', id, patch });
-    const keys = Object.keys(patch);
-    const notesOnly = keys.length > 0 && keys.every((k) => k === 'notes');
-    const send = () =>
-      trackPut(
-        api(
-          '/slides/' + id,
-          'PUT',
-          notesOnly
-            ? { notes: getState().slides.find((s) => s.id === id)?.notes }
-            : patch
-        )
-      );
-    if (notesOnly) debounceSave('notes:' + id, send);
-    else void send();
+    void persist();
   },
 
   setProp(id, path, value) {
-    bumpWrite();
     const slide = getState().slides.find((s) => s.id === id);
     if (!slide) return;
     const props = setPath(slide.props, path, value);
     set((s) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, props } : sl)),
     }));
-    debounceSave(id, () =>
-      trackPut(
-        api('/slides/' + id, 'PUT', {
-          props: getState().slides.find((s) => s.id === id)?.props,
-        })
-      )
-    );
+    void persist();
   },
 
   setBackground(id, background) {
     getState().patchSlide(id, { background });
   },
 
-  async addSlide(layout, props, position, background) {
-    bumpWrite();
-    const pos = position ?? getState().current + 1;
-    const s = await trackPut(
-      api<AppState>('/slides', 'POST', {
-        layout,
-        props,
-        position: pos,
-        background,
-      })
-    );
-    set({ ...s, current: pos });
+  duplicateSlide(id) {
+    const slides = getState().slides;
+    const idx = slides.findIndex((sl) => sl.id === id);
+    if (idx < 0) return;
+    const copy: SlideData = {
+      ...structuredClone(slides[idx]),
+      id: newSlideId(),
+    };
+    const next = [
+      ...slides.slice(0, idx + 1),
+      copy,
+      ...slides.slice(idx + 1),
+    ].map((sl, i) => ({ ...sl, position: i }));
+    set({ slides: next, current: idx + 1 });
+    void persist();
   },
 
-  async duplicateSlide(id) {
-    bumpWrite();
-    const s = await trackPut(api<AppState>(`/slides/${id}/duplicate`, 'POST'));
-    const idx = getState().slides.findIndex((sl) => sl.id === id);
-    set({ ...s, current: idx + 1 });
-  },
-
-  async deleteSlide(id) {
-    bumpWrite();
+  deleteSlide(id) {
     const cur = getState().current;
-    const s = await trackPut(api<AppState>('/slides/' + id, 'DELETE'));
-    set({ ...s, current: Math.min(cur, s.slides.length - 1) });
+    const next = getState()
+      .slides.filter((sl) => sl.id !== id)
+      .map((sl, i) => ({ ...sl, position: i }));
+    set({
+      slides: next,
+      current: Math.min(cur, Math.max(0, next.length - 1)),
+    });
+    void persist();
   },
 
   reorder(ids) {
-    bumpWrite();
     const cur = getState().slides[getState().current]?.id;
     set((s) => ({
       slides: ids
-        .map((id, i) => ({
-          ...s.slides.find((sl) => sl.id === id)!,
-          position: i,
-        }))
-        .filter(Boolean),
+        .map((id, i) => {
+          const sl = s.slides.find((row) => row.id === id);
+          return sl ? { ...sl, position: i } : null;
+        })
+        .filter((sl): sl is SlideData => !!sl),
       current: Math.max(0, ids.indexOf(cur ?? '')),
     }));
-    void trackPut(api('/order', 'PUT', { ids }));
-  },
-
-  async importDeck(json) {
-    bumpWrite();
-    const s = await trackPut(api<AppState>('/import', 'POST', json));
-    set({ ...s, current: 0 });
+    void persist();
   },
 }));
+
+async function persist() {
+  if (!import.meta.env.DEV) return;
+  persistDirty = true;
+  if (persisting) return;
+  persisting = true;
+  while (persistDirty) {
+    persistDirty = false;
+    try {
+      const file = toFile(useStore.getState());
+      const res = await fetch('/__deck', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(file),
+      });
+      if (!res.ok) throw new Error(`POST /__deck → ${res.status}`);
+      const saved = parseDeckFile(await res.json());
+      const id = saved.boltSlidesId ?? null;
+      if (id && id !== useStore.getState().boltSlidesId) {
+        useStore.setState({ boltSlidesId: id });
+      }
+      bus?.postMessage({
+        type: 'deck-file',
+        file: toFile(useStore.getState()),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  persisting = false;
+}
+
+bus?.addEventListener('message', (e) => {
+  const m = e.data as {
+    type?: string;
+    file?: unknown;
+    id?: string;
+    patch?: Partial<SlideData>;
+  } | null;
+  if (m?.type === 'deck-file' && m.file) {
+    useStore.getState().applyFile(m.file);
+    return;
+  }
+  if (m?.type !== 'patch' || !m.id || !m.patch) return;
+  useStore.setState((s) => ({
+    slides: s.slides.map((sl) => (sl.id === m.id ? { ...sl, ...m.patch } : sl)),
+  }));
+});
+
+if (import.meta.hot) {
+  import.meta.hot.on('deck-file-changed', (file: unknown) => {
+    useStore.getState().applyFile(file);
+  });
+}
+
+export function serializeDeck(): DeckFile {
+  return toFile(useStore.getState());
+}

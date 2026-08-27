@@ -1,4 +1,4 @@
-/* The deck as data. Slides are rows in the database; `props` is the
+/* The deck as data. Canonical store is repo-root deck.json; `props` is the
    layout-specific payload rendered by src/layouts/registry.tsx. */
 
 export type Background =
@@ -70,6 +70,15 @@ export interface DeckMeta {
 }
 
 export interface AppState {
+  deck: DeckMeta;
+  slides: SlideData[];
+}
+
+/* On-disk envelope. boltSlidesId is omitted until the first studio persist
+   or the skill bootstrap writes a uuid. */
+export interface DeckFile {
+  boltSlidesVersion: number;
+  boltSlidesId?: string | null;
   deck: DeckMeta;
   slides: SlideData[];
 }

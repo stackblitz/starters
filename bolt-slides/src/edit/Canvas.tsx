@@ -1,18 +1,26 @@
-/* Editor canvas — the current slide at presentation size, scaled to fit,
-   with inline editing live. The slide renders LIVE (count-ups, staggers, the
-   slide's animation mode all play, like in present mode). The bottom bar
-   pages the deck and carries the deck actions (Export PDF · Play · Share). */
+/* Studio canvas — the current slide at presentation size, scaled to fit.
+   The slide renders LIVE (count-ups, staggers, the slide's animation mode
+   all play, like in present mode). The bottom bar pages the deck and
+   carries Present + Download as (PDF / JSON). */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useStore } from '../data/store';
-import { useShareOrigin } from '../data/published-origin';
+import { useStore, serializeDeck } from '../data/store';
 import { DeckCtx } from '../deck/DeckContext';
 import SlideView from '../slide/SlideView';
-import ContextMenu from './ContextMenu';
-import LayoutDataSheet, { hasDataSheet } from './LayoutDataSheet';
-import ShareModal from './ShareModal';
-import { NotesEditor } from './notes';
 import { exportPdf } from '../export/exporter';
+
+function downloadJson(title: string) {
+  const file = serializeDeck();
+  const blob = new Blob([JSON.stringify(file, null, 2) + '\n'], {
+    type: 'application/json',
+  });
+  const a = document.createElement('a');
+  const name = (title || 'deck').replace(/[^\w\- ]+/g, '').trim() || 'deck';
+  a.href = URL.createObjectURL(blob);
+  a.download = `${name}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 export default function Canvas() {
   const slides = useStore((s) => s.slides);
@@ -24,12 +32,9 @@ export default function Canvas() {
 
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
-  const [share, setShare] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
-  const { origin, canCopy } = useShareOrigin();
-  const shareTip = canCopy
-    ? 'Share a presenter console or editor link'
-    : 'Publish to share';
+  const [dlOpen, setDlOpen] = useState(false);
+  const dlRef = useRef<HTMLDivElement>(null);
+
   const note = (msg: string) => {
     setFlash(msg);
     setTimeout(() => setFlash(null), 2600);
@@ -37,6 +42,7 @@ export default function Canvas() {
 
   const onPdf = async () => {
     if (busy || !slides.length) return;
+    setDlOpen(false);
     try {
       await exportPdf(slides, title, setBusy);
       note('PDF downloaded');
@@ -47,19 +53,15 @@ export default function Canvas() {
     }
   };
 
+  const onJson = () => {
+    if (!slides.length && !title) return;
+    setDlOpen(false);
+    downloadJson(title);
+    note('JSON downloaded');
+  };
+
   const boxRef = useRef<HTMLDivElement>(null);
   const [d, setD] = useState({ vw: 1280, vh: 720, scale: 0.5 });
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [dataOpen, setDataOpen] = useState(false);
-  // paging away closes the data sheet — it edits the slide it was opened on
-  useEffect(() => {
-    setDataOpen(false);
-    setMenu(null);
-  }, [current]);
-  useEffect(() => {
-    if (!canCopy) setShare(false);
-  }, [canCopy]);
-  // live context: animations run on the canvas exactly like in present mode
   const liveCtx = useMemo(() => ({ clicks: 9999, isStatic: false }), []);
 
   useEffect(() => {
@@ -85,7 +87,17 @@ export default function Canvas() {
     };
   }, []);
 
-  // keyboard paging (skipped while typing in text/fields)
+  useEffect(() => {
+    if (!dlOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (dlRef.current && !dlRef.current.contains(e.target as Node)) {
+        setDlOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [dlOpen]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -119,29 +131,16 @@ export default function Canvas() {
   if (!slide) {
     return (
       <div className="ed-canvas" ref={boxRef}>
-        <div className="ed-empty">No slides — add one from the rail.</div>
+        <div className="ed-empty">This deck has no slides.</div>
       </div>
     );
   }
-
-  // right-click on data-bearing layouts (table, chart, insight, comparison)
-  // offers the Edit-data sheet. Slide text is contenteditable, so it is NOT
-  // exempted (or tables would never trigger); only real form fields keep the
-  // native menu, and the grip/cell menus that stopPropagation still win.
-  const onCtx = (e: React.MouseEvent) => {
-    if (!hasDataSheet(slide)) return;
-    const t = e.target as HTMLElement;
-    if (t.closest('input, textarea')) return;
-    e.preventDefault();
-    setMenu({ x: e.clientX, y: e.clientY });
-  };
 
   return (
     <div className="ed-canvas" ref={boxRef}>
       <div
         className="ed-frame"
         style={{ width: d.vw * d.scale, height: d.vh * d.scale }}
-        onContextMenu={onCtx}
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -151,8 +150,6 @@ export default function Canvas() {
               width: d.vw,
               height: d.vh,
               transform: `scale(${d.scale})`,
-              // editing chrome inside the scaled slide multiplies by this to
-              // stay at true screen size (see .li-tools etc. in editor.css)
               ['--inv' as never]: String(1 / Math.max(0.05, d.scale)),
             }}
             initial={{ opacity: 0 }}
@@ -161,7 +158,7 @@ export default function Canvas() {
             transition={{ duration: 0.16 }}
           >
             <DeckCtx.Provider value={liveCtx}>
-              <SlideView slide={slide} editable />
+              <SlideView slide={slide} />
             </DeckCtx.Provider>
           </motion.div>
         </AnimatePresence>
@@ -193,40 +190,34 @@ export default function Canvas() {
         >
           →
         </button>
-        <button
-          className={'icon-btn' + (notesOpen ? ' on' : '')}
-          data-tip="Speaker notes"
-          aria-label="Edit speaker notes for this slide"
-          aria-pressed={notesOpen}
-          onClick={() => {
-            setDataOpen(false);
-            setNotesOpen((v) => !v);
-          }}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.9"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <rect x="4" y="4" width="16" height="16" rx="3" />
-            <path d="M8 9.5h8M8 13h8M8 16.5h4.5" />
-          </svg>
-        </button>
         <span className="nav-sep" aria-hidden />
-        <button
-          className="ghost-btn"
-          data-tip={busy ? undefined : 'Download the deck as a PDF'}
-          disabled={!!busy}
-          onClick={onPdf}
-        >
-          Export PDF
-        </button>
+        <div className="dl-wrap" ref={dlRef}>
+          <button
+            className="ghost-btn"
+            data-tip={busy ? undefined : 'Download the deck as PDF or JSON'}
+            disabled={!!busy}
+            aria-haspopup="menu"
+            aria-expanded={dlOpen}
+            onClick={() => setDlOpen((v) => !v)}
+          >
+            Download as
+          </button>
+          {dlOpen && (
+            <div className="dl-pop" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!!busy || !slides.length}
+                onClick={() => void onPdf()}
+              >
+                PDF
+              </button>
+              <button type="button" role="menuitem" onClick={onJson}>
+                JSON
+              </button>
+            </div>
+          )}
+        </div>
         <button
           className="icon-btn"
           data-tip={slides.length ? 'Present' : undefined}
@@ -245,62 +236,7 @@ export default function Canvas() {
             <path d="M7 4.5v15c0 0.9 1 1.45 1.77 0.97l11.5-7.5a1.15 1.15 0 0 0 0-1.94L8.77 3.53C8 3.05 7 3.6 7 4.5Z" />
           </svg>
         </button>
-        <button
-          className="solid-btn"
-          data-tip={canCopy ? shareTip : undefined}
-          aria-label={shareTip}
-          aria-haspopup="dialog"
-          aria-expanded={share}
-          disabled={!canCopy}
-          onClick={() => setShare(true)}
-        >
-          Share
-        </button>
       </div>
-      {share && origin && (
-        <ShareModal origin={origin} onClose={() => setShare(false)} />
-      )}
-      {notesOpen && (
-        <div className="notes-pop">
-          <NotesEditor
-            key={slide.id}
-            value={slide.notes}
-            onChange={(text) => {
-              if (text !== slide.notes)
-                useStore.getState().patchSlide(slide.id, { notes: text });
-            }}
-            onDone={() => setNotesOpen(false)}
-            placeholder="Speaker notes — what to SAY on this slide."
-          />
-          <p className="notes-pop-hint">
-            Shown in the presenter console while you present. Edits there come
-            back here live.
-          </p>
-        </div>
-      )}
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          items={[
-            {
-              label: 'Edit data…',
-              onClick: () => {
-                setNotesOpen(false);
-                setDataOpen(true);
-              },
-            },
-          ]}
-          onClose={() => setMenu(null)}
-        />
-      )}
-      {dataOpen && hasDataSheet(slide) && (
-        <LayoutDataSheet
-          key={slide.id}
-          slide={slide}
-          onClose={() => setDataOpen(false)}
-        />
-      )}
     </div>
   );
 }

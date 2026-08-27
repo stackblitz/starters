@@ -1,0 +1,79 @@
+{
+  "boltSlidesVersion": 1,
+  "deck": {
+    "title": "Slides",
+    "transition": "fade"
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "position": 0,
+      "layout": "cover",
+      "props": {
+        "kicker": "Company · 2026",
+        "title": "A ==bold== opening.",
+        "subtitle": "One sharp sentence on what this deck argues.",
+        "foot": "August 2026 · Your name"
+      },
+      "background": { "type": "none" },
+      "animation": "cascade",
+      "transition": null,
+      "nav": null,
+      "notes": "Open with the one-line promise of the deck.",
+      "status": "none"
+    },
+    {
+      "id": "s2",
+      "position": 1,
+      "layout": "statement",
+      "props": {
+        "kicker": "",
+        "title": "Say the ==one thing== this slide exists to say.",
+        "body": ""
+      },
+      "background": { "type": "none" },
+      "animation": "cascade",
+      "transition": null,
+      "nav": null,
+      "notes": "Land the thesis. Pause before you click on.",
+      "status": "none"
+    },
+    {
+      "id": "s3",
+      "position": 2,
+      "layout": "bigNumber",
+      "props": {
+        "kicker": "The market",
+        "value": "$3T",
+        "caption": "moves through this problem every year",
+        "foot": "Source: —"
+      },
+      "background": { "type": "none" },
+      "animation": "cascade",
+      "transition": null,
+      "nav": null,
+      "notes": "Give the figure a beat, then say what it means for us.",
+      "status": "none"
+    },
+    {
+      "id": "s4",
+      "position": 3,
+      "layout": "agenda",
+      "props": {
+        "kicker": "Agenda",
+        "title": "What we'll cover.",
+        "items": [
+          { "title": "The problem", "hint": "5 min" },
+          { "title": "The product" },
+          { "title": "The ask" }
+        ]
+      },
+      "background": { "type": "none" },
+      "animation": "cascade",
+      "transition": null,
+      "nav": null,
+      "notes": "Preview the arc so they know where this is going.",
+      "status": "none"
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 import Thumb from './Thumb';
 import type { DeckCtxValue } from './DeckContext';
-import { NotesEditor, NotesView } from '../edit/notes';
+import { NotesView } from '../edit/notes';
 import { IconLeft, IconRight, IconClose } from './icons';
 
 /* The presenter console (/present?presenter=1) — a second-screen cockpit, not
@@ -10,9 +10,7 @@ import { IconLeft, IconRight, IconClose } from './icons';
    what is coming next, the speaker notes at reading size, a stopwatch, the
    wall clock and the deck's progress.
 
-   Notes are the deck's own notes — the same rows the editor's Notes tab
-   writes — so editing here updates the deck itself (through the API) and
-   both windows stay in step. */
+   Notes are authored in deck.json and shown here at reading size. */
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const fmtClock = (s: number) =>
@@ -68,7 +66,6 @@ export default function Presenter({
   curMax,
   liveCtx,
   notes,
-  onNotes,
   onGo,
   onNext,
   onPrev,
@@ -82,7 +79,6 @@ export default function Presenter({
   curMax: number;
   liveCtx: DeckCtxValue;
   notes: string;
-  onNotes?: (index: number, text: string) => void;
   onGo: (i: number) => void;
   onNext: () => void;
   onPrev: () => void;
@@ -97,12 +93,7 @@ export default function Presenter({
     const v = parseInt(localStorage.getItem(SIZE_KEY) || '', 10);
     return Number.isFinite(v) && v >= 0 && v < NOTE_SIZES.length ? v : 2;
   });
-  const [editing, setEditing] = useState(false);
 
-  // changing slide always drops back to reading, never leaves you mid-edit
-  useEffect(() => {
-    setEditing(false);
-  }, [slide]);
   useEffect(() => {
     localStorage.setItem(SIZE_KEY, String(sizeIdx));
   }, [sizeIdx]);
@@ -266,47 +257,18 @@ export default function Presenter({
         </section>
 
         <section className="pres-notes-col">
-          <div className="pres-label pres-notes-head">
-            Speaker notes
-            {!editing && notes.trim() && (
-              <button className="pres-edit" onClick={() => setEditing(true)}>
-                Edit
-              </button>
-            )}
-          </div>
+          <div className="pres-label pres-notes-head">Speaker notes</div>
           <div className="pres-notes-box">
-            {editing ? (
-              <NotesEditor
-                key={slide}
-                value={notes}
-                onChange={(text) => onNotes?.(slide, text)}
-                onDone={() => setEditing(false)}
-                placeholder="What to say on this slide…"
-                className="pres-wyg"
-                style={{ fontSize: NOTE_SIZES[sizeIdx] }}
-              />
-            ) : (
-              <div
-                className="pres-notes"
-                style={{ fontSize: NOTE_SIZES[sizeIdx] }}
-                onDoubleClick={() => setEditing(true)}
-              >
-                {notes.trim() ? (
-                  <NotesView text={notes} />
-                ) : (
-                  <p className="pres-notes-empty">
-                    No notes for this slide.{' '}
-                    <button
-                      className="pres-edit-inline"
-                      onClick={() => setEditing(true)}
-                    >
-                      Write some
-                    </button>{' '}
-                    — they save to the deck, so the editor shows them too.
-                  </p>
-                )}
-              </div>
-            )}
+            <div
+              className="pres-notes"
+              style={{ fontSize: NOTE_SIZES[sizeIdx] }}
+            >
+              {notes.trim() ? (
+                <NotesView text={notes} />
+              ) : (
+                <p className="pres-notes-empty">No notes for this slide.</p>
+              )}
+            </div>
           </div>
         </section>
       </div>

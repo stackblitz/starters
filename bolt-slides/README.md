@@ -1,59 +1,51 @@
 # Bolt Slides
 
-A Pitch-style slide studio for [Bolt](https://bolt.new): a deck **editor**, a
-premium **presentation engine**, and a bundled **skill** so Bolt's AI can
-prompt entire decks into existence — which you then refine by hand.
+A Pitch-style slide studio for [Bolt](https://bolt.new): prompt a deck into
+`deck.json`, refine it in the studio rail, present full-screen, and
+download PDF or JSON.
 
-Decks are structured data stored in **Postgres**. Prompted decks write
-`deck` / `slides` rows. The visual editor reads and writes through the
-`deck-api` edge function (share links, speaker notes), so both share one
-store.
+The prompt skill writes `deck.json` (and `src/styles/tokens.css` for
+theme). The studio and the published audience deck both read that file.
 
 ## Quick start
 
 ```bash
 npm install
-npm run dev        # editor at http://localhost:5173 — Present swaps this view
+npm run dev        # studio at http://localhost:5173 — Present swaps this view
 ```
 
-On first use in Bolt the agent must apply
-`supabase/migrations/create_deck_tables.sql` and deploy
-`supabase/functions/deck-api` (the instance is already provisioned; the
-schema and function are not). After that, add slides in the editor or prompt
-a deck with the `slides` skill.
+Prompt a deck with the `slides` skill, or edit `deck.json` directly.
+In the studio, drag the rail to reorder, right-click a thumbnail to
+duplicate or delete, then Present or Download as PDF / JSON.
 
 ## What's inside
 
-- `/` — In the Bolt preview iframe this is the editor: thumbnail rail,
-  click-to-edit text, speaker notes. The bottom bar pages the deck and
-  holds Export PDF, Present, and Share (presenter console or editor;
-  optional password). Share is disabled in Bolt preview until the
-  project is published. Present replaces the editor in place (Esc or
-  the dock close control returns to editing). The published origin is
-  the audience deck (no notes, no editor). From local Vite, **P** opens
-  a presenter console in a second window. On the published audience
-  deck that control stays off; use a presenter-console share link. In
-  an embedded preview that control stays disabled; use Share after
-  publishing.
-- `/present` — Presenter console and leftover presentation share links.
+- `/` — In the Bolt, this is the studio:
+  thumbnail rail, live canvas. The bottom bar pages the deck and holds
+  Download as (PDF, JSON) and Present. Present replaces the studio in
+  place (Esc or the dock close control returns). The published origin is
+  the audience deck. **P** on the dock opens the presenter console in a
+  second window.
+- `/present?presenter=1` — Presenter console: notes, next-up, timer,
+  highlight, note text size.
+
+Collaborate by sharing the Bolt project.
 
 ## The skill
 
-`.bolt/skills/slides/SKILL.md` covers bootstrap (apply the shipped
-migration, deploy `deck-api` as-is) and authoring `deck` / `slides` rows.
-Do not rewrite the app or call `deck-api` to author.
+`.bolt/skills/slides/SKILL.md` covers bootstrap (mint `boltSlidesId` on
+first write) and authoring `deck.json` plus `src/styles/tokens.css`.
 
 ## Architecture
 
 ```
-src/data/               types + zustand store (optimistic writes via deck-api)
+deck.json               canonical deck (envelope + slides)
+src/data/               types + zustand store (Vite DEV persists via POST /__deck)
 src/layouts/            layout registry
-src/components/         section components (locked)
+src/components/         section components
 src/deck/               presentation engine
-src/edit/               editor
+src/edit/               studio chrome
 src/styles/tokens.css   theme: edit :root values only
-supabase/functions/deck-api    edge function — browser / share backend
-supabase/migrations/           schema (apply; writing the file is not enough)
 ```
 
 ## Theming

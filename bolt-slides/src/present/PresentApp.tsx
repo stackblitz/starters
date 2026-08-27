@@ -1,12 +1,10 @@
-/* Present mode — full-screen engine. Opened in-place from the editor (no
+/* Present mode — full-screen engine. Opened in-place from the studio (no
    URL change), at `/` on the published origin (audience deck), or at
-   /present for presenter-console and leftover present share links. */
+   /present?presenter=1 for the presenter console. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import SlideView from '../slide/SlideView';
 import { useStore } from '../data/store';
-import { useDeckSync } from '../data/useDeckSync';
-import Gate from '../data/Gate';
 import { applyFont, applyAccent } from '../data/fonts';
 import { stripRich } from '../edit/rich';
 import { LAYOUTS } from '../layouts/registry';
@@ -19,15 +17,11 @@ export default function PresentApp({
   onExit?: (slideIndex: number) => void;
 }) {
   const loaded = useStore((s) => s.loaded);
-  const denied = useStore((s) => s.denied);
   const bootError = useStore((s) => s.bootError);
   const slides = useStore((s) => s.slides);
   const deck = useStore((s) => s.deck);
-  const patchSlide = useStore((s) => s.patchSlide);
-  const mode = useStore((s) => s.mode);
   const current = useStore((s) => s.current);
 
-  useDeckSync({ enabled: !embedded });
   useEffect(() => {
     document.title = deck.title || 'Slides';
   }, [deck.title]);
@@ -38,13 +32,12 @@ export default function PresentApp({
     applyAccent(deck.accent);
   }, [deck.accent]);
 
-  if (denied) return <Gate />;
   if (bootError) return <div className="boot-screen">{bootError}</div>;
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
   if (!slides.length)
     return (
       <div className="boot-screen">
-        This deck has no slides yet — add some in the editor.
+        This deck has no slides.
         {onExit && (
           <button
             type="button"
@@ -52,7 +45,7 @@ export default function PresentApp({
             style={{ marginTop: 16 }}
             onClick={() => onExit(0)}
           >
-            Back to editor
+            Back to studio
           </button>
         )}
       </div>
@@ -61,19 +54,8 @@ export default function PresentApp({
   return (
     <Deck
       transition={deck.transition}
-      allowPresenter={mode !== 'present'}
       initialSlide={embedded && onExit ? current : undefined}
       onExit={onExit}
-      /* notes writes are owner / edit / presenter only — present-share
-         must not PATCH even if someone mounts the console */
-      onNotes={
-        mode === 'present'
-          ? undefined
-          : (i, text) => {
-              const s = slides[i];
-              if (s) patchSlide(s.id, { notes: text });
-            }
-      }
       navLabel={(i) => {
         const s = slides[i];
         if (!s) return undefined;

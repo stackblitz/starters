@@ -1,5 +1,5 @@
 /* Slide rail — always visible while you move through the deck. Drag to
-   reorder (dnd-kit), right-click for duplicate / delete / insert. */
+   reorder (dnd-kit), right-click for duplicate / delete. */
 import { useState } from 'react';
 import {
   DndContext,
@@ -20,7 +20,6 @@ import { useStore } from '../data/store';
 import { type SlideData } from '../data/types';
 import MiniSlide from './MiniSlide';
 import ContextMenu, { type MenuItem } from './ContextMenu';
-import AddSlide from './AddSlide';
 
 function Row({
   slide,
@@ -80,7 +79,6 @@ export default function Sidebar() {
   const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(
     null
   );
-  const [addAt, setAddAt] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -100,27 +98,16 @@ export default function Sidebar() {
     );
   };
 
-  const menuItems = (id: string): MenuItem[] => {
-    const idx = slides.findIndex((s) => s.id === id);
-    return [
-      { label: 'Add slide after', onClick: () => setAddAt(idx + 1) },
-      { label: 'Duplicate', onClick: () => duplicateSlide(id) },
-      { separator: true, label: '' },
-      { label: 'Delete', danger: true, onClick: () => deleteSlide(id) },
-    ];
-  };
+  const menuItems = (id: string): MenuItem[] => [
+    { label: 'Duplicate', onClick: () => duplicateSlide(id) },
+    { separator: true, label: '' },
+    { label: 'Delete', danger: true, onClick: () => deleteSlide(id) },
+  ];
 
   return (
     <aside className="ed-side">
       <div className="ed-side-head">
         <span>Slides</span>
-        <button
-          className="ghost-btn"
-          title="Add slide"
-          onClick={() => setAddAt(slides.length)}
-        >
-          + Add
-        </button>
       </div>
       <div className="ed-side-list">
         <DndContext
@@ -156,7 +143,6 @@ export default function Sidebar() {
           onClose={() => setMenu(null)}
         />
       )}
-      {addAt != null && <AddSlide at={addAt} onClose={() => setAddAt(null)} />}
     </aside>
   );
 }

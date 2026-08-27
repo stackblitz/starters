@@ -28,7 +28,6 @@ import {
   IconPresent,
   IconClose,
 } from './icons';
-import { isShareablePage, useShareOrigin } from '../data/published-origin';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
    panel, grid overview).
@@ -93,7 +92,6 @@ const TRANSITIONS: Record<string, Variants> = {
 export default function Deck({
   children,
   transition = 'fade',
-  onNotes,
   navLabel,
   allowPresenter = true,
   initialSlide,
@@ -101,10 +99,8 @@ export default function Deck({
 }: {
   children: ReactNode;
   transition?: string;
-  /** false in audience present — the console would show speaker notes */
+  /** false hides the dock P control (the console itself) */
   allowPresenter?: boolean;
-  /** persist a slide's speaker notes (presenter console edits) */
-  onNotes?: (index: number, text: string) => void;
   /** optional short name for a slide, shown as "up next" in the console */
   navLabel?: (index: number) => string | undefined;
   /** start here instead of the URL hash (in-place present from the editor) */
@@ -123,13 +119,8 @@ export default function Deck({
       new URLSearchParams(window.location.search).has('presenter'),
     [allowPresenter]
   );
-  const { canCopy } = useShareOrigin();
-  const canOpenPresenter = allowPresenter && isShareablePage();
-  const presenterTip = canOpenPresenter
-    ? 'Presenter — new tab (P)'
-    : canCopy
-    ? 'Use Share for a presenter link'
-    : 'Publish to open presenter';
+  const canOpenPresenter = allowPresenter && !isPresenter;
+  const presenterTip = 'Presenter — new tab (P)';
 
   const [slide, setSlide] = useState(() => {
     if (initialSlide != null)
@@ -449,7 +440,6 @@ export default function Deck({
           curMax={curMax}
           liveCtx={liveCtx}
           notes={noteText}
-          onNotes={onNotes}
           onGo={go}
           onNext={next}
           onPrev={prev}

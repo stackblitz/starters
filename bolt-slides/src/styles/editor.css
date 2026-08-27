@@ -6,6 +6,7 @@
    slide content (.slide) re-asserts the deck fonts inside the canvas/thumbs */
 .ed-side,
 .ed-canvas-nav,
+.dl-pop,
 .ctx-menu,
 .modal,
 .fmt-menu,
@@ -39,7 +40,7 @@
   min-height: 0;
 }
 
-/* ── bottom-bar actions (Export PDF · Play · Share live with the pager) ── */
+/* ── bottom-bar actions (Download as · Present live with the pager) ── */
 .nav-sep {
   width: 1px;
   height: 18px;
@@ -374,6 +375,41 @@
 .ed-counter {
   color: var(--ed-text-muted);
   font: 500 12px/1 var(--font-mono, monospace);
+}
+
+.dl-wrap {
+  position: relative;
+}
+.dl-pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 132px;
+  padding: 4px;
+  background: rgb(23 23 25 / 0.96);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  z-index: 5;
+}
+.dl-pop button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--ed-text);
+  font: 500 13px/1.2 var(--font-ui);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dl-pop button:hover:not(:disabled) {
+  background: var(--ed-bg-tertiary);
+}
+.dl-pop button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* inline editing affordances — quiet: a hairline underline on hover, a soft

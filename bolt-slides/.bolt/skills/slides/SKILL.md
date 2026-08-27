@@ -1,129 +1,95 @@
 ---
 name: slides
 description: >-
-  Author a premium slide deck INTO the Bolt Slides editor — a Pitch-style
-  slide builder (this repo) where slides live as rows in a database.
-  You write deck content (layouts, copy, backgrounds, animation, speaker
-  notes); the user then edits it in the visual editor, presents
-  full-screen, and exports PDF. Use this whenever the user asks for a
+  Author a premium slide deck in Bolt Slides. Slides live in repo-root
+  deck.json; the studio rail lets the user reorder, duplicate, delete,
+  Present, and download PDF/JSON. Use this whenever the user asks for a
   deck, a pitch, slides, or a presentation in this project.
 ---
 
-# Slides — prompt decks into an editable, presentable app
+# Slides — prompt decks into a presentable app
 
-This repo is a complete slide **studio**. Do not rebuild it.
+This repo is a complete slide **studio**. Author content into it.
 
-- `/` — in the Bolt preview iframe: editor (thumbnail rail, click-to-edit,
-  speaker notes, Export PDF / Present / Share). Present replaces the
-  editor in this view. Share needs a published URL and mints presenter-
-  console or editor links — the published site itself is the audience
-  deck (no notes).
-- Present — floating dock, side panel (S), grid (G), click-builds,
-  presenter view (P, a second window on local Vite or a presenter-
-  console share link — use Share in an embedded preview), annotator (D),
-  fullscreen (F).
+- `/` — in the Bolt preview iframe (and local Vite): studio (thumbnail
+  rail with reorder / duplicate / delete, Present, Download as PDF or
+  JSON). Present replaces the studio in this view. The published site
+  at `/` is the audience deck (notes stripped). **P** on the audience
+  dock opens the presenter console.
+- `/present?presenter=1` — presenter console (notes visible, highlight
+  and note text size). Annotations stay on this machine.
 
-**Your job is CONTENT, not code.** A deck is rows in `deck` and
-`slides`. Never write JSX slides. Never call `deck-api` to author —
-that function is for the editor and share links.
+**Your job is CONTENT.** A deck is `deck.json`. Write that file (and
+`src/styles/tokens.css` when theming). Layout `props` follow the catalog
+below.
 
 ## Hard rules
 
-1. **Don't touch the app.** Off-limits: `src/edit/`, `src/deck/`,
-   `src/present/`, `src/slide/`, `src/layouts/`, `src/components/`,
-   `src/styles/base.css`, `src/styles/editor.css`,
-   `src/styles/chrome-tokens.css`, `src/data/`,
-   `supabase/functions/deck-api/`, `.bolt/config.json`, `index.html`,
-   `vite.config.ts`. After bootstrap, touch only `src/styles/tokens.css`
-   (`:root` values) and the `deck` / `slides` tables. Colors, fonts,
-   sizes, spacing in a deck request mean deck `accent` / `font` or
-   `tokens.css`, never the UI. If they want an app change, say so and
-   wait.
+1. **Write `deck.json` and `src/styles/tokens.css`.** Those are the
+   authoring files. Colors, fonts, sizes, spacing in a deck request mean
+   deck `accent` / `font` or `tokens.css` `:root` values. If they want a
+   studio or engine change, say so and wait.
 2. **Author from the user's REAL input.** Topic, brand, facts, numbers.
    Never invent a placeholder company for a real subject. Brand given →
    derive theme colors/fonts from it (fetch the site or use its known
    palette) and say what you used.
 3. **One solid accent.** `--accent` is a hex, never a gradient. Use it
    sparingly.
-4. **Write `deck` and `slides` only.** Do not read or write `shares`,
-   `share_grants`, or `unlock_attempts`. Do not add `anon` RLS
-   policies — speaker notes and share-password hashes must not be
-   queryable from the browser.
 
 ## Step 0 · bootstrap (mandatory, first)
 
-Apply `supabase/migrations/create_deck_tables.sql` (writing the file
-does not create the tables; the SQL is idempotent — re-apply the same
-name if it times out). Deploy `supabase/functions/deck-api` as-is; do
-not rewrite it. The editor needs that function. Confirm with
-`SELECT id, title FROM deck WHERE id = 1;`.
+Read `deck.json`. If `boltSlidesId` is missing or null, set it to a new
+uuid (`crypto.randomUUID()` or equivalent) and write the file. Keep
+`boltSlidesVersion` at `1`. Then patch content.
 
 ## Workflow
 
 1. Theme only if needed: `:root` values in `src/styles/tokens.css`.
-2. Read the current deck so you keep in-editor edits:
+2. Read `deck.json` so you keep studio-side reorder / duplicate / delete.
+3. Patch when they already have slides; replace `slides` only for a new
+   deck. Keep `boltSlidesId` once it exists.
 
-```sql
-SELECT title, transition, font, accent FROM deck WHERE id = 1;
-SELECT id, position, layout, props, background, animation, transition, notes, status
-FROM slides ORDER BY position;
-```
-
-3. Patch when they already have slides; replace only for a new deck.
-
-```sql
--- one field (keeps the rest of props)
-UPDATE slides
-SET props = jsonb_set(props, '{title}', '"New title"'), updated_at = now()
-WHERE id = '…';
-
--- new deck
-UPDATE deck SET
-  title = '…', transition = 'fade', font = 'inter',
-  accent = '#1688FC', updated_at = now()
-WHERE id = 1;
-DELETE FROM slides;
-INSERT INTO slides (id, position, layout, props, background, animation, notes, status)
-VALUES
-  (left(gen_random_uuid()::text, 8), 0, 'cover',
-   '{"kicker":"…","title":"…","subtitle":"…"}'::jsonb,
-   '{"type":"none"}'::jsonb, 'cascade', 'Open with the hook.', 'none');
-```
-
-`props` and the other slide columns follow **Deck JSON** below.
+`props` and the other slide fields follow **Deck JSON** below.
 `position` is 0-based. Defaults: `background` `{"type":"none"}`,
-`animation` `cascade`, `status` `none`.
+`animation` `cascade`, `status` `none`, `transition` `null`, `nav`
+`null`, `notes` `""`.
 
-4. Verify with the same `SELECT`. Ask the user to look at the editor
-   to see the result.
+4. Ask the user to look at the studio to see the result: rail to
+   reorder / duplicate / delete, Present, Download as PDF or JSON.
 
-Read first. Replacing all of `props` drops keys you omit; `jsonb_set`
-a single path to change one field. Empty `notes` erases what was
-there. `DELETE FROM slides` only when replacing the whole deck.
+Read first. Replacing all of `props` drops keys you omit; change one
+field by patching that key. Empty `notes` erases what was there. Replace
+the `slides` array only when replacing the whole deck.
 
 ## Deck JSON
 
-`deck` columns: `title`, `transition`, `font`, `accent`. Each item in
-`slides` is one `slides` row (`layout`, `props`, `background`, …).
+Repo-root `deck.json`:
 
 ```jsonc
 {
-  "title": "Acme — Series A",
-  "transition": "fade",            // deck default: fade | slide | rise | zoom | none
-  "font": "inter",                 // inter | space | sora | manrope | dm | outfit | playfair | fraunces
-  "accent": "#1688FC",             // optional — deck-wide accent (solid hex); omit for the tokens.css default
+  "boltSlidesVersion": 1,
+  "boltSlidesId": "…",           // uuid; mint on first write if missing
+  "deck": {
+    "title": "Acme — Series A",
+    "transition": "fade",        // deck default: fade | slide | rise | zoom | none
+    "font": "inter",             // inter | space | sora | manrope | dm | outfit | playfair | fraunces
+    "accent": "#1688FC"          // optional — deck-wide accent (solid hex); omit for the tokens.css default
+  },
   "slides": [
     {
-      "layout": "cover",           // one of the layouts below
-      "props": { ... },            // layout-specific (see catalog); every layout
-                                   // also accepts "scale": "lg" | "xl" (+15/+30%
-                                   // text size — for sparse slides like pricing)
-      "animation": "cascade",      // cascade | rise | fade | zoom | none
-      "transition": "zoom",        // optional per-slide override
+      "id": "s1",                // stable string; new slides get a new id
+      "position": 0,
+      "layout": "cover",         // one of the layouts below
+      "props": { ... },          // layout-specific (see catalog); every layout
+                                 // also accepts "scale": "lg" | "xl" (+15/+30%
+                                 // text size — for sparse slides like pricing)
+      "animation": "cascade",    // cascade | rise | fade | zoom | none
+      "transition": "zoom",      // optional per-slide override (or null to inherit)
       "background": { "type": "gradient", "from": "#141e30", "to": "#243b55", "angle": 160 },
-      "notes": "Open with the hook.",   // speaker notes (presenter view)
-      "status": "draft"            // optional review state: none (default) |
-                                   // draft | in-progress | review | approved
+      "nav": null,
+      "notes": "Open with the hook.",   // speaker notes (presenter console)
+      "status": "draft"          // optional review state: none (default) |
+                                 // draft | in-progress | review | approved
     }
   ]
 }
@@ -264,11 +230,11 @@ Visual:
   empty space breathe (it's part of the layout, not waste).
 - Write `notes` for the presenter on every content slide — one or two lines of
   what to SAY, not a repeat of the slide.
-- After writing, tell the user to look at the editor: click text to edit,
-  right-click thumbnails to duplicate/delete, Present / Export PDF / Share
-  on the bottom bar.
+- After writing, tell the user to look at the studio: right-click thumbnails
+  to duplicate/delete, drag to reorder, Present / Download as on the bottom
+  bar.
 
-## Theming (tokens.css `:root` only)
+## Theming (`tokens.css` `:root`)
 
 Prefer the deck-level `accent` and `font` (Deck JSON above) over editing
 tokens. For deeper theming: all color/type/radius/motion live in
@@ -278,5 +244,4 @@ must stay `color-mix` of `--accent` so atmosphere follows the deck accent.
 Dark default; for a light deck set `--bg` /
 `--fg` in tokens.css. Fonts: set the deck-level `font` pairing (Google Fonts,
 loaded automatically; `playfair`/`fraunces` for editorial serifs, `space`/
-`sora`/`outfit` for technical, `manrope`/`dm` for friendly). Do not edit
-`base.css`, `editor.css`, or `chrome-tokens.css`.
+`sora`/`outfit` for technical, `manrope`/`dm` for friendly).
