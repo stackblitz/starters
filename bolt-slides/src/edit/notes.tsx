@@ -388,16 +388,35 @@ export function NotesEditor({
     if (!el) return;
     el.innerHTML = notesToHtml(value);
     setEmpty(!value.trim());
-    if (!autoFocus) return;
-    el.focus();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    const sel = window.getSelection();
-    sel?.removeAllRanges();
-    sel?.addRange(range);
     // mount-only: outside value changes still flow through the sync effect
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus]);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const el = ref.current;
+    if (!el) return;
+    const place = () => {
+      el.focus({ preventScroll: true });
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    };
+    place();
+    // click activation refocuses the trigger after this tick; land again after
+    let cancelled = false;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) place();
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(id);
+    };
   }, [autoFocus]);
 
   // uncontrolled while focused: set the HTML once per value change from outside
@@ -743,6 +762,7 @@ export function NotesEditor({
         className={'note-wyg' + (empty ? ' is-empty' : '')}
         style={style}
         contentEditable
+        tabIndex={0}
         role="textbox"
         aria-multiline="true"
         aria-label={placeholder ?? 'Speaker notes'}

@@ -139,20 +139,11 @@ export default function Canvas() {
       e.preventDefault();
       closeNotes(true);
     };
-    const onFocusIn = (e: FocusEvent) => {
-      const t = e.target as Node | null;
-      if (!t) return;
-      if (notesPopRef.current?.contains(t) || notesBtnRef.current?.contains(t))
-        return;
-      closeNotes(false);
-    };
     document.addEventListener('pointerdown', onPtr);
     document.addEventListener('keydown', onKey);
-    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.removeEventListener('pointerdown', onPtr);
       document.removeEventListener('keydown', onKey);
-      document.removeEventListener('focusin', onFocusIn);
     };
   }, [notesOpen]);
 
@@ -227,8 +218,11 @@ export default function Canvas() {
           aria-haspopup="dialog"
           aria-expanded={notesOpen}
           aria-controls={notesOpen ? notesId : undefined}
+          onPointerDown={(e) => {
+            if (e.button === 0) e.preventDefault();
+          }}
           onClick={() => {
-            if (notesOpen) closeNotes(false);
+            if (notesOpen) closeNotes(true);
             else setNotesOpen(true);
           }}
         >

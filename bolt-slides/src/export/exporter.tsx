@@ -7,7 +7,7 @@
    color in the iframe before snapshot. Do not inline all computed styles or
    move the tree into the parent — that produced empty black pages. */
 import { createRoot } from 'react-dom/client';
-import { toSvg } from 'html-to-image';
+import { getFontEmbedCSS, toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import type { SlideData } from '../data/types';
 import SlideView from '../slide/SlideView';
@@ -76,6 +76,78 @@ async function flattenClipText(root: HTMLElement, view: Window) {
   await walk(root);
 }
 
+const FONT_SHEET = /fonts\.google(?:apis)?\.com|fonts\.gstatic\.com/;
+
+async function blobDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function inlineFontSrc(
+  cssText: string,
+  baseUrl: string
+): Promise<string> {
+  const locs = cssText.match(/url\([^)]+\)/g) ?? [];
+  let out = cssText;
+  for (const loc of locs) {
+    const raw = loc.replace(/^url\((['"]?)(.+)\1\)$/, '$2');
+    if (raw.startsWith('data:')) continue;
+    try {
+      const href = new URL(raw, baseUrl).href;
+      const res = await fetch(href);
+      if (!res.ok) continue;
+      const data = await blobDataUrl(await res.blob());
+      out = out.replaceAll(loc, `url(${data})`);
+    } catch {
+      /* offline / CORS — leave the remote url */
+    }
+  }
+  return out;
+}
+
+function googleFontUrls(): string[] {
+  const urls = new Set<string>();
+  document.querySelectorAll('link[rel="stylesheet"]').forEach((n) => {
+    const href = (n as HTMLLinkElement).href;
+    if (href && FONT_SHEET.test(href)) urls.add(href);
+  });
+  for (const el of document.querySelectorAll('style')) {
+    const text = el.textContent ?? '';
+    for (const m of text.matchAll(
+      /@import\s+(?:url\(\s*)?['"]?([^'")\s]+)['"]?\s*\)?/g
+    )) {
+      if (FONT_SHEET.test(m[1])) urls.add(m[1]);
+    }
+  }
+  return [...urls];
+}
+
+/* html-to-image snapshots into SVG foreignObject, which cannot use fonts
+   loaded in the live document. Inline @font-face as data URIs so the PDF
+   keeps Inter / the deck pairing instead of falling back to system type. */
+async function collectFontEmbedCSS(): Promise<string> {
+  const chunks: string[] = [];
+  try {
+    const fromLib = await getFontEmbedCSS(document.body);
+    if (fromLib.trim()) chunks.push(fromLib);
+  } catch {
+    /* sheet.cssRules is often opaque for Google Fonts */
+  }
+  for (const url of googleFontUrls()) {
+    try {
+      const css = await (await fetch(url)).text();
+      chunks.push(await inlineFontSrc(css, url));
+    } catch {
+      /* preview may be offline */
+    }
+  }
+  return chunks.join('\n');
+}
+
 function loadSvgImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -105,7 +177,8 @@ async function rasterSlide(
   slide: SlideData,
   w: number,
   h: number,
-  pixelRatio: number
+  pixelRatio: number,
+  fontEmbedCSS: string
 ): Promise<HTMLCanvasElement> {
   const iframe = document.createElement('iframe');
   iframe.style.cssText = `position:fixed;left:-100000px;top:0;width:${w}px;height:${h}px;border:0;`;
@@ -123,6 +196,11 @@ async function rasterSlide(
        onto the live <html> style. Cloned sheets only have tokens.css defaults,
        so without this a themed deck exports as Bolt blue / Inter. */
     doc.documentElement.style.cssText = document.documentElement.style.cssText;
+    if (fontEmbedCSS) {
+      const faces = doc.createElement('style');
+      faces.textContent = fontEmbedCSS;
+      doc.head.appendChild(faces);
+    }
     doc.body.style.margin = '0';
     const mount = doc.createElement('div');
     mount.style.cssText = `width:${w}px;height:${h}px;`;
@@ -158,6 +236,7 @@ async function rasterSlide(
       height: h,
       pixelRatio,
       backgroundColor: bg,
+      fontEmbedCSS,
     });
     await yieldToUi();
 
@@ -190,6 +269,9 @@ export async function exportPdf(
 ): Promise<void> {
   const W = 1280,
     H = 720;
+  onProgress('Embedding fonts…');
+  await yieldToUi();
+  const fontEmbedCSS = await collectFontEmbedCSS();
   const pdf = new jsPDF({
     orientation: 'landscape',
     unit: 'px',
@@ -199,7 +281,7 @@ export async function exportPdf(
   for (let i = 0; i < slides.length; i++) {
     onProgress(`Rendering slide ${i + 1} / ${slides.length}…`);
     await yieldToUi();
-    const canvas = await rasterSlide(slides[i], W, H, 2);
+    const canvas = await rasterSlide(slides[i], W, H, 2, fontEmbedCSS);
     const blob = await canvasPngBlob(canvas);
     await yieldToUi();
     const bytes = new Uint8Array(await blob.arrayBuffer());
