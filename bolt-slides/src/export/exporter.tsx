@@ -7,7 +7,7 @@
    color in the iframe before snapshot. Do not inline all computed styles or
    move the tree into the parent — that produced empty black pages. */
 import { createRoot } from 'react-dom/client';
-import { toPng } from 'html-to-image';
+import { toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import type { SlideData } from '../data/types';
 import SlideView from '../slide/SlideView';
@@ -15,13 +15,18 @@ import { api } from '../data/store';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/* html-to-image and jsPDF run on the window thread (they need the live
-   DOM). Yield after progress so React can paint the toast instead of
-   freezing through the whole deck. */
 function yieldToUi() {
   return new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    setTimeout(resolve, 0);
   });
+}
+
+const YIELD_BUDGET_MS = 8;
+
+async function yieldIfDue(state: { t: number }) {
+  if (performance.now() - state.t < YIELD_BUDGET_MS) return;
+  await yieldToUi();
+  state.t = performance.now();
 }
 
 function opaqueColor(c: string): string | null {
@@ -41,10 +46,11 @@ function paintColor(cs: CSSStyleDeclaration): string | null {
   );
 }
 
-function flattenClipText(root: HTMLElement, view: Window) {
+async function flattenClipText(root: HTMLElement, view: Window) {
   const Html = (view as unknown as { HTMLElement: typeof HTMLElement })
     .HTMLElement;
-  const walk = (node: Element) => {
+  const due = { t: performance.now() };
+  const walk = async (node: Element) => {
     if (node instanceof Html) {
       const cs = view.getComputedStyle(node);
       const clip = `${cs.getPropertyValue('-webkit-background-clip')} ${
@@ -62,17 +68,55 @@ function flattenClipText(root: HTMLElement, view: Window) {
         }
       }
     }
-    Array.from(node.children).forEach(walk);
+    const kids = Array.from(node.children);
+    for (const child of kids) {
+      await yieldIfDue(due);
+      await walk(child);
+    }
   };
-  walk(root);
+  await walk(root);
 }
 
-async function renderSlidePng(
+function loadSvgImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.decoding = 'async';
+    img.onload = () => {
+      img
+        .decode()
+        .catch(() => undefined)
+        .then(() => resolve(img));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function canvasPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))),
+      'image/png'
+    );
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function rasterSlide(
   slide: SlideData,
   w: number,
   h: number,
   pixelRatio: number
-): Promise<string> {
+): Promise<HTMLCanvasElement> {
   const iframe = document.createElement('iframe');
   iframe.style.cssText = `position:fixed;left:-100000px;top:0;width:${w}px;height:${h}px;border:0;`;
   document.body.appendChild(iframe);
@@ -113,18 +157,37 @@ async function renderSlidePng(
       )
     );
     await sleep(240); // let canvases (globe) and charts paint
+    await yieldToUi();
 
-    flattenClipText(mount, view);
+    await flattenClipText(mount, view);
+    await yieldToUi();
 
     const bg = getComputedStyle(document.body).backgroundColor;
-    const png = await toPng(mount, {
+    const svg = await toSvg(mount, {
       width: w,
       height: h,
       pixelRatio,
       backgroundColor: bg,
     });
+    await yieldToUi();
+
+    const img = await loadSvgImage(svg);
+    await yieldToUi();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w * pixelRatio;
+    canvas.height = h * pixelRatio;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('2d context unavailable');
+    if (bg) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    await yieldToUi();
+
     root.unmount();
-    return png;
+    return canvas;
   } finally {
     iframe.remove();
   }
@@ -146,9 +209,12 @@ export async function exportPdf(
   for (let i = 0; i < slides.length; i++) {
     onProgress(`Rendering slide ${i + 1} / ${slides.length}…`);
     await yieldToUi();
-    const png = await renderSlidePng(slides[i], W, H, 2);
+    const canvas = await rasterSlide(slides[i], W, H, 2);
+    const blob = await canvasPngBlob(canvas);
+    await yieldToUi();
+    const bytes = new Uint8Array(await blob.arrayBuffer());
     if (i > 0) pdf.addPage([W, H], 'landscape');
-    pdf.addImage(png, 'PNG', 0, 0, W, H);
+    pdf.addImage(bytes, 'PNG', 0, 0, W, H);
   }
   onProgress('Writing PDF…');
   await yieldToUi();
@@ -159,6 +225,8 @@ export async function exportPdf(
 
 /* First slide → /og.png (1200×630), wired to the OpenGraph tags in index.html. */
 export async function updateOgImage(first: SlideData): Promise<void> {
-  const png = await renderSlidePng(first, 1200, 630, 1);
-  await api('/og', 'POST', { dataUrl: png });
+  const canvas = await rasterSlide(first, 1200, 630, 1);
+  const blob = await canvasPngBlob(canvas);
+  const dataUrl = await blobToDataUrl(blob);
+  await api('/og', 'POST', { dataUrl });
 }
