@@ -1,6 +1,7 @@
 /* Present mode — full-screen engine. Opened in-place from the studio (no
    URL change), at `/` on the published origin (audience deck), or at
-   /present?presenter=1 for the presenter console. */
+   /present?presenter=1 for the presenter console. Dock P on the audience
+   chrome opens the published bolt.host console when one exists. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import SlideView from '../slide/SlideView';

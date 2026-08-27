@@ -28,6 +28,7 @@ import {
   IconPresent,
   IconClose,
 } from './icons';
+import { isPreviewHostname, usePresenterLaunchOrigin } from '../data/shell';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
    panel, grid overview).
@@ -119,7 +120,8 @@ export default function Deck({
       new URLSearchParams(window.location.search).has('presenter'),
     [allowPresenter]
   );
-  const canOpenPresenter = allowPresenter && !isPresenter;
+  const launchOrigin = usePresenterLaunchOrigin();
+  const canOpenPresenter = allowPresenter && !isPresenter && !!launchOrigin;
   const presenterTip = 'Presenter — new tab (P)';
 
   const [slide, setSlide] = useState(() => {
@@ -208,12 +210,14 @@ export default function Deck({
     else document.documentElement.requestFullscreen?.();
   }, []);
   const openPresenter = useCallback(() => {
-    if (isPresenter || !canOpenPresenter) return;
-    const params = new URLSearchParams(window.location.search);
-    params.set('presenter', '1');
-    const url = `${window.location.pathname}?${params}#${slide + 1}`;
-    window.open(url, 'deck-presenter');
-  }, [isPresenter, canOpenPresenter, slide]);
+    if (!launchOrigin) return;
+    try {
+      if (isPreviewHostname(new URL(launchOrigin).hostname)) return;
+    } catch {
+      return;
+    }
+    window.open(`${launchOrigin}/?presenter=1#${slide + 1}`, 'deck-presenter');
+  }, [launchOrigin, slide]);
 
   // keyboard
   useEffect(() => {
@@ -654,12 +658,11 @@ export default function Deck({
             >
               {fs ? <IconShrink /> : <IconExpand />}
             </button>
-            {allowPresenter && (
+            {canOpenPresenter && (
               <button
                 className="noir-icon-btn noir-optional"
-                data-tip={canOpenPresenter ? presenterTip : undefined}
+                data-tip={presenterTip}
                 aria-label={presenterTip}
-                disabled={!canOpenPresenter}
                 onClick={openPresenter}
               >
                 <IconPresent />
