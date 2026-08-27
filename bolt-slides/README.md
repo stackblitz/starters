@@ -15,19 +15,20 @@ npm run dev        # studio at http://localhost:5173 — Present swaps this view
 ```
 
 Prompt a deck with the `slides` skill, or edit `deck.json` directly.
-In the studio, drag the rail to reorder, right-click a thumbnail to
-duplicate or delete, then Present or Download as PDF / JSON.
+In the studio, drag to reorder, right-click a thumbnail to
+duplicate or delete, edit speaker notes, then Present or Download
+as PDF / JSON.
 
 ## What's inside
 
-- `/` — In the Bolt, this is the studio:
-  thumbnail rail, live canvas. The bottom bar pages the deck and holds
-  Download as (PDF, JSON) and Present. Present replaces the studio in
-  place (Esc or the dock close control returns). The published origin is
-  the audience deck. **P** on the dock opens the presenter console in a
-  second window.
-- `/present?presenter=1` — Presenter console: notes, next-up, timer,
-  highlight, note text size.
+- `/` — In Bolt this is the studio: slide management, canvas, and
+  speaker notes. The bottom bar pages the deck and holds notes,
+  Download as (PDF, JSON), and Present. Present replaces the studio
+  in place (Esc or the dock close control returns). The published
+  origin is the audience deck. **P** on the dock opens the presenter
+  console in a second window.
+- `/present?presenter=1` — Presenter console: notes (read-only),
+  next-up, timer, highlight, note text size.
 
 Collaborate by sharing the Bolt project.
 

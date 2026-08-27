@@ -1,12 +1,14 @@
 /* Studio canvas — the current slide at presentation size, scaled to fit.
    The slide renders LIVE (count-ups, staggers, the slide's animation mode
    all play, like in present mode). The bottom bar pages the deck and
-   carries Present + Download as (PDF / JSON). */
+   carries speaker notes, Present, and Download as (PDF / JSON). */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStore, serializeDeck } from '../data/store';
 import { DeckCtx } from '../deck/DeckContext';
 import SlideView from '../slide/SlideView';
+import { NotesEditor } from './notes';
+import MenuButton from './MenuButton';
 import { exportPdf } from '../export/exporter';
 
 function downloadJson(title: string) {
@@ -32,8 +34,7 @@ export default function Canvas() {
 
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
-  const [dlOpen, setDlOpen] = useState(false);
-  const dlRef = useRef<HTMLDivElement>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const note = (msg: string) => {
     setFlash(msg);
@@ -42,7 +43,6 @@ export default function Canvas() {
 
   const onPdf = async () => {
     if (busy || !slides.length) return;
-    setDlOpen(false);
     try {
       await exportPdf(slides, title, setBusy);
       note('PDF downloaded');
@@ -55,7 +55,6 @@ export default function Canvas() {
 
   const onJson = () => {
     if (!slides.length && !title) return;
-    setDlOpen(false);
     downloadJson(title);
     note('JSON downloaded');
   };
@@ -88,17 +87,6 @@ export default function Canvas() {
   }, []);
 
   useEffect(() => {
-    if (!dlOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      if (dlRef.current && !dlRef.current.contains(e.target as Node)) {
-        setDlOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [dlOpen]);
-
-  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
@@ -111,6 +99,7 @@ export default function Canvas() {
       )
         return;
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      if (document.querySelector('[role="menu"]')) return;
       if (
         e.key === 'ArrowDown' ||
         e.key === 'ArrowRight' ||
@@ -190,34 +179,48 @@ export default function Canvas() {
         >
           →
         </button>
-        <span className="nav-sep" aria-hidden />
-        <div className="dl-wrap" ref={dlRef}>
-          <button
-            className="ghost-btn"
-            data-tip={busy ? undefined : 'Download the deck as PDF or JSON'}
-            disabled={!!busy}
-            aria-haspopup="menu"
-            aria-expanded={dlOpen}
-            onClick={() => setDlOpen((v) => !v)}
+        <button
+          className={'icon-btn' + (notesOpen ? ' on' : '')}
+          data-tip="Speaker notes"
+          type="button"
+          aria-label="Edit speaker notes for this slide"
+          aria-pressed={notesOpen}
+          onClick={() => setNotesOpen((v) => !v)}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
           >
-            Download as
-          </button>
-          {dlOpen && (
-            <div className="dl-pop" role="menu">
-              <button
-                type="button"
-                role="menuitem"
-                disabled={!!busy || !slides.length}
-                onClick={() => void onPdf()}
-              >
-                PDF
-              </button>
-              <button type="button" role="menuitem" onClick={onJson}>
-                JSON
-              </button>
-            </div>
-          )}
-        </div>
+            <rect x="4" y="4" width="16" height="16" rx="3" />
+            <path d="M8 9.5h8M8 13h8M8 16.5h4.5" />
+          </svg>
+        </button>
+        <span className="nav-sep" aria-hidden />
+        <MenuButton
+          label="Download as"
+          tip={busy ? undefined : 'Download the deck as PDF or JSON'}
+          disabled={!!busy}
+          items={[
+            {
+              id: 'pdf',
+              label: 'PDF',
+              disabled: !slides.length,
+              onSelect: () => void onPdf(),
+            },
+            {
+              id: 'json',
+              label: 'JSON',
+              onSelect: onJson,
+            },
+          ]}
+        />
         <button
           className="icon-btn"
           data-tip={slides.length ? 'Present' : undefined}
@@ -237,6 +240,23 @@ export default function Canvas() {
           </svg>
         </button>
       </div>
+      {notesOpen && (
+        <div className="notes-pop">
+          <NotesEditor
+            key={slide.id}
+            value={slide.notes}
+            onChange={(text) => {
+              if (text !== slide.notes)
+                useStore.getState().patchSlide(slide.id, { notes: text });
+            }}
+            onDone={() => setNotesOpen(false)}
+            placeholder="Speaker notes — what to SAY on this slide."
+          />
+          <p className="notes-pop-hint">
+            Shown in the presenter console while you present.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

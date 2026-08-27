@@ -10,7 +10,8 @@ import { IconLeft, IconRight, IconClose } from './icons';
    what is coming next, the speaker notes at reading size, a stopwatch, the
    wall clock and the deck's progress.
 
-   Notes are authored in deck.json and shown here at reading size. */
+   Notes are authored in the studio (and in deck.json) and shown here
+   at reading size — not editable in this console. */
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const fmtClock = (s: number) =>

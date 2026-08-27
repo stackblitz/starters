@@ -3,8 +3,9 @@ name: slides
 description: >-
   Author a premium slide deck in Bolt Slides. Slides live in repo-root
   deck.json; the studio rail lets the user reorder, duplicate, delete,
-  Present, and download PDF/JSON. Use this whenever the user asks for a
-  deck, a pitch, slides, or a presentation in this project.
+  edit speaker notes, Present, and download PDF/JSON. Use this whenever
+  the user asks for a deck, a pitch, slides, or a presentation in this
+  project.
 ---
 
 # Slides — prompt decks into a presentable app
@@ -12,12 +13,13 @@ description: >-
 This repo is a complete slide **studio**. Author content into it.
 
 - `/` — in the Bolt preview iframe (and local Vite): studio (thumbnail
-  rail with reorder / duplicate / delete, Present, Download as PDF or
-  JSON). Present replaces the studio in this view. The published site
-  at `/` is the audience deck (notes stripped). **P** on the audience
-  dock opens the presenter console.
-- `/present?presenter=1` — presenter console (notes visible, highlight
-  and note text size). Annotations stay on this machine.
+  rail with reorder / duplicate / delete, speaker notes, Present,
+  Download as PDF or JSON). Present replaces the studio in this view.
+  The published site at `/` is the audience deck (notes stripped). **P**
+  on the audience dock opens the presenter console.
+- `/present?presenter=1` — presenter console (notes visible and
+  read-only, highlight and note text size). Annotations stay on this
+  machine.
 
 **Your job is CONTENT.** A deck is `deck.json`. Write that file (and
 `src/styles/tokens.css` when theming). Layout `props` follow the catalog
@@ -231,8 +233,8 @@ Visual:
 - Write `notes` for the presenter on every content slide — one or two lines of
   what to SAY, not a repeat of the slide.
 - After writing, tell the user to look at the studio: right-click thumbnails
-  to duplicate/delete, drag to reorder, Present / Download as on the bottom
-  bar.
+  to duplicate/delete, drag to reorder, edit speaker notes, Present /
+  Download as on the bottom bar.
 
 ## Theming (`tokens.css` `:root`)
 

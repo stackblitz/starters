@@ -392,7 +392,7 @@
   box-shadow: var(--ed-shadow-lg);
   z-index: 5;
 }
-.dl-pop button {
+.dl-pop [role='menuitem'] {
   display: block;
   width: 100%;
   text-align: left;
@@ -404,10 +404,15 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.dl-pop button:hover:not(:disabled) {
+.dl-pop [role='menuitem']:hover:not([aria-disabled='true']),
+.dl-pop [role='menuitem']:focus-visible {
   background: var(--ed-bg-tertiary);
+  outline: none;
 }
-.dl-pop button:disabled {
+.dl-pop [role='menuitem']:focus-visible {
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.dl-pop [role='menuitem'][aria-disabled='true'] {
   opacity: 0.4;
   cursor: default;
 }

@@ -76,6 +76,20 @@ function toFile(s: {
 
 let persistDirty = false;
 let persisting = false;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function schedulePersist(ms: number) {
+  if (persistTimer) clearTimeout(persistTimer);
+  if (ms <= 0) {
+    persistTimer = null;
+    void persist();
+    return;
+  }
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    void persist();
+  }, ms);
+}
 
 interface Store extends AppState {
   loaded: boolean;
@@ -197,7 +211,9 @@ export const useStore = create<Store>((set, getState) => ({
       slides: s.slides.map((sl) => (sl.id === id ? { ...sl, ...patch } : sl)),
     }));
     bus?.postMessage({ type: 'patch', id, patch });
-    void persist();
+    const keys = Object.keys(patch);
+    const notesOnly = keys.length > 0 && keys.every((k) => k === 'notes');
+    schedulePersist(notesOnly ? 400 : 0);
   },
 
   setProp(id, path, value) {

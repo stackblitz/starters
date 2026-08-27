@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { renderRich, richToHtml } from './rich';
 
-/* Speaker notes — one shared surface for the editor's Notes tab and the
+/* Speaker notes — authored in the studio popover, shown read-only in the
    presenter console.
 
    Notes are stored as plain text (the skill authors them, the CLI exports
