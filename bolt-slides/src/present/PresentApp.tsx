@@ -7,7 +7,7 @@ import SlideView from '../slide/SlideView';
 import { useStore } from '../data/store';
 import { applyFont, applyAccent } from '../data/fonts';
 import { stripRich } from '../edit/rich';
-import { LAYOUTS } from '../layouts/registry';
+import { LAYOUTS, resolveLayoutType } from '../layouts/registry';
 
 export default function PresentApp({
   embedded,
@@ -69,7 +69,7 @@ export default function PresentApp({
           ? plain.length > 52
             ? plain.slice(0, 52) + '…'
             : plain
-          : LAYOUTS[s.layout]?.label;
+          : LAYOUTS[resolveLayoutType(s.layout)]?.label;
       }}
     >
       {slides.map((s) => (

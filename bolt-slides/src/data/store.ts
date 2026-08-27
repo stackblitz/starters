@@ -50,13 +50,23 @@ function newSlideId(): string {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 8);
 }
 
+function coerceSlide(raw: SlideData): SlideData {
+  const s = raw as SlideData & { type?: string };
+  const rest = { ...s };
+  delete rest.type;
+  return {
+    ...rest,
+    layout: String(s.layout || s.type || '').trim(),
+  };
+}
+
 function parseDeckFile(raw: unknown): DeckFile {
   if (!raw || typeof raw !== 'object') throw new Error('invalid-deck');
   const f = raw as DeckFile;
   if (!f.deck || typeof f.deck !== 'object' || !Array.isArray(f.slides)) {
     throw new Error('invalid-deck');
   }
-  return f;
+  return { ...f, slides: f.slides.map(coerceSlide) };
 }
 
 function toFile(s: {

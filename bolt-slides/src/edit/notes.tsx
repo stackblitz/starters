@@ -1,4 +1,11 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import { renderRich, richToHtml } from './rich';
 
@@ -326,6 +333,7 @@ export function NotesEditor({
   placeholder,
   style,
   className = '',
+  autoFocus = false,
 }: {
   value: string;
   onChange: (text: string) => void;
@@ -333,6 +341,7 @@ export function NotesEditor({
   placeholder?: string;
   style?: React.CSSProperties;
   className?: string;
+  autoFocus?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const colorBtn = useRef<HTMLButtonElement>(null);
@@ -372,6 +381,24 @@ export function NotesEditor({
     const r = colorBtn.current?.getBoundingClientRect();
     if (r) setPalette({ x: r.left, y: r.bottom + 8 });
   };
+
+  // set HTML before focusing so the later sync effect doesn't skip a blank editor
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.innerHTML = notesToHtml(value);
+    setEmpty(!value.trim());
+    if (!autoFocus) return;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    // mount-only: outside value changes still flow through the sync effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus]);
 
   // uncontrolled while focused: set the HTML once per value change from outside
   useEffect(() => {
@@ -541,7 +568,20 @@ export function NotesEditor({
   ];
 
   return (
-    <div className={'note-wyg-wrap ' + className}>
+    <div
+      className={'note-wyg-wrap ' + className}
+      onKeyDownCapture={(e) => {
+        if (e.key !== 'Escape') return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (paletteOpen) {
+          setPalette(null);
+          return;
+        }
+        commit();
+        onDone?.();
+      }}
+    >
       {/* in a narrow panel the bar scrolls: drag it, or use a plain wheel —
           sideways scrolling shouldn't need a trackpad */}
       <div
@@ -703,6 +743,9 @@ export function NotesEditor({
         className={'note-wyg' + (empty ? ' is-empty' : '')}
         style={style}
         contentEditable
+        role="textbox"
+        aria-multiline="true"
+        aria-label={placeholder ?? 'Speaker notes'}
         suppressContentEditableWarning
         data-placeholder={placeholder}
         spellCheck
@@ -719,10 +762,6 @@ export function NotesEditor({
         onBlur={commit}
         onKeyDown={(e) => {
           e.stopPropagation(); // never let slide navigation see typing
-          if (e.key === 'Escape') {
-            commit();
-            onDone?.();
-          }
         }}
       />
     </div>

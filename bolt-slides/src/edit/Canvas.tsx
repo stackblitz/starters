@@ -2,7 +2,7 @@
    The slide renders LIVE (count-ups, staggers, the slide's animation mode
    all play, like in present mode). The bottom bar pages the deck and
    carries speaker notes, Present, and Download as (PDF / JSON). */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStore, serializeDeck } from '../data/store';
 import { DeckCtx } from '../deck/DeckContext';
@@ -35,6 +35,14 @@ export default function Canvas() {
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
+  const notesId = useId();
+  const notesBtnRef = useRef<HTMLButtonElement>(null);
+  const notesPopRef = useRef<HTMLDivElement>(null);
+
+  const closeNotes = (restore: boolean) => {
+    setNotesOpen(false);
+    if (restore) notesBtnRef.current?.focus();
+  };
 
   const note = (msg: string) => {
     setFlash(msg);
@@ -98,6 +106,7 @@ export default function Canvas() {
           t.isContentEditable)
       )
         return;
+      if (notesOpen) return;
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (document.querySelector('[role="menu"]')) return;
       if (
@@ -115,7 +124,37 @@ export default function Canvas() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [current, setCurrent]);
+  }, [current, notesOpen, setCurrent]);
+
+  useEffect(() => {
+    if (!notesOpen) return;
+    const onPtr = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (notesPopRef.current?.contains(t) || notesBtnRef.current?.contains(t))
+        return;
+      closeNotes(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      closeNotes(true);
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as Node | null;
+      if (!t) return;
+      if (notesPopRef.current?.contains(t) || notesBtnRef.current?.contains(t))
+        return;
+      closeNotes(false);
+    };
+    document.addEventListener('pointerdown', onPtr);
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
+    return () => {
+      document.removeEventListener('pointerdown', onPtr);
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
+    };
+  }, [notesOpen]);
 
   if (!slide) {
     return (
@@ -180,12 +219,18 @@ export default function Canvas() {
           →
         </button>
         <button
+          ref={notesBtnRef}
           className={'icon-btn' + (notesOpen ? ' on' : '')}
           data-tip="Speaker notes"
           type="button"
           aria-label="Edit speaker notes for this slide"
-          aria-pressed={notesOpen}
-          onClick={() => setNotesOpen((v) => !v)}
+          aria-haspopup="dialog"
+          aria-expanded={notesOpen}
+          aria-controls={notesOpen ? notesId : undefined}
+          onClick={() => {
+            if (notesOpen) closeNotes(false);
+            else setNotesOpen(true);
+          }}
         >
           <svg
             width="18"
@@ -241,15 +286,23 @@ export default function Canvas() {
         </button>
       </div>
       {notesOpen && (
-        <div className="notes-pop">
+        <div
+          ref={notesPopRef}
+          id={notesId}
+          className="notes-pop"
+          role="dialog"
+          aria-modal="false"
+          aria-label="Speaker notes"
+        >
           <NotesEditor
             key={slide.id}
+            autoFocus
             value={slide.notes}
             onChange={(text) => {
               if (text !== slide.notes)
                 useStore.getState().patchSlide(slide.id, { notes: text });
             }}
-            onDone={() => setNotesOpen(false)}
+            onDone={() => closeNotes(true)}
             placeholder="Speaker notes — what to SAY on this slide."
           />
           <p className="notes-pop-hint">

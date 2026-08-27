@@ -37,6 +37,9 @@ below.
    palette) and say what you used.
 3. **One solid accent.** `--accent` is a hex, never a gradient. Use it
    sparingly.
+4. **`layout` is an exact catalog token.** camelCase keys from the
+   catalog (`bigNumber`, `statGrid`), not kebab-case (`big-number`) and
+   not a `type` field. `canvas` is not a layout.
 
 ## Step 0 · bootstrap (mandatory, first)
 
@@ -81,7 +84,8 @@ Repo-root `deck.json`:
     {
       "id": "s1",                // stable string; new slides get a new id
       "position": 0,
-      "layout": "cover",         // one of the layouts below
+      "layout": "cover",         // exact catalog token (camelCase:
+                                 // bigNumber, not big-number)
       "props": { ... },          // layout-specific (see catalog); every layout
                                  // also accepts "scale": "lg" | "xl" (+15/+30%
                                  // text size — for sparse slides like pricing)
