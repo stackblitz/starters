@@ -16,8 +16,7 @@ This repo is a complete slide **studio**. Author content into it.
   rail with reorder / duplicate / delete, speaker notes, Present,
   Download as PDF or JSON). Present replaces the studio in this view.
   The published site at `/` is the audience deck (notes stripped). **P**
-  on the audience dock opens the presenter console on the published
-  bolt.host URL; it stays hidden in the Bolt preview until a live publish.
+  on the dock opens the presenter console in a new tab.
 - `/present?presenter=1` — presenter console (notes visible and
   read-only, highlight and note text size). Annotations stay on this
   machine.

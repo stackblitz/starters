@@ -28,7 +28,6 @@ import {
   IconPresent,
   IconClose,
 } from './icons';
-import { isPreviewHostname, usePresenterLaunchOrigin } from '../data/shell';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
    panel, grid overview).
@@ -120,8 +119,7 @@ export default function Deck({
       new URLSearchParams(window.location.search).has('presenter'),
     [allowPresenter]
   );
-  const launchOrigin = usePresenterLaunchOrigin();
-  const canOpenPresenter = allowPresenter && !isPresenter && !!launchOrigin;
+  const canOpenPresenter = allowPresenter && !isPresenter;
   const presenterTip = 'Presenter — new tab (P)';
 
   const [slide, setSlide] = useState(() => {
@@ -210,14 +208,8 @@ export default function Deck({
     else document.documentElement.requestFullscreen?.();
   }, []);
   const openPresenter = useCallback(() => {
-    if (!launchOrigin) return;
-    try {
-      if (isPreviewHostname(new URL(launchOrigin).hostname)) return;
-    } catch {
-      return;
-    }
-    window.open(`${launchOrigin}/?presenter=1#${slide + 1}`, 'deck-presenter');
-  }, [launchOrigin, slide]);
+    window.open(`/?presenter=1#${slide + 1}`, 'deck-presenter');
+  }, [slide]);
 
   // keyboard
   useEffect(() => {
