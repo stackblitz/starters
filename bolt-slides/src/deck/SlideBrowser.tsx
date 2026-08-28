@@ -1,6 +1,6 @@
 /* Shared slide rail + grid overview. `mutable` turns on reorder (dnd-kit)
    and duplicate / delete via the context menu; published stays nav-only. */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   DndContext,
@@ -165,6 +165,9 @@ export default function SlideBrowser({
 }) {
   const railOpen = browse === 'rail';
   const gridOpen = browse === 'grid';
+  const [railThumbs, setRailThumbs] = useState(railOpen);
+  const railOpenRef = useRef(railOpen);
+  railOpenRef.current = railOpen;
   const railRef = useRef<HTMLElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const railScrolled = useScrolled(railRef, railOpen);
@@ -175,6 +178,10 @@ export default function SlideBrowser({
   const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(
     null
   );
+
+  useEffect(() => {
+    if (railOpen) setRailThumbs(true);
+  }, [railOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -268,6 +275,9 @@ export default function SlideBrowser({
         initial={false}
         animate={{ x: railOpen ? 0 : '-100%' }}
         transition={STAGE_LAYOUT_TRANSITION}
+        onAnimationComplete={() => {
+          if (!railOpenRef.current) setRailThumbs(false);
+        }}
       >
         <div className={'noir-rail-head' + (railScrolled ? ' scrolled' : '')}>
           <span className="noir-rail-title">Slides</span>
@@ -282,7 +292,7 @@ export default function SlideBrowser({
           </button>
         </div>
         <div className="noir-rail-list">
-          {railOpen && wrap(false, thumbs(false))}
+          {railThumbs && wrap(false, thumbs(false))}
         </div>
       </motion.aside>
 
