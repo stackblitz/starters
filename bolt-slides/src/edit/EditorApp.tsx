@@ -1,6 +1,7 @@
 /* The studio — thumbnail rail + scaled live canvas. Present swaps this
    view in place; published `/` is the audience deck. */
 import { useCallback, useEffect, useState } from 'react';
+import { LayoutGroup, MotionConfig } from 'motion/react';
 import { useStore } from '../data/store';
 import {
   allowPresenterFeatures,
@@ -54,35 +55,39 @@ export default function EditorApp() {
     return <PresentApp embedded />;
 
   if (isStudioShell()) {
-    if (presenting)
-      return (
-        <PresentApp
-          embedded
-          onExit={(i) => {
-            setCurrent(i);
-            setPresenting(false);
-          }}
-        />
-      );
     return (
-      <div className="ed-root">
-        <div className="ed-main">
-          <Canvas
-            browse={browse}
-            onToggleRail={toggleRail}
-            onToggleGrid={toggleGrid}
-            onCloseBrowse={closeBrowse}
-          />
-        </div>
-        <SlideBrowser
-          slides={slides}
-          current={current}
-          browse={browse}
-          mutable
-          onGo={setCurrent}
-          onClose={closeBrowse}
-        />
-      </div>
+      <MotionConfig reducedMotion="user">
+        <LayoutGroup id="slides-stage">
+          {presenting ? (
+            <PresentApp
+              embedded
+              onExit={(i) => {
+                setCurrent(i);
+                setPresenting(false);
+              }}
+            />
+          ) : (
+            <div className="ed-root">
+              <div className="ed-main">
+                <Canvas
+                  browse={browse}
+                  onToggleRail={toggleRail}
+                  onToggleGrid={toggleGrid}
+                  onCloseBrowse={closeBrowse}
+                />
+              </div>
+              <SlideBrowser
+                slides={slides}
+                current={current}
+                browse={browse}
+                mutable
+                onGo={setCurrent}
+                onClose={closeBrowse}
+              />
+            </div>
+          )}
+        </LayoutGroup>
+      </MotionConfig>
     );
   }
 

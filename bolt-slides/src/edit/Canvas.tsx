@@ -8,6 +8,7 @@ import { useStore, serializeDeck } from '../data/store';
 import { DeckCtx } from '../deck/DeckContext';
 import Dock from '../deck/Dock';
 import type { BrowseMode } from '../deck/SlideBrowser';
+import { STAGE_LAYOUT_ID, STAGE_LAYOUT_TRANSITION } from '../deck/stageLayout';
 import SlideView from '../slide/SlideView';
 import { NotesEditor } from './notes';
 import { exportPdf } from '../export/exporter';
@@ -93,22 +94,24 @@ export default function Canvas({
     },
   ];
 
-  const boxRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState({ vw: 1280, vh: 720, scale: 0.5 });
   const liveCtx = useMemo(() => ({ clicks: 9999, isStatic: false }), []);
 
+  // Fit the slide to `.ed-stage`, which already sits inside canvas padding
+  // (and the rail inset when open). Measuring the outer canvas would count
+  // that padding twice and let the frame overflow to the right.
   useEffect(() => {
-    const el = boxRef.current;
+    const el = stageRef.current;
     if (!el) return;
     const update = () => {
-      const vw = window.innerWidth,
-        vh = window.innerHeight;
-      const pad = 48;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
       const scale = Math.min(
-        (el.clientWidth - pad) / vw,
-        (el.clientHeight - pad) / vh
+        Math.max(1, el.clientWidth) / vw,
+        Math.max(1, el.clientHeight) / vh
       );
-      setFrame({ vw, vh, scale });
+      setFrame({ vw, vh, scale: Math.max(0.05, scale) });
     };
     update();
     const ro = new ResizeObserver(update);
@@ -118,7 +121,7 @@ export default function Canvas({
       ro.disconnect();
       window.removeEventListener('resize', update);
     };
-  }, []);
+  }, [browse]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -278,42 +281,48 @@ export default function Canvas({
 
   if (!slide) {
     return (
-      <div className={canvasClass} ref={boxRef}>
-        <div className="ed-empty">This deck has no slides.</div>
+      <div className={canvasClass}>
+        <div className="ed-stage" ref={stageRef}>
+          <div className="ed-empty">This deck has no slides.</div>
+        </div>
         {dock}
       </div>
     );
   }
 
   return (
-    <div className={canvasClass} ref={boxRef}>
-      <div
-        className="ed-frame"
-        style={{
-          width: frame.vw * frame.scale,
-          height: frame.vh * frame.scale,
-        }}
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={slide.id}
-            className="ed-frame-inner"
-            style={{
-              width: frame.vw,
-              height: frame.vh,
-              transform: `scale(${frame.scale})`,
-              ['--inv' as never]: String(1 / Math.max(0.05, frame.scale)),
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.16 }}
-          >
-            <DeckCtx.Provider value={liveCtx}>
-              <SlideView slide={slide} />
-            </DeckCtx.Provider>
-          </motion.div>
-        </AnimatePresence>
+    <div className={canvasClass}>
+      <div className="ed-stage" ref={stageRef}>
+        <motion.div
+          layoutId={STAGE_LAYOUT_ID}
+          className="ed-frame"
+          transition={{ layout: STAGE_LAYOUT_TRANSITION }}
+          style={{
+            width: frame.vw * frame.scale,
+            height: frame.vh * frame.scale,
+          }}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={slide.id}
+              className="ed-frame-inner"
+              style={{
+                width: frame.vw,
+                height: frame.vh,
+                transform: `scale(${frame.scale})`,
+                ['--inv' as never]: String(1 / Math.max(0.05, frame.scale)),
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
+            >
+              <DeckCtx.Provider value={liveCtx}>
+                <SlideView slide={slide} />
+              </DeckCtx.Provider>
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
       </div>
       {dock}
     </div>

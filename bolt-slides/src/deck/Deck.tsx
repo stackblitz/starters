@@ -15,6 +15,7 @@ import { loadAnnotations, type Stroke } from './annotationInk';
 import Presenter from './Presenter';
 import Dock from './Dock';
 import SlideBrowser from './SlideBrowser';
+import { STAGE_LAYOUT_ID, STAGE_LAYOUT_TRANSITION } from './stageLayout';
 import {
   useDeckBroadcastSync,
   useDeckHashSync,
@@ -279,28 +280,34 @@ export default function Deck({
   return (
     <MotionConfig reducedMotion="user">
       <div className={'deck' + (cursorHidden ? ' nocursor' : '')}>
-        <DeckCtx.Provider value={liveCtx}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              className="slide-stage"
-              key={currentSlide?.id ?? slideIndex}
-              style={{ animation: 'none' }}
-              variants={variants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{
-                duration: transitionName === 'none' ? 0 : 0.42,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              onAnimationComplete={(definition) => {
-                if (definition === 'animate') setStageIn(true);
-              }}
-            >
-              {currentSlide ? renderSlide(currentSlide) : null}
-            </motion.div>
-          </AnimatePresence>
-        </DeckCtx.Provider>
+        <motion.div
+          layoutId={STAGE_LAYOUT_ID}
+          className="deck-live-stage"
+          transition={{ layout: STAGE_LAYOUT_TRANSITION }}
+        >
+          <DeckCtx.Provider value={liveCtx}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                className="slide-stage"
+                key={currentSlide?.id ?? slideIndex}
+                style={{ animation: 'none' }}
+                variants={variants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{
+                  duration: transitionName === 'none' ? 0 : 0.42,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                onAnimationComplete={(definition) => {
+                  if (definition === 'animate') setStageIn(true);
+                }}
+              >
+                {currentSlide ? renderSlide(currentSlide) : null}
+              </motion.div>
+            </AnimatePresence>
+          </DeckCtx.Provider>
+        </motion.div>
 
         {showAnnotator && (
           <Annotator

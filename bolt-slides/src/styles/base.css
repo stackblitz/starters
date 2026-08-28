@@ -35,6 +35,14 @@ body {
   height: 100svh;
   overflow: hidden;
 }
+/* Shared-layout target with the editor `.ed-frame` (layoutId morph). */
+.deck-live-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--bg);
+}
 .slide-stage {
   position: absolute;
   inset: 0;
@@ -2280,11 +2288,16 @@ strong {
 }
 .noir-thumb-frame {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: auto;
   border-radius: 9px;
   overflow: hidden;
   border: 1.5px solid transparent;
   transition: border-color 0.25s ease;
   line-height: 0;
+  /* Fixed thumb chrome — do not follow the window aspect or rail thumbs
+     grow taller as the viewport narrows. */
   aspect-ratio: 16 / 9;
   position: relative;
   background: var(--bg);
@@ -2298,8 +2311,8 @@ strong {
 .noir-thumb.active .noir-thumb-frame {
   border-color: var(--ed-brand);
 }
-/* the live slide rendered at true viewport size, then scaled into the frame
-   (so responsive vw/vh units stay faithful). width/height/transform set inline. */
+/* Fixed 16×9 stage (1280×720) scaled into the frame — thumbs keep presentation
+   aspect instead of mirroring the live window. width/height/transform inline. */
 .noir-thumb-scale {
   position: absolute;
   top: 0;
