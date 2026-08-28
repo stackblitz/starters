@@ -14,6 +14,13 @@ import SlideView from '../slide/SlideView';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const W = 1280;
+const H = 720;
+/* PDF page is 1280×720. pixelRatio 2 rasterized 2560×1440 and the sync
+   drawImage + PNG encode could occupy the preview thread past Bolt’s 2s
+   heartbeat ack. Ratio 1 is 4× fewer pixels and matches the page. */
+const PIXEL_RATIO = 1;
+
 function yieldToUi() {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
@@ -26,6 +33,11 @@ async function yieldIfDue(state: { t: number }) {
   if (performance.now() - state.t < YIELD_BUDGET_MS) return;
   await yieldToUi();
   state.t = performance.now();
+}
+
+function logSlow(stage: string, ms: number) {
+  if (ms < 200) return;
+  console.info(`[pdf] ${stage} ${Math.round(ms)}ms`);
 }
 
 function opaqueColor(c: string): string | null {
@@ -164,24 +176,25 @@ function loadSvgImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-function canvasPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+/* Slides have an opaque background, so alpha is unused. JPEG lets jsPDF
+   embed DCTDecode bytes instead of inflate/deflate PNG on the main thread. */
+function canvasJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))),
-      'image/png'
+      'image/jpeg',
+      0.92
     );
   });
 }
 
 async function rasterSlide(
   slide: SlideData,
-  w: number,
-  h: number,
-  pixelRatio: number,
-  fontEmbedCSS: string
+  fontEmbedCSS: string,
+  index: number
 ): Promise<HTMLCanvasElement> {
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = `position:fixed;left:-100000px;top:0;width:${w}px;height:${h}px;border:0;`;
+  iframe.style.cssText = `position:fixed;left:-100000px;top:0;width:${W}px;height:${H}px;border:0;`;
   document.body.appendChild(iframe);
   try {
     const doc = iframe.contentDocument!;
@@ -203,7 +216,7 @@ async function rasterSlide(
     }
     doc.body.style.margin = '0';
     const mount = doc.createElement('div');
-    mount.style.cssText = `width:${w}px;height:${h}px;`;
+    mount.style.cssText = `width:${W}px;height:${H}px;`;
     doc.body.appendChild(mount);
 
     const root = createRoot(mount);
@@ -231,28 +244,33 @@ async function rasterSlide(
     await yieldToUi();
 
     const bg = getComputedStyle(document.body).backgroundColor;
+    const cloneAt = performance.now();
     const svg = await toSvg(mount, {
-      width: w,
-      height: h,
-      pixelRatio,
+      width: W,
+      height: H,
+      pixelRatio: PIXEL_RATIO,
       backgroundColor: bg,
       fontEmbedCSS,
+      skipFonts: true,
     });
+    logSlow(`clone slide ${index + 1}`, performance.now() - cloneAt);
     await yieldToUi();
 
     const img = await loadSvgImage(svg);
     await yieldToUi();
 
     const canvas = document.createElement('canvas');
-    canvas.width = w * pixelRatio;
-    canvas.height = h * pixelRatio;
+    canvas.width = W * PIXEL_RATIO;
+    canvas.height = H * PIXEL_RATIO;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('2d context unavailable');
     if (bg) {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
+    const drawAt = performance.now();
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    logSlow(`drawImage slide ${index + 1}`, performance.now() - drawAt);
     await yieldToUi();
 
     root.unmount();
@@ -267,8 +285,6 @@ export async function exportPdf(
   title: string,
   onProgress: (msg: string) => void
 ): Promise<void> {
-  const W = 1280,
-    H = 720;
   onProgress('Embedding fonts…');
   await yieldToUi();
   const fontEmbedCSS = await collectFontEmbedCSS();
@@ -281,12 +297,14 @@ export async function exportPdf(
   for (let i = 0; i < slides.length; i++) {
     onProgress(`Rendering slide ${i + 1} / ${slides.length}…`);
     await yieldToUi();
-    const canvas = await rasterSlide(slides[i], W, H, 2, fontEmbedCSS);
-    const blob = await canvasPngBlob(canvas);
+    const canvas = await rasterSlide(slides[i], fontEmbedCSS, i);
+    const encodeAt = performance.now();
+    const blob = await canvasJpegBlob(canvas);
+    logSlow(`toBlob slide ${i + 1}`, performance.now() - encodeAt);
     await yieldToUi();
     const bytes = new Uint8Array(await blob.arrayBuffer());
     if (i > 0) pdf.addPage([W, H], 'landscape');
-    pdf.addImage(bytes, 'PNG', 0, 0, W, H);
+    pdf.addImage(bytes, 'JPEG', 0, 0, W, H);
   }
   onProgress('Writing PDF…');
   await yieldToUi();
