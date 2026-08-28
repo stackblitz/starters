@@ -1,22 +1,25 @@
-import {
-  Children,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import type { ReactElement, ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   AnimatePresence,
   MotionConfig,
   motion,
   type Variants,
 } from 'motion/react';
+import type { SlideData } from '../data/types';
+import SlideView from '../slide/SlideView';
 import { DeckCtx } from './DeckContext';
 import Annotator, { loadAnnotations, type Stroke } from './Annotator';
 import Thumb from './Thumb';
 import Presenter from './Presenter';
+import {
+  useDeckBroadcastSync,
+  useDeckHashSync,
+  useDeckKeyboard,
+  useFullscreenState,
+  useIdleCursorNearDock,
+  useScrolled,
+  useStageEntrance,
+} from './deckHooks';
 import {
   IconGrid,
   IconSidebar,
@@ -30,8 +33,7 @@ import {
 } from './icons';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
-   panel, grid overview).
-   Wrap your <Slide>/<Bento>/… in <Deck>. Each top-level child is one slide.
+   panel, grid overview). Pass `slides` as data; Deck renders each SlideView.
      → / ↓ / Space   next (reveals the next <Build>, then the next slide)
      ← / ↑           previous            S side panel   G grid overview
      Home / End      first / last        D draw         F fullscreen
@@ -41,30 +43,6 @@ import {
    [ ] size · ⌘Z / ⇧⌘Z undo+redo · ⌫ clear · D or Esc to finish.
    Copy verbatim; theme only via the :root tokens. ───────────────────────── */
 
-/* True once a scroll container has moved off the top — the sticky heads stay
-   fully transparent until something actually scrolls under them. */
-function useScrolled(
-  ref: React.RefObject<HTMLElement | null>,
-  active: boolean
-) {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!active || !el) {
-      setScrolled(false);
-      return;
-    }
-    const onScroll = () => setScrolled(el.scrollTop > 0);
-    onScroll();
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, [ref, active]);
-  return scrolled;
-}
-
-/* Slide-to-slide transition variants. The deck default comes from the
-   `transition` prop; a slide can override it via a `transition` prop on the
-   slide element itself (SlideView passes the row's value through). */
 const TRANSITIONS: Record<string, Variants> = {
   fade: {
     initial: { opacity: 0 },
@@ -89,15 +67,25 @@ const TRANSITIONS: Record<string, Variants> = {
   none: { initial: {}, animate: {}, exit: {} },
 };
 
+function renderSlide(slide: SlideData) {
+  return (
+    <SlideView
+      slide={slide}
+      notes={slide.notes}
+      transition={slide.transition ?? undefined}
+    />
+  );
+}
+
 export default function Deck({
-  children,
+  slides,
   transition = 'fade',
   navLabel,
   allowPresenter = true,
   initialSlide,
   onExit,
 }: {
-  children: ReactNode;
+  slides: SlideData[];
   transition?: string;
   /** false hides the dock P control (the console itself) */
   allowPresenter?: boolean;
@@ -108,10 +96,6 @@ export default function Deck({
   /** leave present mode without changing the URL (in-place from the editor) */
   onExit?: (slideIndex: number) => void;
 }) {
-  const slides = useMemo(
-    () => Children.toArray(children) as ReactElement[],
-    [children]
-  );
   const slideCount = slides.length;
   const isPresenter = useMemo(
     () =>
@@ -146,12 +130,11 @@ export default function Deck({
   );
   const closeBrowse = useCallback(() => setBrowse('none'), []);
   const [drawing, setDrawing] = useState(false);
-  // false while the incoming slide is still animating — annotations wait for it
-  const [stageIn, setStageIn] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
-  const [nearDock, setNearDock] = useState(false);
-  const [cursorIdle, setCursorIdle] = useState(false);
+
+  const { stageIn, setStageIn } = useStageEntrance(slideIndex);
+  const { isFullscreen, toggleFullscreen } = useFullscreenState();
+  const { nearDock, cursorIdle } = useIdleCursorNearDock();
 
   // per-slide build maxima (so going back restores the right click state) and
   // per-slide annotations (so drawings persist on the slide they were made).
@@ -208,111 +191,16 @@ export default function Deck({
     }
   }, [clicks, slideIndex]);
 
-  const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen?.();
-  }, []);
   const openPresenter = useCallback(() => {
     window.open(`/?presenter=1#${slideIndex + 1}`, 'deck-presenter');
   }, [slideIndex]);
 
-  // keyboard
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === 'TEXTAREA' ||
-          target.tagName === 'INPUT' ||
-          target.isContentEditable)
-      )
-        return;
-      switch (event.key) {
-        case 'ArrowRight':
-        case 'ArrowDown':
-        case ' ':
-        case 'PageDown':
-          event.preventDefault();
-          next();
-          break;
-        case 'ArrowLeft':
-        case 'ArrowUp':
-        case 'PageUp':
-          event.preventDefault();
-          prev();
-          break;
-        case 'Home':
-          event.preventDefault();
-          go(0);
-          break;
-        case 'End':
-          event.preventDefault();
-          go(slideCount - 1);
-          break;
-        // while drawing, the annotator owns the letter keys it uses (O, P, H
-        // are ellipse / pen / highlighter there) — D and Escape still exit
-        case 'o':
-        case 'O':
-          if (isPresenter || drawing) break;
-          toggleRail();
-          break;
-        case 's':
-        case 'S':
-          if (isPresenter) break;
-          toggleRail();
-          break;
-        case 'g':
-        case 'G':
-          if (isPresenter) break;
-          toggleGrid();
-          break;
-        case 'f':
-        case 'F':
-          if (isPresenter) break;
-          toggleFullscreen();
-          break;
-        case 'd':
-        case 'D':
-          if (isPresenter) break;
-          setDrawing((open) => !open);
-          break;
-        case 'p':
-        case 'P':
-          if (drawing || !canOpenPresenter) break;
-          openPresenter();
-          break;
-        case 'h':
-        case 'H':
-          if (isPresenter || drawing) break;
-          setUiHidden((hidden) => !hidden);
-          break;
-        case 'Escape':
-          if (isPresenter) {
-            event.preventDefault();
-            if (window.opener) window.close();
-            break;
-          }
-          if (browse !== 'none' || drawing || uiHidden) {
-            closeBrowse();
-            setDrawing(false);
-            setUiHidden(false);
-            break;
-          }
-          if (onExit) {
-            event.preventDefault();
-            onExit(slideIndex);
-          }
-          break;
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [
+  useDeckKeyboard({
     next,
     prev,
     go,
     slideCount,
+    slideIndex,
     toggleFullscreen,
     openPresenter,
     toggleRail,
@@ -324,107 +212,21 @@ export default function Deck({
     isPresenter,
     canOpenPresenter,
     onExit,
-    slideIndex,
-  ]);
+    setDrawing,
+    setUiHidden,
+  });
 
-  // the slide's entrance owns the screen first: hold the ink until the stage
-  // has finished animating in (with a safety net if no animation ever runs)
-  useEffect(() => {
-    setStageIn(false);
-    const safetyTimer = window.setTimeout(() => setStageIn(true), 1000);
-    return () => clearTimeout(safetyTimer);
-  }, [slideIndex]);
-
-  // URL hash sync — skipped in-place from the editor (no new URL). Presenter
-  // consoles, the published audience deck, and leftover /present share links
-  // still use it so a P popup can open on the live slide.
   const skipHash = !!onExit && !isPresenter;
-  useEffect(() => {
-    if (skipHash) return;
-    const want = String(slideIndex + 1);
-    if (window.location.hash.slice(1) !== want)
-      history.replaceState(null, '', '#' + want);
-  }, [slideIndex, skipHash]);
-  useEffect(() => {
-    if (skipHash) return;
-    const onHash = () => {
-      const hashSlide = parseInt(window.location.hash.slice(1), 10);
-      if (
-        hashSlide >= 1 &&
-        hashSlide <= slideCount &&
-        hashSlide - 1 !== slideIndex
-      )
-        go(hashSlide - 1);
-    };
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, [slideIndex, slideCount, go, skipHash]);
+  useDeckHashSync({ slideIndex, slideCount, go, skipHash });
 
-  // cross-tab sync (audience ⇄ presenter), via BroadcastChannel.
-  // Only the presenter console (or in-place owner Present) publishes;
-  // audience tabs subscribe. The P popup reads the hash before this
-  // effect, so the first publish is the live slide, not 0.
-  const syncChannel = useRef<BroadcastChannel | null>(null);
-  const applyingRemote = useRef(false);
   const isLeader = isPresenter || !!onExit;
-  useEffect(() => {
-    const channel = new BroadcastChannel('deck-sync');
-    syncChannel.current = channel;
-    channel.onmessage = (event) => {
-      if (event.data?.type !== 'state') return;
-      /* wire format keeps `slide` so an older presenter tab still syncs */
-      const remoteSlide = event.data.slide;
-      const remoteClicks = event.data.clicks;
-      if (
-        !Number.isInteger(remoteSlide) ||
-        !Number.isInteger(remoteClicks) ||
-        remoteSlide < 0 ||
-        remoteClicks < 0
-      )
-        return;
-      applyingRemote.current = true;
-      setSlideIndex(remoteSlide);
-      setClicks(remoteClicks);
-    };
-    return () => channel.close();
-  }, []);
-  useEffect(() => {
-    if (!isLeader) return;
-    if (applyingRemote.current) {
-      applyingRemote.current = false;
-      return;
-    }
-    syncChannel.current?.postMessage({
-      type: 'state',
-      slide: slideIndex,
-      clicks,
-    });
-  }, [slideIndex, clicks, isLeader]);
-
-  // fullscreen flag, presenter timer, idle auto-hide
-  useEffect(() => {
-    const onFullscreenChange = () =>
-      setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () =>
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-  }, []);
-  // the dock returns on pointer near the bottom (where it lives) or when
-  // keyboard focus lands in it (:focus-within); the cursor hides on idle.
-  useEffect(() => {
-    let idleTimer = 0;
-    const onMove = (event: MouseEvent) => {
-      setCursorIdle(false);
-      setNearDock(event.clientY > window.innerHeight - 150);
-      clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => setCursorIdle(true), 2600);
-    };
-    window.addEventListener('mousemove', onMove);
-    return () => {
-      clearTimeout(idleTimer);
-      window.removeEventListener('mousemove', onMove);
-    };
-  }, []);
+  useDeckBroadcastSync({
+    slideIndex,
+    clicks,
+    isLeader,
+    setSlideIndex,
+    setClicks,
+  });
 
   const railScrolled = useScrolled(railRef, railOpen);
   const gridScrolled = useScrolled(gridRef, gridOpen);
@@ -435,11 +237,9 @@ export default function Deck({
   );
   const hasPrev = slideIndex > 0 || clicks > 0;
   const hasNext = slideIndex < slideCount - 1 || clicks < buildMax;
-  const noteText =
-    (slides[slideIndex]?.props as { notes?: string } | undefined)?.notes ?? '';
-  const slideTransition =
-    (slides[slideIndex]?.props as { transition?: string } | undefined)
-      ?.transition || transition;
+  const currentSlide = slides[slideIndex];
+  const noteText = currentSlide?.notes ?? '';
+  const slideTransition = currentSlide?.transition || transition;
   const hideUI = uiHidden || (isFullscreen && !nearDock);
   const cursorHidden = isFullscreen && cursorIdle && !drawing;
   const showAnnotator =
@@ -469,35 +269,32 @@ export default function Deck({
     );
   }
 
+  const transitionName = slideTransition;
+  const variants = TRANSITIONS[transitionName] ?? TRANSITIONS.fade;
+
   return (
     <MotionConfig reducedMotion="user">
       <div className={'deck' + (cursorHidden ? ' nocursor' : '')}>
         <DeckCtx.Provider value={liveCtx}>
           <AnimatePresence mode="wait" initial={false}>
-            {(() => {
-              const transitionName = slideTransition;
-              const variants = TRANSITIONS[transitionName] ?? TRANSITIONS.fade;
-              return (
-                <motion.div
-                  className="slide-stage"
-                  key={slideIndex}
-                  style={{ animation: 'none' }}
-                  variants={variants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={{
-                    duration: transitionName === 'none' ? 0 : 0.42,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  onAnimationComplete={(definition) => {
-                    if (definition === 'animate') setStageIn(true);
-                  }}
-                >
-                  {slides[slideIndex]}
-                </motion.div>
-              );
-            })()}
+            <motion.div
+              className="slide-stage"
+              key={currentSlide?.id ?? slideIndex}
+              style={{ animation: 'none' }}
+              variants={variants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{
+                duration: transitionName === 'none' ? 0 : 0.42,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              onAnimationComplete={(definition) => {
+                if (definition === 'animate') setStageIn(true);
+              }}
+            >
+              {currentSlide ? renderSlide(currentSlide) : null}
+            </motion.div>
           </AnimatePresence>
         </DeckCtx.Provider>
 
@@ -531,9 +328,9 @@ export default function Deck({
               keep browsing; close it deliberately (button, S, Esc). */}
           <div className="noir-rail-list">
             {railOpen &&
-              slides.map((slideNode, i) => (
+              slides.map((slide, i) => (
                 <button
-                  key={i}
+                  key={slide.id}
                   className={'noir-thumb' + (i === slideIndex ? ' active' : '')}
                   aria-label={`Go to slide ${i + 1}${
                     navLabel?.(i) ? ' — ' + navLabel(i) : ''
@@ -542,7 +339,7 @@ export default function Deck({
                   onClick={() => go(i)}
                 >
                   <span className="noir-thumb-no">{i + 1}</span>
-                  <Thumb>{slideNode}</Thumb>
+                  <Thumb>{renderSlide(slide)}</Thumb>
                 </button>
               ))}
           </div>
@@ -576,9 +373,9 @@ export default function Deck({
                 </button>
               </div>
               <div className="noir-grid-list">
-                {slides.map((slideNode, i) => (
+                {slides.map((slide, i) => (
                   <button
-                    key={i}
+                    key={slide.id}
                     className={
                       'noir-thumb noir-thumb-grid' +
                       (i === slideIndex ? ' active' : '')
@@ -592,7 +389,7 @@ export default function Deck({
                       closeBrowse();
                     }}
                   >
-                    <Thumb>{slideNode}</Thumb>
+                    <Thumb>{renderSlide(slide)}</Thumb>
                     <span className="noir-thumb-no">{i + 1}</span>
                   </button>
                 ))}

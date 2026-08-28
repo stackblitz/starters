@@ -1,9 +1,20 @@
 import { useEffect, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { SlideData } from '../data/types';
+import SlideView from '../slide/SlideView';
 import Thumb from './Thumb';
 import type { DeckCtxValue } from './DeckContext';
 import { NotesView } from '../edit/notes';
 import { IconLeft, IconRight, IconClose } from './icons';
+
+function renderSlide(slide: SlideData) {
+  return (
+    <SlideView
+      slide={slide}
+      notes={slide.notes}
+      transition={slide.transition ?? undefined}
+    />
+  );
+}
 
 /* The presenter console (/present?presenter=1) — a second-screen cockpit, not
    a copy of the slide: what the audience sees right now (live, mid-build),
@@ -73,17 +84,17 @@ export default function Presenter({
   navLabel,
   onExit,
 }: {
-  slides: ReactElement[];
+  slides: SlideData[];
   slideIndex: number;
   slideCount: number;
   clicks: number;
   buildMax: number;
   liveCtx: DeckCtxValue;
   notes: string;
-  onGo: (i: number) => void;
+  onGo: (index: number) => void;
   onNext: () => void;
   onPrev: () => void;
-  navLabel?: (i: number) => string | undefined;
+  navLabel?: (index: number) => string | undefined;
   /** leave the console for the editor when this is not a script-opened window */
   onExit?: (slideIndex: number) => void;
 }) {
@@ -140,7 +151,8 @@ export default function Presenter({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const nextEl = slides[slideIndex + 1];
+  const currentSlide = slides[slideIndex];
+  const nextSlide = slides[slideIndex + 1];
   const nextName = navLabel?.(slideIndex + 1);
   const progress = slideCount > 1 ? (slideIndex / (slideCount - 1)) * 100 : 100;
   const builds =
@@ -237,7 +249,9 @@ export default function Presenter({
         <section className="pres-stage">
           <div className="pres-label">On screen now</div>
           <div className="pres-now">
-            <Thumb ctx={liveCtx}>{slides[slideIndex]}</Thumb>
+            {currentSlide ? (
+              <Thumb ctx={liveCtx}>{renderSlide(currentSlide)}</Thumb>
+            ) : null}
           </div>
 
           <div className="pres-next-wrap">
@@ -247,13 +261,13 @@ export default function Presenter({
                 <span className="pres-next-name"> · {nextName}</span>
               ) : null}
             </div>
-            {nextEl ? (
+            {nextSlide ? (
               <button
                 className="pres-next"
                 onClick={() => onGo(slideIndex + 1)}
                 aria-label="Go to next slide"
               >
-                <Thumb>{nextEl}</Thumb>
+                <Thumb>{renderSlide(nextSlide)}</Thumb>
               </button>
             ) : (
               <div className="pres-next pres-next-end">End of deck</div>

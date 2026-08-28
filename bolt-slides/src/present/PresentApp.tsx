@@ -4,7 +4,6 @@
    console in a new tab on the current origin. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
-import SlideView from '../slide/SlideView';
 import { useStore } from '../data/store';
 import { applyFont, applyAccent } from '../data/fonts';
 import { stripRich } from '../edit/rich';
@@ -54,6 +53,7 @@ export default function PresentApp({
 
   return (
     <Deck
+      slides={slides}
       transition={deck.transition}
       initialSlide={embedded && onExit ? current : undefined}
       onExit={onExit}
@@ -75,15 +75,6 @@ export default function PresentApp({
             : plain
           : LAYOUTS[resolveLayoutType(slide.layout)]?.label;
       }}
-    >
-      {slides.map((slide) => (
-        <SlideView
-          key={slide.id}
-          slide={slide}
-          notes={slide.notes}
-          transition={slide.transition ?? undefined}
-        />
-      ))}
-    </Deck>
+    />
   );
 }
