@@ -12,6 +12,8 @@ theme). The studio and the published audience deck both read that file.
 ```bash
 npm install
 npm run dev        # studio at http://localhost:5173 — Present swaps this view
+npm run lint       # ESLint (same kit as bolt-vite-react-ts)
+npm run typecheck
 ```
 
 Prompt a deck with the `slides` skill, or edit `deck.json` directly.

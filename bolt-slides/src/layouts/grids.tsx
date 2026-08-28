@@ -683,11 +683,9 @@ const PillarsDef: LayoutDef = {
                     <T path={`items.${i}.title`} />
                   </LiCtl>
                 </h3>
-                {(it.body || true) && (
-                  <div className="pillars-body">
-                    <T path={`items.${i}.body`} placeholder="Body" block />
-                  </div>
-                )}
+                <div className="pillars-body">
+                  <T path={`items.${i}.body`} placeholder="Body" block />
+                </div>
               </div>
             ))}
           </div>

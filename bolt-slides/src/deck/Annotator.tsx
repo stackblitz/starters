@@ -497,7 +497,8 @@ export default function Annotator({
           h = Math.abs(b.y - a.y);
         const r = Math.min(6, w / 2, h / 2);
         ctx.beginPath();
-        ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
+        if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+        else ctx.rect(x, y, w, h);
         ctx.stroke();
       } else if (s.tool === 'ellipse') {
         ctx.beginPath();
@@ -829,7 +830,8 @@ export default function Annotator({
         return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        e.shiftKey ? redo() : undo();
+        if (e.shiftKey) redo();
+        else undo();
         return;
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
