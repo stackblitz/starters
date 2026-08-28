@@ -14,6 +14,7 @@ import Annotator from './Annotator';
 import { loadAnnotations, type Stroke } from './annotationInk';
 import Presenter from './Presenter';
 import Dock from './Dock';
+import { DockPopoverProvider } from './DockPopover';
 import SlideBrowser from './SlideBrowser';
 import { STAGE_LAYOUT_ID, STAGE_LAYOUT_TRANSITION } from './stageLayout';
 import {
@@ -279,79 +280,82 @@ export default function Deck({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={'deck' + (cursorHidden ? ' nocursor' : '')}>
-        <motion.div
-          layoutId={STAGE_LAYOUT_ID}
-          className="deck-live-stage"
-          transition={{ layout: STAGE_LAYOUT_TRANSITION }}
-        >
-          <DeckCtx.Provider value={liveCtx}>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                className="slide-stage"
-                key={currentSlide?.id ?? slideIndex}
-                style={{ animation: 'none' }}
-                variants={variants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{
-                  duration: transitionName === 'none' ? 0 : 0.42,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                onAnimationComplete={(definition) => {
-                  if (definition === 'animate') setStageIn(true);
-                }}
-              >
-                {currentSlide ? renderSlide(currentSlide) : null}
-              </motion.div>
-            </AnimatePresence>
-          </DeckCtx.Provider>
-        </motion.div>
+      <DockPopoverProvider>
+        <div className={'deck' + (cursorHidden ? ' nocursor' : '')}>
+          <motion.div
+            layout
+            layoutId={STAGE_LAYOUT_ID}
+            className="deck-live-stage"
+            transition={{ layout: STAGE_LAYOUT_TRANSITION }}
+          >
+            <DeckCtx.Provider value={liveCtx}>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  className="slide-stage"
+                  key={currentSlide?.id ?? slideIndex}
+                  style={{ animation: 'none' }}
+                  variants={variants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{
+                    duration: transitionName === 'none' ? 0 : 0.42,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  onAnimationComplete={(definition) => {
+                    if (definition === 'animate') setStageIn(true);
+                  }}
+                >
+                  {currentSlide ? renderSlide(currentSlide) : null}
+                </motion.div>
+              </AnimatePresence>
+            </DeckCtx.Provider>
+          </motion.div>
 
-        {showAnnotator && (
-          <Annotator
-            key={slideIndex}
-            slide={slideIndex}
-            store={annotationsBySlide.current}
-            active={drawing}
-            onDone={() => setDrawing(false)}
-            hold={!stageIn}
+          {showAnnotator && (
+            <Annotator
+              key={slideIndex}
+              slide={slideIndex}
+              store={annotationsBySlide.current}
+              active={drawing}
+              onDone={() => setDrawing(false)}
+              hold={!stageIn}
+            />
+          )}
+
+          <SlideBrowser
+            slides={slides}
+            current={slideIndex}
+            browse={browse}
+            mutable={mutable}
+            navLabel={navLabel}
+            onGo={go}
+            onClose={closeBrowse}
           />
-        )}
 
-        <SlideBrowser
-          slides={slides}
-          current={slideIndex}
-          browse={browse}
-          mutable={mutable}
-          navLabel={navLabel}
-          onGo={go}
-          onClose={closeBrowse}
-        />
-
-        <Dock
-          ref={dockRef}
-          mode={onExit ? 'editor-present' : 'audience'}
-          slideIndex={slideIndex}
-          slideCount={slideCount}
-          hasPrev={hasPrev}
-          hasNext={hasNext}
-          railOpen={railOpen}
-          gridOpen={gridOpen}
-          hidden={hideUI}
-          drawing={drawing}
-          isFullscreen={isFullscreen}
-          onToggleRail={toggleRail}
-          onToggleGrid={toggleGrid}
-          onPrev={prev}
-          onNext={next}
-          onAnnotate={() => setDrawing((open) => !open)}
-          onFullscreen={toggleFullscreen}
-          onPresenter={canOpenPresenter ? openPresenter : undefined}
-          onBack={onExit ? () => onExit(slideIndex) : undefined}
-        />
-      </div>
+          <Dock
+            ref={dockRef}
+            mode={onExit ? 'editor-present' : 'audience'}
+            slideIndex={slideIndex}
+            slideCount={slideCount}
+            hasPrev={hasPrev}
+            hasNext={hasNext}
+            railOpen={railOpen}
+            gridOpen={gridOpen}
+            hidden={hideUI}
+            drawing={drawing}
+            isFullscreen={isFullscreen}
+            onToggleRail={toggleRail}
+            onToggleGrid={toggleGrid}
+            onPrev={prev}
+            onNext={next}
+            onAnnotate={() => setDrawing((open) => !open)}
+            onFullscreen={toggleFullscreen}
+            onPresenter={canOpenPresenter ? openPresenter : undefined}
+            onBack={onExit ? () => onExit(slideIndex) : undefined}
+          />
+        </div>
+      </DockPopoverProvider>
     </MotionConfig>
   );
 }

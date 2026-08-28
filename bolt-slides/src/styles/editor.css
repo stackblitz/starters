@@ -94,17 +94,11 @@
   border-color: transparent;
 }
 
-/* speaker-notes popover, docked above the shared toolbar. Centered with a
-   negative margin, NOT a transform — a transformed ancestor would re-anchor
-   the note editor's position:fixed colour palette and strand it off-screen. */
+/* speaker-notes popover — lives in `.noir-dock-popover` above the bar.
+   Avoid transform on this node: a transformed ancestor would re-anchor the
+   note editor's position:fixed colour palette and strand it off-screen. */
 .notes-pop {
-  position: absolute;
-  z-index: 45;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  right: auto;
-  margin-inline: 0;
-  margin-left: calc(min(620px, 92vw) / -2);
+  position: relative;
   width: min(620px, 92vw);
   padding: 12px;
   display: flex;
@@ -342,16 +336,11 @@
   /* Even inset on every side; bottom clears the floating dock. */
   padding: 24px 24px 72px;
   background: var(--ed-bg);
-  transition: padding-left 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .ed-canvas.rail-open {
-  /* noir-rail width + the same 24px gap used on the other edges */
+  /* Snaps so layout/layoutId can spring the frame; stage stays overflow
+     visible so the FLIP projection is not clipped mid-morph. */
   padding-left: calc(min(248px, 84vw) + 24px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ed-canvas {
-    transition: none;
-  }
 }
 .ed-stage {
   flex: 1;
@@ -360,13 +349,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  /* Visible so layout projection can overshoot the content box while
+     springing; the rail sits above on z-index. */
+  overflow: visible;
 }
 .ed-frame {
   position: relative;
   flex: none;
   overflow: hidden;
-  border-radius: 12px;
   border: 1px solid var(--ed-border-subtle);
   box-shadow: var(--ed-shadow-lg);
 }

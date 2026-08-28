@@ -2,13 +2,27 @@
    The slide renders LIVE (count-ups, staggers, the slide's animation mode
    all play, like in present mode). The shared dock pages the deck and
    carries speaker notes, Present, Presenter, and Export as… */
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStore, serializeDeck } from '../data/store';
 import { DeckCtx } from '../deck/DeckContext';
 import Dock from '../deck/Dock';
 import type { BrowseMode } from '../deck/SlideBrowser';
-import { STAGE_LAYOUT_ID, STAGE_LAYOUT_TRANSITION } from '../deck/stageLayout';
+import {
+  STAGE_LAYOUT_ID,
+  STAGE_LAYOUT_TRANSITION,
+  fitScaleForBox,
+  railCanvasPadding,
+  readStoredFit,
+  rememberFit,
+} from '../deck/stageLayout';
 import SlideView from '../slide/SlideView';
 import { NotesEditor } from './notes';
 import { exportPdf } from '../export/exporter';
@@ -94,34 +108,41 @@ export default function Canvas({
     },
   ];
 
+  const canvasRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [frame, setFrame] = useState({ vw: 1280, vh: 720, scale: 0.5 });
+  const railOpen = browse === 'rail';
+  const padLeft = railCanvasPadding(railOpen);
+  // Border-box only — independent of left padding, so the fit target can
+  // update in the same render as the rail toggle.
+  const [canvasBox, setCanvasBox] = useState({ w: 0, h: 0 });
   const liveCtx = useMemo(() => ({ clicks: 9999, isStatic: false }), []);
 
-  // Fit the slide to `.ed-stage`, which already sits inside canvas padding
-  // (and the rail inset when open). Measuring the outer canvas would count
-  // that padding twice and let the frame overflow to the right.
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
-    const update = () => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const scale = Math.min(
-        Math.max(1, el.clientWidth) / vw,
-        Math.max(1, el.clientHeight) / vh
-      );
-      setFrame({ vw, vh, scale: Math.max(0.05, scale) });
+  const frame = useMemo(() => {
+    const next =
+      canvasBox.w > 0
+        ? fitScaleForBox(canvasBox.w, canvasBox.h, padLeft)
+        : readStoredFit(railOpen);
+    rememberFit(next);
+    return next;
+  }, [padLeft, railOpen, canvasBox]);
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const syncBox = () => {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      setCanvasBox((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
     };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    window.addEventListener('resize', update);
+    syncBox();
+    const ro = new ResizeObserver(syncBox);
+    ro.observe(canvas);
+    window.addEventListener('resize', syncBox);
     return () => {
       ro.disconnect();
-      window.removeEventListener('resize', update);
+      window.removeEventListener('resize', syncBox);
     };
-  }, [browse]);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -241,7 +262,7 @@ export default function Canvas({
       }
       notesBtnRef={notesBtnRef}
       notesId={notesId}
-      notesSlot={
+      popoverSlot={
         notesOpen && slide ? (
           <div
             ref={notesPopRef}
@@ -277,11 +298,11 @@ export default function Canvas({
     />
   );
 
-  const canvasClass = 'ed-canvas' + (browse === 'rail' ? ' rail-open' : '');
+  const canvasClass = 'ed-canvas' + (railOpen ? ' rail-open' : '');
 
   if (!slide) {
     return (
-      <div className={canvasClass}>
+      <div className={canvasClass} ref={canvasRef}>
         <div className="ed-stage" ref={stageRef}>
           <div className="ed-empty">This deck has no slides.</div>
         </div>
@@ -290,17 +311,27 @@ export default function Canvas({
     );
   }
 
+  const frameW = frame.vw * frame.scale;
+  const frameH = frame.vh * frame.scale;
+
   return (
-    <div className={canvasClass}>
+    <div className={canvasClass} ref={canvasRef}>
       <div className="ed-stage" ref={stageRef}>
+        {/*
+          Size via style + layout/layoutId (not animate width/height).
+          Motion docs: layout changes belong on style/className; layout
+          springs the morph for sidebar and Present alike.
+        */}
         <motion.div
+          layout
           layoutId={STAGE_LAYOUT_ID}
           className="ed-frame"
-          transition={{ layout: STAGE_LAYOUT_TRANSITION }}
           style={{
-            width: frame.vw * frame.scale,
-            height: frame.vh * frame.scale,
+            width: frameW,
+            height: frameH,
+            borderRadius: 12,
           }}
+          transition={{ layout: STAGE_LAYOUT_TRANSITION }}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -310,6 +341,7 @@ export default function Canvas({
                 width: frame.vw,
                 height: frame.vh,
                 transform: `scale(${frame.scale})`,
+                transformOrigin: 'top left',
                 ['--inv' as never]: String(1 / Math.max(0.05, frame.scale)),
               }}
               initial={{ opacity: 0 }}

@@ -27,6 +27,7 @@ import {
   IconSidebar,
 } from './icons';
 import MenuButton, { type MenuButtonItem } from '../edit/MenuButton';
+import { useDockPopoverHost } from './dockPopoverContext';
 
 export type DockMode = 'editor' | 'editor-present' | 'audience';
 
@@ -98,6 +99,9 @@ export type DockProps = {
   onNotes?: () => void;
   notesBtnRef?: Ref<HTMLButtonElement | null>;
   notesId?: string;
+  /** Content anchored above the bar (notes, annotate, …). Follows dock drag. */
+  popoverSlot?: ReactNode;
+  /** @deprecated use popoverSlot */
   notesSlot?: ReactNode;
   onAnnotate?: () => void;
   onFullscreen?: () => void;
@@ -129,6 +133,7 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
     onNotes,
     notesBtnRef,
     notesId,
+    popoverSlot,
     notesSlot,
     onAnnotate,
     onFullscreen,
@@ -153,6 +158,8 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
   const dragOffset = useRef({ x: 0, y: 0 });
   const notesFallbackId = useId();
   const notesControlId = notesId ?? notesFallbackId;
+  const dockPopover = useDockPopoverHost();
+  const popover = popoverSlot ?? notesSlot;
 
   const applyFit = useCallback((next: Pos, el: HTMLElement) => {
     return clamp(next.left, next.top, el.offsetWidth, el.offsetHeight);
@@ -252,7 +259,12 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
           {toast}
         </span>
       )}
-      {notesSlot}
+      <div
+        className="noir-dock-popover"
+        ref={(node) => dockPopover?.setHost(node)}
+      >
+        {popover}
+      </div>
       <div className="noir-bar">
         <button
           type="button"

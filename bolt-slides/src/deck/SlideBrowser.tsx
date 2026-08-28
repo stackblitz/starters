@@ -25,6 +25,7 @@ import SlideView from '../slide/SlideView';
 import Thumb from './Thumb';
 import { IconClose } from './icons';
 import { useScrolled } from './deckHooks';
+import { STAGE_LAYOUT_TRANSITION } from './stageLayout';
 
 export type BrowseMode = 'none' | 'rail' | 'grid';
 
@@ -261,7 +262,13 @@ export default function SlideBrowser({
 
   return (
     <>
-      <aside className={'noir-rail' + (railOpen ? ' open' : '')} ref={railRef}>
+      <motion.aside
+        className={'noir-rail' + (railOpen ? ' open' : '')}
+        ref={railRef}
+        initial={false}
+        animate={{ x: railOpen ? 0 : '-100%' }}
+        transition={STAGE_LAYOUT_TRANSITION}
+      >
         <div className={'noir-rail-head' + (railScrolled ? ' scrolled' : '')}>
           <span className="noir-rail-title">Slides</span>
           <button
@@ -277,7 +284,7 @@ export default function SlideBrowser({
         <div className="noir-rail-list">
           {railOpen && wrap(false, thumbs(false))}
         </div>
-      </aside>
+      </motion.aside>
 
       <AnimatePresence>
         {gridOpen && (

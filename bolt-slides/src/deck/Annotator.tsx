@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useDockPopoverHost } from './dockPopoverContext';
 import {
   type Pt,
   type Stroke,
@@ -136,7 +138,6 @@ export default function Annotator({
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
   const [styleOpen, setStyleOpen] = useState(false);
-  const [drawingNow, setDrawingNow] = useState(false);
   // the ink never beats its slide in: it fades up once the slide's own
   // transition has finished, whatever that transition is
   const [inked, setInked] = useState(false);
@@ -527,7 +528,6 @@ export default function Annotator({
   }, [apply, schedule]);
 
   const endSession = useCallback(() => {
-    setDrawingNow(false);
     laserHeld.current = false;
     const base = eraseBase.current;
     eraseBase.current = null;
@@ -662,7 +662,6 @@ export default function Annotator({
     e.currentTarget.setPointerCapture?.(e.pointerId);
     setStyleOpen(false);
     const t = toolRef.current;
-    setDrawingNow(true);
     if (t === 'laser') {
       laserHeld.current = true;
       laser.current = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
@@ -735,6 +734,134 @@ export default function Annotator({
     tool === 'arrow' ||
     tool === 'rect' ||
     tool === 'ellipse';
+  const dockPopover = useDockPopoverHost();
+
+  const toolbar = active ? (
+    <div
+      className="ann-bar"
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <div className="ann-group" role="radiogroup" aria-label="Annotation tool">
+        {TOOLS.map((item) => (
+          <button
+            key={item.id}
+            className={'ann-btn' + (tool === item.id ? ' on' : '')}
+            data-tip={`${item.label} (${item.key})`}
+            role="radio"
+            aria-checked={tool === item.id}
+            aria-label={item.label}
+            onClick={() => setTool(item.id)}
+          >
+            <Ico d={item.path} />
+          </button>
+        ))}
+      </div>
+
+      <span className="ann-sep" />
+
+      <div className="ann-style">
+        <button
+          className={'ann-swatch' + (styleOpen ? ' on' : '')}
+          data-tip="Color & size"
+          aria-label="Color and size"
+          aria-expanded={styleOpen}
+          onClick={() => setStyleOpen((open) => !open)}
+        >
+          <span
+            className="ann-swatch-dot"
+            style={{
+              background: color,
+              width: Math.max(8, size + 4),
+              height: Math.max(8, size + 4),
+            }}
+          />
+        </button>
+        {styleOpen && (
+          <div className="ann-pop">
+            <div className="ann-pop-row">
+              {COLORS.map((swatch, index) => (
+                <button
+                  key={swatch}
+                  className={'ann-color' + (color === swatch ? ' on' : '')}
+                  style={{ background: swatch }}
+                  aria-label={`Color ${index + 1}`}
+                  aria-pressed={color === swatch}
+                  onClick={() => setColor(swatch)}
+                />
+              ))}
+            </div>
+            <div className="ann-pop-row ann-pop-sizes">
+              {SIZES.map((strokeSize) => (
+                <button
+                  key={strokeSize}
+                  className={'ann-size' + (size === strokeSize ? ' on' : '')}
+                  aria-label={`Size ${strokeSize}`}
+                  aria-pressed={size === strokeSize}
+                  onClick={() => setSize(strokeSize)}
+                >
+                  <span
+                    style={{
+                      width: strokeSize + 3,
+                      height: strokeSize + 3,
+                      background: color,
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+            <div className="ann-pop-hint">
+              {styleTool
+                ? '1–6 colors · [ ] size'
+                : 'Pick a drawing tool to use these'}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <span className="ann-sep" />
+
+      <button
+        className="ann-btn"
+        data-tip={canUndo ? 'Undo (⌘Z)' : undefined}
+        aria-label="Undo"
+        disabled={!canUndo}
+        onClick={undo}
+      >
+        <IconUndo />
+      </button>
+      <button
+        className="ann-btn"
+        data-tip={canRedo ? 'Redo (⇧⌘Z)' : undefined}
+        aria-label="Redo"
+        disabled={!canRedo}
+        onClick={redo}
+      >
+        <IconRedo />
+      </button>
+      <button
+        className="ann-btn"
+        data-tip={strokes.current.length ? 'Clear slide (⌫)' : undefined}
+        aria-label="Clear this slide"
+        disabled={!strokes.current.length}
+        onClick={clear}
+      >
+        <IconTrash />
+      </button>
+      {onDone && (
+        <>
+          <span className="ann-sep" />
+          <button
+            className="ann-btn ann-done"
+            data-tip="Done (D)"
+            aria-label="Exit drawing mode"
+            onClick={onDone}
+          >
+            <IconDone />
+          </button>
+        </>
+      )}
+    </div>
+  ) : null;
 
   return (
     <>
@@ -750,136 +877,8 @@ export default function Annotator({
         onPointerDown={down}
         onPointerMove={move}
       />
-      {active && (
-        <div
-          className={'ann-bar' + (drawingNow ? ' drawing' : '')}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <div
-            className="ann-group"
-            role="radiogroup"
-            aria-label="Annotation tool"
-          >
-            {TOOLS.map((t) => (
-              <button
-                key={t.id}
-                className={'ann-btn' + (tool === t.id ? ' on' : '')}
-                data-tip={`${t.label} (${t.key})`}
-                role="radio"
-                aria-checked={tool === t.id}
-                aria-label={t.label}
-                onClick={() => setTool(t.id)}
-              >
-                <Ico d={t.path} />
-              </button>
-            ))}
-          </div>
-
-          <span className="ann-sep" />
-
-          <div className="ann-style">
-            <button
-              className={'ann-swatch' + (styleOpen ? ' on' : '')}
-              data-tip="Color & size"
-              aria-label="Color and size"
-              aria-expanded={styleOpen}
-              onClick={() => setStyleOpen((v) => !v)}
-            >
-              <span
-                className="ann-swatch-dot"
-                style={{
-                  background: color,
-                  width: Math.max(8, size + 4),
-                  height: Math.max(8, size + 4),
-                }}
-              />
-            </button>
-            {styleOpen && (
-              <div className="ann-pop">
-                <div className="ann-pop-row">
-                  {COLORS.map((c, i) => (
-                    <button
-                      key={c}
-                      className={'ann-color' + (color === c ? ' on' : '')}
-                      style={{ background: c }}
-                      aria-label={`Color ${i + 1}`}
-                      aria-pressed={color === c}
-                      onClick={() => setColor(c)}
-                    />
-                  ))}
-                </div>
-                <div className="ann-pop-row ann-pop-sizes">
-                  {SIZES.map((s) => (
-                    <button
-                      key={s}
-                      className={'ann-size' + (size === s ? ' on' : '')}
-                      aria-label={`Size ${s}`}
-                      aria-pressed={size === s}
-                      onClick={() => setSize(s)}
-                    >
-                      <span
-                        style={{
-                          width: s + 3,
-                          height: s + 3,
-                          background: color,
-                        }}
-                      />
-                    </button>
-                  ))}
-                </div>
-                <div className="ann-pop-hint">
-                  {styleTool
-                    ? '1–6 colors · [ ] size'
-                    : 'Pick a drawing tool to use these'}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <span className="ann-sep" />
-
-          <button
-            className="ann-btn"
-            data-tip={canUndo ? 'Undo (⌘Z)' : undefined}
-            aria-label="Undo"
-            disabled={!canUndo}
-            onClick={undo}
-          >
-            <IconUndo />
-          </button>
-          <button
-            className="ann-btn"
-            data-tip={canRedo ? 'Redo (⇧⌘Z)' : undefined}
-            aria-label="Redo"
-            disabled={!canRedo}
-            onClick={redo}
-          >
-            <IconRedo />
-          </button>
-          <button
-            className="ann-btn"
-            data-tip={strokes.current.length ? 'Clear slide (⌫)' : undefined}
-            aria-label="Clear this slide"
-            disabled={!strokes.current.length}
-            onClick={clear}
-          >
-            <IconTrash />
-          </button>
-          {onDone && (
-            <>
-              <span className="ann-sep" />
-              <button
-                className="ann-btn ann-done"
-                data-tip="Done (D)"
-                aria-label="Exit drawing mode"
-                onClick={onDone}
-              >
-                <IconDone />
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      {toolbar &&
+        (dockPopover?.host ? createPortal(toolbar, dockPopover.host) : toolbar)}
     </>
   );
 }
