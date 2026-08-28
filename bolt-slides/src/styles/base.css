@@ -2083,10 +2083,11 @@ strong {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 7px 9px;
-  border-radius: 8px;
-  background: rgb(23 23 25 / 0.92);
-  border: 1px solid var(--ed-border);
+  padding: 6px 8px;
+  border-radius: 999px;
+  /* DS dark --bgTertiary (neutral[900]) — one step lighter than --bgSecondary */
+  background: color-mix(in srgb, var(--ed-bg-tertiary) 92%, transparent);
+  border: none;
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   box-shadow: var(--ed-shadow-lg);
@@ -2097,7 +2098,7 @@ strong {
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 6px;
+  border-radius: 50%;
   background: transparent;
   color: var(--ed-text);
   font-size: 18px;
@@ -2105,7 +2106,8 @@ strong {
   transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 .noir-icon-btn:hover {
-  background: var(--ed-util-hover);
+  /* DS dark --bgTertiaryHover (neutral[800]) */
+  background: var(--ed-bg-tertiary-hover);
 }
 .noir-icon-btn:disabled {
   opacity: 0.5;
@@ -2128,23 +2130,24 @@ strong {
   height: 1em;
 }
 .noir-grip {
-  width: 22px;
+  width: 32px;
   height: 32px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
   border: none;
   padding: 0;
-  border-radius: 6px;
+  border-radius: 50%;
   background: transparent;
-  color: var(--ed-text-faint);
+  /* DS dark --textSecondary (neutral[300]) — above faint icon gray */
+  color: var(--ed-text-muted);
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
 .noir-grip:hover {
   color: var(--ed-text);
-  background: var(--ed-util-hover);
+  background: var(--ed-bg-tertiary-hover);
 }
 .noir-grip:active {
   cursor: grabbing;
@@ -2155,9 +2158,9 @@ strong {
 }
 .noir-chip {
   height: 32px;
-  padding: 0 10px;
+  padding: 0 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   background: transparent;
   color: var(--ed-text);
   font: 500 12.5px/1 var(--font-ui);
@@ -2166,7 +2169,7 @@ strong {
 }
 .noir-chip:hover:not(:disabled),
 .noir-chip[aria-expanded='true'] {
-  background: var(--ed-util-hover);
+  background: var(--ed-bg-tertiary-hover);
 }
 .noir-chip:disabled {
   opacity: 0.5;
@@ -2214,7 +2217,7 @@ strong {
   -webkit-backdrop-filter: blur(26px) saturate(180%);
   font-family: var(--font-ui);
   transform: translateX(-100%);
-  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .noir-rail.open {
   transform: translateX(0);
