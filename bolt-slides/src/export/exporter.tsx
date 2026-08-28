@@ -238,7 +238,7 @@ async function rasterSlide(
             })
       )
     );
-    await sleep(240); // let canvases (globe) and charts paint
+    await sleep(240); // let charts paint
     await yieldToUi();
 
     await flattenClipText(mount, view);

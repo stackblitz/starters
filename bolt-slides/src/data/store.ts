@@ -135,14 +135,6 @@ interface Store extends AppState {
   duplicateSlide(id: string): void;
   deleteSlide(id: string): void;
   reorder(ids: string[]): void;
-
-  /* freeform canvas (unregistered; kept for a future rework): selected
-     item index on the current slide + a one-shot request to open the
-     chart data drawer. Used only by FreeformEditor. */
-  cnvSel: number | null;
-  setCnvSel(index: number | null): void;
-  cnvDataReq: boolean;
-  reqCnvData(value: boolean): void;
 }
 
 function applyEnvelope(
@@ -179,10 +171,6 @@ export const useStore = create<Store>((set, getState) => ({
   bootError: null,
   boltSlidesVersion: 1,
   boltSlidesId: null,
-  cnvSel: null,
-  setCnvSel: (index) => set({ cnvSel: index }),
-  cnvDataReq: false,
-  reqCnvData: (value) => set({ cnvDataReq: value }),
   deck: { title: '', transition: 'fade' },
   slides: [],
   current: 0,

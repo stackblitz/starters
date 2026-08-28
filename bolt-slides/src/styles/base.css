@@ -405,43 +405,6 @@ strong {
   line-height: 1.4;
 }
 
-/* ── Split — full-bleed feature section ─────────────────────────── */
-.split {
-  display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  width: 100%;
-  height: 100%;
-}
-.split-body {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: clamp(14px, 2vh, 22px);
-  padding: var(--gutter-y) clamp(28px, 5vw, 72px) var(--gutter-y) var(--gutter);
-}
-.split.flip .split-body {
-  order: 2;
-  padding: var(--gutter-y) var(--gutter) var(--gutter-y) clamp(28px, 5vw, 72px);
-}
-.split-media {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-left: 1px solid var(--hair-2);
-}
-.split.flip .split-media {
-  border-left: none;
-  border-right: 1px solid var(--hair-2);
-}
-.split-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
 /* ── Stat grid + card ───────────────────────────────────────────── */
 .stat-grid {
   display: grid;
@@ -965,72 +928,6 @@ strong {
   font-style: italic;
 }
 
-/* Browser frame */
-.bf {
-  width: 100%;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow),
-    inset 0 1px 0 color-mix(in srgb, var(--fg) 6%, transparent);
-}
-.bf-bar {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--hair-2);
-}
-.bf-dots {
-  display: flex;
-  gap: 7px;
-}
-.bf-dots i {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--hair);
-}
-.bf-nav {
-  display: flex;
-  gap: 2px;
-  color: var(--fg-faint);
-  opacity: 0.7;
-}
-.bf-nav svg {
-  width: 15px;
-  height: 15px;
-}
-.bf-url {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--fg-muted);
-  background: color-mix(in srgb, var(--bg) 60%, transparent);
-  border: 1px solid var(--hair-2);
-  border-radius: 999px;
-  padding: 6px 14px;
-}
-.bf-url svg {
-  width: 11px;
-  height: 11px;
-  color: var(--primary);
-  flex-shrink: 0;
-}
-.bf-body {
-  background: var(--bg);
-}
-.bf-body img {
-  display: block;
-  width: 100%;
-}
-
 /* Charts */
 .ch-bars {
   display: flex;
@@ -1153,61 +1050,6 @@ strong {
   font-size: 14px;
   color: var(--fg-muted);
   font-weight: 500;
-}
-
-/* Spotlight card (cursor-follow glow: interior bloom + border ring) */
-.spot {
-  border-radius: var(--radius-lg);
-  padding: clamp(24px, 2.6vw, 36px);
-  overflow: hidden;
-  transition: border-color var(--dur) var(--ease),
-    transform var(--dur) var(--ease);
-}
-.spot::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.35s var(--ease);
-  background: radial-gradient(
-    260px circle at var(--mx, 50%) var(--my, 50%),
-    color-mix(in srgb, var(--primary) 16%, transparent),
-    transparent 70%
-  );
-}
-.spot:hover {
-  border-color: color-mix(in srgb, var(--primary) 34%, transparent);
-  transform: translateY(-2px);
-}
-.spot:hover::after {
-  opacity: 1;
-}
-.spot > * {
-  position: relative;
-  z-index: 1;
-}
-.spot .spot-ring {
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  opacity: 0;
-  z-index: 0;
-  transition: opacity 0.35s var(--ease);
-  pointer-events: none;
-  background: radial-gradient(
-    200px circle at var(--mx, 50%) var(--my, 50%),
-    var(--primary),
-    transparent 72%
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-.spot:hover .spot-ring {
-  opacity: 1;
 }
 
 /* ═══ Slide layouts — Section / Quote / Pricing / Steps / Agenda / Team ═══ */
@@ -1678,107 +1520,6 @@ strong {
   border-bottom-left-radius: 5px;
 }
 
-/* Globe — 3D dotted globe (hand-built Canvas2D) + stat rows */
-/* no divider: the globe floats in space, unlike a Split's media panel
-   (!important beats the .split.flip and mobile border variants) */
-.globe-media {
-  border: none !important;
-}
-.globe-wrap {
-  position: relative;
-  width: min(88%, 64vh, 620px);
-  aspect-ratio: 1;
-}
-.globe-wrap canvas {
-  width: 100%;
-  height: 100%;
-  cursor: grab;
-  opacity: 0;
-  transition: opacity 1.2s var(--ease);
-  contain: layout paint size;
-}
-/* thumbnails get a cheap static disc instead of a WebGL context */
-.globe-static {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 34% 30%,
-    color-mix(in srgb, var(--fg) 22%, transparent),
-    color-mix(in srgb, var(--fg) 7%, transparent) 55%,
-    transparent 72%
-  );
-  border: 1px solid var(--hair-2);
-}
-/* DOM-bound marker labels — real text chips that ride the globe and fade
-   when their marker rotates behind it (positioned per-frame by the loop) */
-.globe-label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  pointer-events: none;
-  opacity: 0;
-  white-space: nowrap;
-  will-change: transform, opacity;
-}
-.globe-label-name {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: var(--fg);
-  background: color-mix(in srgb, var(--bg) 74%, transparent);
-  border: 1px solid var(--hair);
-  border-radius: 8px;
-  padding: 4px 9px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-.globe-label-val {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-radius: 8px;
-  padding: 5px 9px;
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--primary) 60%, transparent);
-}
-.globe-stats {
-  display: flex;
-  flex-direction: column;
-  margin-top: 6px;
-  max-width: 380px;
-}
-.globe-stat {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 2px;
-  border-bottom: 1px solid var(--hair-2);
-}
-.globe-stat:first-child {
-  border-top: 1px solid var(--hair-2);
-}
-.globe-stat-l {
-  color: var(--fg-muted);
-  font-size: clamp(13px, 1.4vw, 15px);
-}
-.globe-stat-v {
-  font-weight: 600;
-  font-feature-settings: 'tnum' 1;
-  font-size: clamp(18px, 1.9vw, 24px);
-  background: var(--accent);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 /* Team — people grid (photos or auto-initials) */
 .team {
   display: grid;
@@ -1834,37 +1575,14 @@ strong {
   margin-top: 3px;
 }
 
-/* ── Hover helpers ──────────────────────────────────────────────── */
-.lift {
-  transition: transform var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
-}
-.lift:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow), var(--glow);
-}
-
-/* ── Responsive utilities ───────────────────────────────────────────
-   .cols       equal columns that wrap on narrow screens (safe default grid)
-   .appmock    the sidebar+content shell for BrowserFrame app mocks
-   .hide-narrow  drop non-essential mock chrome (e.g. the sidebar) on phones */
+/* ── Responsive utilities ─────────────────────────────────────────── */
 .cols {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 20px;
   align-items: stretch;
 }
-.appmock {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-}
 @media (max-width: 640px) {
-  .appmock {
-    grid-template-columns: 1fr;
-  }
-  .hide-narrow {
-    display: none !important;
-  }
   /* charts shrink so stacked chart cards fit short phones (beats inline heights) */
   .ch-bars,
   .ch-line {
@@ -1955,22 +1673,6 @@ strong {
   .btile-fig {
     font-size: clamp(28px, 8vw, 44px);
   }
-  /* split: text sizes itself, media takes the remainder (and clips inside) */
-  .split {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .split.flip .split-body {
-    order: 0;
-  }
-  .split-media {
-    order: 2;
-    border-left: none;
-    border-top: 1px solid var(--hair-2);
-  }
-  .split.flip .split-media {
-    border-right: none;
-  }
   .cmp-cell {
     padding: 10px 10px;
     font-size: 13.5px;
@@ -2012,11 +1714,6 @@ strong {
     padding: 14px;
     gap: 8px;
   }
-  /* Globe: size by the stacked pane's HEIGHT so it never escapes it */
-  .globe-wrap {
-    width: auto;
-    height: min(90%, 78vw);
-  }
   /* Team: 2-up compact cards so 4 people fit one phone screen */
   .team {
     grid-template-columns: repeat(2, 1fr);
@@ -2032,16 +1729,6 @@ strong {
   }
   .cols {
     gap: 12px;
-  }
-}
-
-/* very narrow: simplify the dashboard mock so it fits a stacked Split half */
-@media (max-width: 480px) {
-  .dbars {
-    display: none;
-  }
-  .vframe {
-    gap: 11px;
   }
 }
 
@@ -3391,35 +3078,7 @@ strong {
   cursor: none !important;
 }
 
-/* ── TiltCard / Marquee / visual frame (shared with the other skills) ─ */
-.tilt-frame {
-  display: inline-block;
-  max-width: 100%;
-  perspective: 1100px;
-}
-.tilt {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
-  transform-style: preserve-3d;
-  will-change: transform;
-}
-.tilt-glare {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: var(--radius-lg);
-  background: radial-gradient(
-    60% 60% at var(--gx, 50%) var(--gy, 50%),
-    rgba(255, 255, 255, 0.16),
-    transparent 60%
-  );
-  opacity: 0;
-  transition: opacity 0.4s var(--ease);
-}
-.tilt-frame:hover .tilt-glare {
-  opacity: 1;
-}
+/* ── Marquee ─────────────────────────────────────────────────────── */
 .marquee {
   width: 100%;
   overflow: hidden;
@@ -3477,180 +3136,6 @@ strong {
     transform: translateX(-50%);
   }
 }
-.vframe {
-  padding: clamp(18px, 2vw, 24px);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow),
-    inset 0 1px 0 color-mix(in srgb, var(--fg) 6%, transparent);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  font-family: var(--font-body);
-}
-.vtitle {
-  font-size: 16.5px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--fg);
-}
-.vmeta {
-  font-size: 12.5px;
-  color: var(--fg-faint);
-  font-weight: 400;
-}
-.ddot {
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
-  background: var(--accent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 55%, transparent);
-}
-.dlive {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  color: var(--primary);
-  padding: 5px 11px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
-}
-.dlive span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-  animation: pulse 1.6s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-.dkpis {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-.dkpi {
-  background: var(--surface);
-  border: 1px solid var(--hair-2);
-  border-radius: var(--radius-sm);
-  padding: 12px 13px 10px;
-  overflow: hidden;
-}
-.dkpi-l {
-  font-size: 11.5px;
-  color: var(--fg-faint);
-  letter-spacing: 0.02em;
-}
-.dkpi-v {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  color: var(--fg);
-  margin: 3px 0 3px;
-  font-feature-settings: 'tnum' 1;
-}
-.dkpi-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-.dkpi-d {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--primary);
-  font-feature-settings: 'tnum' 1;
-}
-.dspark {
-  width: 50px;
-  height: 18px;
-  flex-shrink: 0;
-  overflow: visible;
-}
-.dspark path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-}
-.vframe.shown .dspark path {
-  animation: dash 1.2s var(--ease) 0.45s forwards;
-}
-.dgrid {
-  stroke: var(--hair-2);
-  stroke-width: 1;
-}
-.dbars {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 9px;
-  align-items: end;
-}
-.dbar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-.dbar-track {
-  width: 100%;
-  height: 42px;
-  border-radius: 6px;
-  background: var(--hair-2);
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-}
-.dbar-track span {
-  width: 100%;
-  border-radius: 6px;
-  background: var(--accent);
-  display: block;
-  transform: scaleY(0);
-  transform-origin: bottom;
-}
-.dbar-k {
-  font-size: 10px;
-  color: var(--fg-faint);
-}
-.dline {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-}
-.dfill-area {
-  opacity: 0;
-  transition: opacity 0.8s var(--ease) 0.5s;
-}
-.vframe.shown .dline {
-  animation: dash 1.5s var(--ease) 0.15s forwards;
-}
-.vframe.shown .dfill-area {
-  opacity: 1;
-}
-.vframe.shown .dbar-track span {
-  animation: bargrow 0.8s var(--ease-spring) both;
-}
-@keyframes dash {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes bargrow {
-  from {
-    transform: scaleY(0);
-  }
-  to {
-    transform: scaleY(1);
-  }
-}
-
 /* ── Responsive controls — declutter the dock on touch / small screens ─
    On touch there's no hover, so keep the dock fully visible; on phones,
    shrink it and drop the presenter-only tools (draw + presenter overlay). */
@@ -3698,7 +3183,6 @@ strong {
 @media (prefers-reduced-motion: reduce) {
   .slide-stage,
   .slide::before,
-  .lift,
   .marquee-track,
   .btile,
   .btile::after,
@@ -3707,33 +3191,14 @@ strong {
   .acc-plus::before,
   .acc-plus::after,
   .stat-card,
-  .spot,
-  .spot::after,
-  .spot .spot-ring,
   .tab,
   .ch-dot,
-  .ch-dot::before,
-  .dlive span {
+  .ch-dot::before {
     animation: none !important;
     transition: none !important;
   }
-  .tilt {
-    transform: none !important;
-  }
   .ch-dot {
     opacity: 1;
-  }
-  .dline,
-  .dspark path {
-    stroke-dashoffset: 0 !important;
-    animation: none !important;
-  }
-  .dfill-area {
-    opacity: 1;
-  }
-  .dbar-track span {
-    transform: scaleY(1) !important;
-    animation: none !important;
   }
   /* chrome too: panels, overlays and popovers appear instead of sliding */
   .noir-rail,
@@ -4597,147 +4062,6 @@ strong {
   font-feature-settings: 'tnum' 1;
   margin-bottom: 3px;
   white-space: nowrap;
-}
-
-/* ── freeform 'canvas' layout (unregistered; kept for a future rework) ── */
-.cnv {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-.cnv-item {
-  position: absolute;
-}
-.cnv-text {
-  width: 100%;
-  min-height: 100%;
-  /* the deck's heading font by DEFAULT — it changes visibly with every
-     pairing (body is Inter in half of them); opt into body via .body */
-  font-family: var(--font-head);
-  font-size: clamp(15px, 1.9vw, 30px);
-  line-height: 1.35;
-  color: var(--fg);
-}
-.cnv-text.head {
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.12;
-}
-.cnv-text.body {
-  font-family: var(--font-body);
-}
-.cnv-img {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-.cnv-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.cnv-box {
-  width: 100%;
-  height: 100%;
-  background: color-mix(in srgb, var(--primary) 13%, transparent);
-  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
-}
-.cnv-box.ellipse {
-  border-radius: 50%;
-}
-/* unified shapes: fill = accent glass, outline = accent stroke */
-.cnv-shp {
-  width: 100%;
-  height: 100%;
-}
-.cnv-shp.fill {
-  background: color-mix(in srgb, var(--primary) 20%, transparent);
-}
-.cnv-shp.outline {
-  background: transparent;
-  border: 2px solid color-mix(in srgb, var(--primary) 70%, var(--fg) 10%);
-}
-.cnv-shp-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-}
-.cnv-shp-svg.fill polygon {
-  fill: color-mix(in srgb, var(--primary) 20%, transparent);
-}
-.cnv-shp-svg.outline polygon {
-  fill: none;
-  stroke: color-mix(in srgb, var(--primary) 70%, var(--fg) 10%);
-  stroke-width: 2px;
-}
-/* lines: the bar is a thin center stripe of the frame; arrows are chevrons */
-.cnv-line2 {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-.cnv-line2-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: clamp(2px, 0.22vw, 4px);
-  transform: translateY(-50%);
-  border-radius: 99px;
-}
-.cnv-arr {
-  position: absolute;
-  top: 50%;
-  width: clamp(7px, 0.75vw, 13px);
-  height: clamp(7px, 0.75vw, 13px);
-  border-top: clamp(2px, 0.22vw, 4px) solid currentColor;
-  border-right: clamp(2px, 0.22vw, 4px) solid currentColor;
-}
-.cnv-arr.r {
-  right: 0;
-  transform: translate(15%, -50%) rotate(45deg);
-}
-.cnv-arr.l {
-  left: 0;
-  transform: translate(-15%, -50%) rotate(225deg);
-}
-/* chart items measure their frame and render the real chart components */
-.cnv-chart {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.cnv-chart > * {
-  width: 100%;
-}
-.cnv-box.tri {
-  border: none;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  background: color-mix(in srgb, var(--primary) 20%, transparent);
-}
-.cnv-line {
-  width: 100%;
-  height: 100%;
-  background: var(--accent);
-  border-radius: 99px;
-}
-.cnv-tbl {
-  max-width: none;
-  width: 100%;
-}
-.cnv-cmp {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-.cnv-cmp .cmp {
-  max-width: none;
 }
 
 /* ── Share links + the password gate ───────────────────────────────── */
