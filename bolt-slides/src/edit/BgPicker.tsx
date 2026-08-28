@@ -3,7 +3,7 @@
    backgrounds inside layout fields. "none" means the theme --bg surface. */
 import type { Background } from '../data/types';
 
-export const GRADIENTS: { from: string; to: string }[] = [
+const GRADIENTS: { from: string; to: string }[] = [
   { from: '#0a0f1e', to: '#12325e' },
   { from: '#0b1026', to: '#3b2f8f' },
   { from: '#04121f', to: '#0e4f63' },
@@ -22,7 +22,7 @@ export const GRADIENTS: { from: string; to: string }[] = [
    row squeezed a native slider between a flex-1 label and the panel edge, so
    it barely moved and read as broken. Shared by slide backgrounds and by the
    layouts that carry their own full-bleed image. */
-export function DimSlider({
+function DimSlider({
   value,
   onChange,
   label = 'Dim',
@@ -178,14 +178,4 @@ export default function BgPicker({
       )}
     </div>
   );
-}
-
-/** CSS background value for a color/gradient/theme Background (no image) */
-export function bgCss(bg: Background | undefined): string | undefined {
-  if (!bg) return undefined;
-  if (bg.type === 'none') return 'var(--bg)';
-  if (bg.type === 'color') return bg.color;
-  if (bg.type === 'gradient')
-    return `linear-gradient(${bg.angle ?? 135}deg, ${bg.from}, ${bg.to})`;
-  return undefined;
 }

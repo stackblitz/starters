@@ -19,9 +19,6 @@ import {
   withStrokeBoxCache,
 } from './annotationInk';
 
-export type { Stroke, Tool } from './annotationInk';
-export { loadAnnotations } from './annotationInk';
-
 /* Annotation layer: a full-screen canvas + a floating tool bar.
    Tools: pen, highlighter, laser, line, arrow, rectangle, ellipse, eraser.
    Strokes are stored as data (per slide, in `store`) so they PERSIST on the

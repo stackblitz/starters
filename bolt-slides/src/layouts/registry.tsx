@@ -46,8 +46,6 @@ export function resolveLayoutType(raw: unknown): string {
   return LAYOUT_ALIASES[name] ?? LAYOUT_ALIASES[name.toLowerCase()] ?? name;
 }
 
-export const LAYOUT_LIST = Object.values(LAYOUTS);
-
 /* add-slide modal grouping — order here is display order */
 export const LAYOUT_GROUPS: { title: string; types: string[] }[] = [
   {

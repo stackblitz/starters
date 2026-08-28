@@ -970,13 +970,15 @@ function InsertBar({ onAdd }: { onAdd: (it: CnvItem) => void }) {
   );
 }
 
+const EMPTY_ITEMS: CnvItem[] = [];
+
 export default function FreeformCanvas({ slide }: { slide: SlideData }) {
   const { editable, slideId } = useEdit();
   const { isStatic } = useDeck();
   const setProp = useStore((s) => s.setProp);
   const items: CnvItem[] = Array.isArray(slide.props.items)
     ? slide.props.items
-    : [];
+    : EMPTY_ITEMS;
 
   const rootRef = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<number | null>(null);
@@ -1332,7 +1334,7 @@ export default function FreeformCanvas({ slide }: { slide: SlideData }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [editable, sel, editing, dataEdit, items]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editable, sel, editing, dataEdit, items]); // eslint-disable-line react-hooks/exhaustive-deps -- quarantined; omit commit/setSel
 
   /* ── context menus ───────────────────────────────────────────────── */
   const pctAt = (cx: number, cy: number) => {

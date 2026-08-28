@@ -65,7 +65,7 @@ export const useShow = () => {
 };
 
 /** "$1.24M" → CountUp fields; null when the string isn't a plain figure */
-export function parseCountable(v: string | undefined) {
+function parseCountable(v: string | undefined) {
   if (!v || v.length > 16) return null;
   const m = v.match(/^([^0-9-]{0,4})(-?[\d,]+(?:\.\d+)?)([^0-9]{0,6})$/);
   if (!m) return null;

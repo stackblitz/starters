@@ -23,16 +23,12 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
-      /* Surfaces single-letter locals for Round 1 naming; keep as warn so
-         the first lint pass can land without a mass rename. */
-      'id-length': [
-        'warn',
-        {
-          min: 2,
-          exceptions: ['_', 'i', 'j', 'k', 'x', 'y'],
-          properties: 'never',
-        },
-      ],
     },
+  },
+  /* Layout catalogs export schema + Render functions, not Fast Refresh
+     boundaries. Same kit as bolt-vite-react-ts otherwise. */
+  {
+    files: ['src/layouts/**/*.{ts,tsx}'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   }
 );

@@ -260,7 +260,7 @@ export function DonutChart({
 /* Grouped bars — multi-series comparison with a y-axis and legend.
    <GroupedBarChart categories={['Q1','Q2']} series={[{label:'2024',values:[10,20]},…]} />
    Token-driven: first series takes the accent, later ones step down in ink. */
-export const SERIES_COLORS = [
+const SERIES_COLORS = [
   'var(--primary)',
   'color-mix(in srgb, var(--primary) 45%, var(--fg-muted))',
   'color-mix(in srgb, var(--fg-muted) 60%, transparent)',

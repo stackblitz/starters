@@ -16,7 +16,7 @@ const seed = seedJson as DeckFile;
 
 /* set a deep value in a plain-JSON object via "items.0.title" paths */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function setPath(obj: any, path: string, value: unknown): any {
+function setPath(obj: any, path: string, value: unknown): any {
   const clone = structuredClone(obj);
   const keys = path.split('.');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

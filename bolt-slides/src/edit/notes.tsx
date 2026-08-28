@@ -8,9 +8,6 @@ import {
 import type { ReactNode } from 'react';
 import { htmlToNotes, notesToHtml } from './notesFormat';
 
-export type { Block } from './notesFormat';
-export { htmlToNotes, notesToHtml, NotesView, parseNotes } from './notesFormat';
-
 /* Speaker notes — authored in the studio popover as a WYSIWYG. Markup
    parse / HTML convert / read-only view live in notesFormat.tsx. */
 
@@ -112,15 +109,15 @@ export function NotesEditor({
     if (r) setPalette({ x: r.left, y: r.bottom + 8 });
   };
 
-  // set HTML before focusing so the later sync effect doesn't skip a blank editor
+  // Seed HTML once on mount so autoFocus can land on real content. Later
+  // value changes go through the sync effect, which skips while focused.
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     el.innerHTML = notesToHtml(value);
     setEmpty(!value.trim());
-    // mount-only: outside value changes still flow through the sync effect
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoFocus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount seed; do not overwrite focused edits
+  }, []);
 
   useEffect(() => {
     if (!autoFocus) return;

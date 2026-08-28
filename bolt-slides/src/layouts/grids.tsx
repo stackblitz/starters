@@ -23,7 +23,7 @@ import {
   Heading,
   pipe,
 } from './shared';
-import { bgCss } from '../edit/BgPicker';
+import { bgCss } from '../edit/bgCss';
 
 /* layout components type text props as string but only ever render them —
    this lets us hand them editable <T> elements instead */

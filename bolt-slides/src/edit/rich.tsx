@@ -15,13 +15,12 @@ const TOKEN =
   /(==[^=]+==|\*\*[^*]+\*\*|\+\+[^+]+\+\+|~~[^~]+~~|_[^_]+_|\{c:[^}]+\}[\s\S]+?\{\/c\}|\{s:[^}]+\}[\s\S]+?\{\/s\})/g;
 
 /* whole-field alignment: a `{a:l|c|r}` prefix on the stored string */
-export const ALIGN_RE = /\{a:([lcr])\}/;
 export const ALIGNS: Record<string, 'left' | 'center' | 'right'> = {
   l: 'left',
   c: 'center',
   r: 'right',
 };
-export function splitAlign(text: string): {
+function splitAlign(text: string): {
   align: 'l' | 'c' | 'r' | null;
   rest: string;
 } {

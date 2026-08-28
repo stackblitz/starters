@@ -642,8 +642,7 @@ const ChartDef: LayoutDef = {
       if (kind === 'lines' && !linesData.length)
         setProp(slideId, 'lines', structuredClone(ChartDef.defaults.lines));
       // props identity: re-seed if a racing load() clobbered the write
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editable, slideId, kind, slide.props]);
+    }, [editable, slideId, kind, slide.props, setProp]);
     const large = !!slide.props.large;
     const showValues = slide.props.values !== false; // on by default
     const bars = (
@@ -948,8 +947,7 @@ const InsightDef: LayoutDef = {
         setProp(slideId, 'donutValue', 64);
         setProp(slideId, 'donutLabel', p.donutLabel ?? 'The headline figure');
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editable, slideId, kind, slide.props]);
+    }, [editable, slideId, kind, slide.props, setProp]);
     const bars = (
       (slide.props.bars ?? []) as { label: string; value: number | string }[]
     ).map((b) => ({ label: b.label, value: Number(b.value) || 0 }));

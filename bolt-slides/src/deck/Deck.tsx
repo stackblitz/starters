@@ -8,7 +8,8 @@ import {
 import type { SlideData } from '../data/types';
 import SlideView from '../slide/SlideView';
 import { DeckCtx } from './DeckContext';
-import Annotator, { loadAnnotations, type Stroke } from './Annotator';
+import Annotator from './Annotator';
+import { loadAnnotations, type Stroke } from './annotationInk';
 import Thumb from './Thumb';
 import Presenter from './Presenter';
 import {

@@ -2,7 +2,7 @@
    theme's --font-head/--font-body variables and injecting one stylesheet
    link. 'inter' is the bundled default (imported in base.css). */
 
-export interface FontPairing {
+interface FontPairing {
   id: string;
   label: string;
   head: string;
@@ -18,7 +18,7 @@ const g = (families: string[]) =>
     .join('&') +
   '&display=swap';
 
-export const FONTS: FontPairing[] = [
+const FONTS: FontPairing[] = [
   { id: 'inter', label: 'Inter', head: 'Inter', body: 'Inter' },
   {
     id: 'space',

@@ -66,10 +66,6 @@ const pipe = (s: unknown): string[] =>
     .map((x) => x.trim())
     .filter((x) => x !== '');
 
-export function hasDataSheet(slide: SlideData): boolean {
-  return ['chart', 'insight', 'table', 'comparison'].includes(slide.layout);
-}
-
 export default function LayoutDataSheet({
   slide,
   onClose,

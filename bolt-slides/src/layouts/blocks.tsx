@@ -147,8 +147,7 @@ const ComparisonDef: LayoutDef = {
       const t = normCmp(slide.props);
       setProp(slideId, 'cols', t.cols);
       setProp(slideId, 'rows', t.rows);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editable, slideId, legacy, slide.props]);
+    }, [editable, slideId, legacy, slide.props, setProp]);
     const data = normCmp(slide.props);
     const canEdit = editable && !legacy;
     return (
@@ -218,8 +217,7 @@ const TableDef: LayoutDef = {
       setProp(slideId, 'columns', t.columns);
       setProp(slideId, 'rows', t.rows);
       // props identity: re-migrate if a racing load() clobbered the write
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editable, slideId, legacy, slide.props]);
+    }, [editable, slideId, legacy, slide.props, setProp]);
     const { columns, rows } = normTable(slide.props);
     const canEdit = editable && !legacy; // cell paths are valid post-migration
     const labels = show(slide.props.labelLeft) && (
