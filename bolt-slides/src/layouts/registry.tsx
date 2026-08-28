@@ -10,6 +10,7 @@ import { blockLayouts } from './blocks';
 import { mediaLayouts } from './media';
 /* freeformLayouts (type 'canvas') is intentionally omitted — the files
    stay in the repo for a future rework. Do not wire it back in here. */
+const QUARANTINED_LAYOUTS = new Set(['canvas']);
 
 export type { LayoutDef, FieldSpec } from './shared';
 
@@ -18,6 +19,12 @@ export const LAYOUTS: Record<string, LayoutDef> = Object.fromEntries(
     (l) => [l.type, l]
   )
 );
+
+for (const type of QUARANTINED_LAYOUTS) {
+  if (type in LAYOUTS) {
+    throw new Error(`${type} is quarantined — do not register it`);
+  }
+}
 
 function aliasKeys(type: string): string[] {
   const kebab = type.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase());
@@ -80,7 +87,16 @@ export const LAYOUT_GROUPS: { title: string; types: string[] }[] = [
 ];
 
 export function RenderLayout({ slide }: { slide: SlideData }) {
-  const def = LAYOUTS[resolveLayoutType(slide.layout)];
+  const type = resolveLayoutType(slide.layout);
+  if (QUARANTINED_LAYOUTS.has(type)) {
+    return (
+      <div className="slide center">
+        <div className="kicker">Unavailable</div>
+        <h2 className="headline">Freeform is not in this build</h2>
+      </div>
+    );
+  }
+  const def = LAYOUTS[type];
   if (!def) {
     return (
       <div className="slide center">

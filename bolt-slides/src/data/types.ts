@@ -53,6 +53,7 @@ export interface SlideData {
   id: string;
   position: number;
   layout: string;
+  /* Per-layout shape; stay `any` until layouts share a discriminated union. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props: any;
   background: Background;

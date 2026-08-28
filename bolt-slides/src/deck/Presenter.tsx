@@ -3,7 +3,7 @@ import type { SlideData } from '../data/types';
 import SlideView from '../slide/SlideView';
 import Thumb from './Thumb';
 import type { DeckCtxValue } from './DeckContext';
-import { NotesView } from '../edit/notes';
+import { NotesView } from '../edit/notesFormat';
 import { IconLeft, IconRight, IconClose } from './icons';
 
 function renderSlide(slide: SlideData) {

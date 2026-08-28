@@ -25,8 +25,7 @@ export interface FieldSpec {
   /** list kind: fields per item (paths relative to the item) */
   item?: FieldSpec[];
   /** list kind: template for a newly added item */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  blank?: any;
+  blank?: unknown;
   hint?: string;
   /** keep this text field in the inspector even though text is normally
       canvas-edited (pipe-string tables, code, values not wrapped in T) */
@@ -35,16 +34,14 @@ export interface FieldSpec {
       edits it as a plain input — no rich toolbar, no marker handling */
   plain?: boolean;
   /** show this field only when relevant (e.g. per chart kind) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  when?: (props: any) => boolean;
+  when?: (props: Record<string, unknown>) => boolean;
 }
 
 export interface LayoutDef {
   type: string;
   label: string;
   hint: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  defaults: any;
+  defaults: Record<string, unknown>;
   fields: FieldSpec[];
   Render: (p: { slide: SlideData }) => ReactNode;
 }
