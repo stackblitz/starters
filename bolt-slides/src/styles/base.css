@@ -51,6 +51,12 @@ body {
   }
 }
 
+/* Slide surface — always opaque theme fill so thumbs / studio / present
+   match when background is none or missing (chrome must never show through). */
+.slide-view {
+  background: var(--bg);
+}
+
 /* ── A slide = one full-viewport screen. Content is RESPONSIVE: it
    reflows to the viewport (no fixed canvas, no scaling/clipping). ──── */
 .slide {

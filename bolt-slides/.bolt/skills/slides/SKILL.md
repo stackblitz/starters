@@ -55,7 +55,8 @@ uuid (`crypto.randomUUID()` or equivalent) and write the file. Keep
    deck. Keep `boltSlidesId` once it exists.
 
 `props` and the other slide fields follow **Deck JSON** below.
-`position` is 0-based. Defaults: `background` `{"type":"none"}`,
+`position` is 0-based. Always set `background` on every slide (never omit).
+Default: `background` `{"type":"color","color":"var(--bg)"}`,
 `animation` `cascade`, `status` `none`, `transition` `null`, `nav`
 `null`, `notes` `""`.
 
@@ -91,7 +92,7 @@ Repo-root `deck.json`:
                                  // text size — for sparse slides like pricing)
       "animation": "cascade",    // cascade | rise | fade | zoom | none
       "transition": "zoom",      // optional per-slide override (or null to inherit)
-      "background": { "type": "gradient", "from": "#141e30", "to": "#243b55", "angle": 160 },
+      "background": { "type": "color", "color": "var(--bg)" },
       "nav": null,
       "notes": "Open with the hook.",   // speaker notes (presenter console)
       "status": "draft"          // optional review state: none (default) |
@@ -110,12 +111,17 @@ needed — layouts already align deliberately). Markers nest across types. Disci
 custom colors and sizes are for rare, deliberate moments — the theme does the
 typography.
 
-**Backgrounds**: `{"type":"none"}` (default — the themed atmosphere),
+**Backgrounds** — always set on every slide (studio, thumbs, and present share
+the same opaque surface; never leave the field off):
+`{"type":"color","color":"var(--bg)"}` (default — theme surface; follows
+`tokens.css`),
 `{"type":"color","color":"#0b1020"}`,
 `{"type":"gradient","from":"#…","to":"#…","angle":160}`,
-`{"type":"image","url":"https://…","dim":0.45}` (dim 0–0.85 keeps text legible).
-Most slides should stay `none`; save backgrounds for moments (a section break,
-a photo cover). Photos: `https://images.unsplash.com/...?w=1600&q=80`.
+`{"type":"image","url":"https://…","dim":0.45}` (dim 0–0.85 keeps text legible),
+`{"type":"none"}` (legacy alias for the theme surface — prefer `color` +
+`var(--bg)` in new decks). Most slides use `var(--bg)`; save gradient / image
+for moments (a section break, a photo cover). Photos:
+`https://images.unsplash.com/...?w=1600&q=80`.
 
 **Animation** is per-slide and user-changeable later — pick deliberately:
 `cascade` (default — the layout's designed staggers) for almost everything;

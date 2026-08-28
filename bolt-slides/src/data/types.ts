@@ -1,6 +1,8 @@
 /* The deck as data. Canonical store is repo-root deck.json; `props` is the
    layout-specific payload rendered by src/layouts/registry.tsx. */
 
+/* none = theme --bg (opaque). Prefer color with "var(--bg)" in new decks so
+   every slide carries an explicit background value. */
 export type Background =
   | { type: 'none' }
   | { type: 'color'; color: string }

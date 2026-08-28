@@ -57,6 +57,7 @@ function coerceSlide(raw: SlideData): SlideData {
   return {
     ...rest,
     layout: String(s.layout || s.type || '').trim(),
+    background: s.background ?? { type: 'color', color: 'var(--bg)' },
   };
 }
 

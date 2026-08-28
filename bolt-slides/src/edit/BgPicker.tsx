@@ -1,6 +1,6 @@
-/* BgPicker — reusable background control: none / color / gradient (+ image
+/* BgPicker — reusable background control: theme / color / gradient (+ image
    where allowed). Drives the slide background in the Design tab and per-card
-   backgrounds inside layout fields. */
+   backgrounds inside layout fields. "none" means the theme --bg surface. */
 import type { Background } from '../data/types';
 
 export const GRADIENTS: { from: string; to: string }[] = [
@@ -63,7 +63,7 @@ export default function BgPicker({
   value,
   onChange,
   image = false,
-  noneLabel = 'none',
+  noneLabel = 'theme',
 }: {
   value: Background | undefined;
   onChange: (b: Background) => void;
@@ -71,7 +71,7 @@ export default function BgPicker({
   image?: boolean;
   noneLabel?: string;
 }) {
-  const bg = value ?? { type: 'none' };
+  const bg = value ?? { type: 'color', color: 'var(--bg)' };
   const modes = (
     image
       ? ['none', 'color', 'gradient', 'image']
@@ -89,7 +89,7 @@ export default function BgPicker({
               if (t === 'color')
                 onChange({
                   type: 'color',
-                  color: bg.type === 'color' ? bg.color : '#101623',
+                  color: bg.type === 'color' ? bg.color : 'var(--bg)',
                 });
               if (t === 'gradient')
                 onChange({
@@ -180,9 +180,10 @@ export default function BgPicker({
   );
 }
 
-/** CSS background value for a color/gradient Background (no image) */
+/** CSS background value for a color/gradient/theme Background (no image) */
 export function bgCss(bg: Background | undefined): string | undefined {
   if (!bg) return undefined;
+  if (bg.type === 'none') return 'var(--bg)';
   if (bg.type === 'color') return bg.color;
   if (bg.type === 'gradient')
     return `linear-gradient(${bg.angle ?? 135}deg, ${bg.from}, ${bg.to})`;

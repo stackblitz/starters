@@ -15,7 +15,7 @@
         "subtitle": "One sharp sentence on what this deck argues.",
         "foot": "August 2026 · Your name"
       },
-      "background": { "type": "none" },
+      "background": { "type": "color", "color": "var(--bg)" },
       "animation": "cascade",
       "transition": null,
       "nav": null,
@@ -31,7 +31,7 @@
         "title": "Say the ==one thing== this slide exists to say.",
         "body": ""
       },
-      "background": { "type": "none" },
+      "background": { "type": "color", "color": "var(--bg)" },
       "animation": "cascade",
       "transition": null,
       "nav": null,
@@ -48,7 +48,7 @@
         "caption": "moves through this problem every year",
         "foot": "Source: —"
       },
-      "background": { "type": "none" },
+      "background": { "type": "color", "color": "var(--bg)" },
       "animation": "cascade",
       "transition": null,
       "nav": null,
@@ -68,7 +68,7 @@
           { "title": "The ask" }
         ]
       },
-      "background": { "type": "none" },
+      "background": { "type": "color", "color": "var(--bg)" },
       "animation": "cascade",
       "transition": null,
       "nav": null,

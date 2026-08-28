@@ -11,8 +11,12 @@ import { EditCtx } from '../edit/EditContext';
 import { RenderLayout } from '../layouts/registry';
 
 function BackgroundLayer({ bg }: { bg: Background | undefined }) {
-  if (!bg || bg.type === 'none') return null;
   const base = { position: 'absolute', inset: 0, zIndex: 0 } as const;
+  /* none / missing → theme surface so studio canvas, thumbs, and present
+     never show chrome through a transparent slide */
+  if (!bg || bg.type === 'none') {
+    return <div aria-hidden style={{ ...base, background: 'var(--bg)' }} />;
+  }
   if (bg.type === 'color')
     return <div aria-hidden style={{ ...base, background: bg.color }} />;
   if (bg.type === 'gradient') {
