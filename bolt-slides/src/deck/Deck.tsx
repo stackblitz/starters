@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AnimatePresence,
   MotionConfig,
@@ -6,32 +6,23 @@ import {
   type Variants,
 } from 'motion/react';
 import type { SlideData } from '../data/types';
+import { useStore } from '../data/store';
+import { isPresenterRoute } from '../data/shell';
 import SlideView from '../slide/SlideView';
 import { DeckCtx } from './DeckContext';
 import Annotator from './Annotator';
 import { loadAnnotations, type Stroke } from './annotationInk';
-import Thumb from './Thumb';
 import Presenter from './Presenter';
+import Dock from './Dock';
+import SlideBrowser from './SlideBrowser';
 import {
   useDeckBroadcastSync,
   useDeckHashSync,
   useDeckKeyboard,
   useFullscreenState,
   useIdleCursorNearDock,
-  useScrolled,
   useStageEntrance,
 } from './deckHooks';
-import {
-  IconGrid,
-  IconSidebar,
-  IconLeft,
-  IconRight,
-  IconPencil,
-  IconExpand,
-  IconShrink,
-  IconPresent,
-  IconClose,
-} from './icons';
 
 /* ── The paged presentation engine + the Slidev-style chrome (dock, side
    panel, grid overview). Pass `slides` as data; Deck renders each SlideView.
@@ -98,14 +89,12 @@ export default function Deck({
   onExit?: (slideIndex: number) => void;
 }) {
   const slideCount = slides.length;
+  const mutable = !!onExit;
   const isPresenter = useMemo(
-    () =>
-      allowPresenter &&
-      new URLSearchParams(window.location.search).has('presenter'),
+    () => allowPresenter && isPresenterRoute(),
     [allowPresenter]
   );
   const canOpenPresenter = allowPresenter && !isPresenter;
-  const presenterTip = 'Presenter — new tab (P)';
 
   const [slideIndex, setSlideIndex] = useState(() => {
     if (initialSlide != null)
@@ -135,7 +124,8 @@ export default function Deck({
 
   const { stageIn, setStageIn } = useStageEntrance(slideIndex);
   const { isFullscreen, toggleFullscreen } = useFullscreenState();
-  const { nearDock, cursorIdle } = useIdleCursorNearDock();
+  const dockRef = useRef<HTMLDivElement>(null);
+  const { nearDock, cursorIdle } = useIdleCursorNearDock(dockRef);
 
   // per-slide build maxima (so going back restores the right click state) and
   // per-slide annotations (so drawings persist on the slide they were made).
@@ -143,8 +133,6 @@ export default function Deck({
   const annotationsBySlide = useRef<Record<number, Stroke[]>>(
     loadAnnotations()
   );
-  const railRef = useRef<HTMLElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
   const slideIndexRef = useRef(slideIndex);
   slideIndexRef.current = slideIndex;
 
@@ -157,14 +145,22 @@ export default function Deck({
     setBuildMax((prev) => Math.max(prev, at));
   }, []);
 
+  const syncStoreCurrent = useCallback(
+    (index: number) => {
+      if (mutable) useStore.getState().setCurrent(index);
+    },
+    [mutable]
+  );
+
   const go = useCallback(
     (index: number) => {
       const nextIndex = Math.max(0, Math.min(slideCount - 1, index));
       setSlideIndex(nextIndex);
       setClicks(0);
       setBuildMax(buildMaxBySlide.current[nextIndex] || 0);
+      syncStoreCurrent(nextIndex);
     },
-    [slideCount]
+    [slideCount, syncStoreCurrent]
   );
   const next = useCallback(() => {
     if (clicks < buildMax) {
@@ -176,8 +172,9 @@ export default function Deck({
       setSlideIndex(nextIndex);
       setClicks(0);
       setBuildMax(buildMaxBySlide.current[nextIndex] || 0);
+      syncStoreCurrent(nextIndex);
     }
-  }, [clicks, buildMax, slideIndex, slideCount]);
+  }, [clicks, buildMax, slideIndex, slideCount, syncStoreCurrent]);
   const prev = useCallback(() => {
     if (clicks > 0) {
       setClicks(clicks - 1);
@@ -189,8 +186,17 @@ export default function Deck({
       setSlideIndex(prevIndex);
       setClicks(restoredBuilds);
       setBuildMax(restoredBuilds);
+      syncStoreCurrent(prevIndex);
     }
-  }, [clicks, slideIndex]);
+  }, [clicks, slideIndex, syncStoreCurrent]);
+
+  useEffect(() => {
+    if (!mutable) return;
+    const storeCurrent = useStore.getState().current;
+    if (storeCurrent !== slideIndex && slides[storeCurrent]) go(storeCurrent);
+    else if (!slides[slideIndex] && slides.length)
+      go(Math.min(slideIndex, slides.length - 1));
+  }, [slides, mutable, slideIndex, go]);
 
   const openPresenter = useCallback(() => {
     window.open(`/?presenter=1#${slideIndex + 1}`, 'deck-presenter');
@@ -228,9 +234,6 @@ export default function Deck({
     setSlideIndex,
     setClicks,
   });
-
-  const railScrolled = useScrolled(railRef, railOpen);
-  const gridScrolled = useScrolled(gridRef, gridOpen);
 
   const liveCtx = useMemo(
     () => ({ clicks, isStatic: false, registerMax }),
@@ -310,181 +313,37 @@ export default function Deck({
           />
         )}
 
-        <aside
-          className={'noir-rail' + (railOpen ? ' open' : '')}
-          ref={railRef}
-        >
-          <div className={'noir-rail-head' + (railScrolled ? ' scrolled' : '')}>
-            <span className="noir-rail-title">Slides</span>
-            <button
-              className="noir-icon-btn sm"
-              data-tip="Close"
-              aria-label="Close the slide panel"
-              onClick={closeBrowse}
-            >
-              <IconClose />
-            </button>
-          </div>
-          {/* picking a slide does NOT close the panel — it stays open so you can
-              keep browsing; close it deliberately (button, S, Esc). */}
-          <div className="noir-rail-list">
-            {railOpen &&
-              slides.map((slide, i) => (
-                <button
-                  key={slide.id}
-                  className={'noir-thumb' + (i === slideIndex ? ' active' : '')}
-                  aria-label={`Go to slide ${i + 1}${
-                    navLabel?.(i) ? ' — ' + navLabel(i) : ''
-                  }`}
-                  aria-current={i === slideIndex ? 'true' : undefined}
-                  onClick={() => go(i)}
-                >
-                  <span className="noir-thumb-no">{i + 1}</span>
-                  <Thumb>{renderSlide(slide)}</Thumb>
-                </button>
-              ))}
-          </div>
-        </aside>
+        <SlideBrowser
+          slides={slides}
+          current={slideIndex}
+          browse={browse}
+          mutable={mutable}
+          navLabel={navLabel}
+          onGo={go}
+          onClose={closeBrowse}
+        />
 
-        {/* Grid overview — a full-screen picker; it covers the slide, so
-            choosing one closes it. */}
-        <AnimatePresence>
-          {gridOpen && (
-            <motion.div
-              className="noir-grid"
-              ref={gridRef}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-            >
-              <div
-                className={'noir-grid-head' + (gridScrolled ? ' scrolled' : '')}
-              >
-                <span className="noir-rail-title">
-                  All slides · {slideCount}
-                </span>
-                <button
-                  className="noir-icon-btn sm"
-                  data-tip="Close"
-                  aria-label="Close the grid overview"
-                  onClick={closeBrowse}
-                >
-                  <IconClose />
-                </button>
-              </div>
-              <div className="noir-grid-list">
-                {slides.map((slide, i) => (
-                  <button
-                    key={slide.id}
-                    className={
-                      'noir-thumb noir-thumb-grid' +
-                      (i === slideIndex ? ' active' : '')
-                    }
-                    aria-label={`Go to slide ${i + 1}${
-                      navLabel?.(i) ? ' — ' + navLabel(i) : ''
-                    }`}
-                    aria-current={i === slideIndex ? 'true' : undefined}
-                    onClick={() => {
-                      go(i);
-                      closeBrowse();
-                    }}
-                  >
-                    <Thumb>{renderSlide(slide)}</Thumb>
-                    <span className="noir-thumb-no">{i + 1}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className={'noir-dock' + (hideUI ? ' hidden' : '')}>
-          <div className="noir-bar">
-            {onExit && (
-              <>
-                <button
-                  className="noir-icon-btn"
-                  data-tip="Back to editor (Esc)"
-                  aria-label="Back to the editor"
-                  onClick={() => onExit(slideIndex)}
-                >
-                  <IconClose />
-                </button>
-                <span className="noir-sep" />
-              </>
-            )}
-            <button
-              className={'noir-icon-btn' + (railOpen ? ' on' : '')}
-              data-tip="Side panel (S)"
-              aria-label="Slide panel"
-              aria-pressed={railOpen}
-              onClick={toggleRail}
-            >
-              <IconSidebar />
-            </button>
-            <button
-              className={'noir-icon-btn' + (gridOpen ? ' on' : '')}
-              data-tip="Grid overview (G)"
-              aria-label="Grid overview"
-              aria-pressed={gridOpen}
-              onClick={toggleGrid}
-            >
-              <IconGrid />
-            </button>
-            <span className="noir-sep" />
-            <button
-              className="noir-icon-btn"
-              data-tip={hasPrev ? 'Previous' : undefined}
-              aria-label="Previous slide"
-              disabled={!hasPrev}
-              onClick={prev}
-            >
-              <IconLeft />
-            </button>
-            <div className="noir-counter">
-              <span className="noir-counter-now">{slideIndex + 1}</span>
-              <span className="noir-counter-tot">/ {slideCount}</span>
-            </div>
-            <button
-              className="noir-icon-btn"
-              data-tip={hasNext ? 'Next' : undefined}
-              aria-label="Next slide"
-              disabled={!hasNext}
-              onClick={next}
-            >
-              <IconRight />
-            </button>
-            <span className="noir-sep" />
-            <button
-              className={'noir-icon-btn noir-optional' + (drawing ? ' on' : '')}
-              data-tip="Annotate (D)"
-              aria-label="Annotate the slide"
-              aria-pressed={drawing}
-              onClick={() => setDrawing((open) => !open)}
-            >
-              <IconPencil />
-            </button>
-            <button
-              className="noir-icon-btn"
-              data-tip={isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              onClick={toggleFullscreen}
-            >
-              {isFullscreen ? <IconShrink /> : <IconExpand />}
-            </button>
-            {canOpenPresenter && (
-              <button
-                className="noir-icon-btn noir-optional"
-                data-tip={presenterTip}
-                aria-label={presenterTip}
-                onClick={openPresenter}
-              >
-                <IconPresent />
-              </button>
-            )}
-          </div>
-        </div>
+        <Dock
+          ref={dockRef}
+          mode={onExit ? 'editor-present' : 'audience'}
+          slideIndex={slideIndex}
+          slideCount={slideCount}
+          hasPrev={hasPrev}
+          hasNext={hasNext}
+          railOpen={railOpen}
+          gridOpen={gridOpen}
+          hidden={hideUI}
+          drawing={drawing}
+          isFullscreen={isFullscreen}
+          onToggleRail={toggleRail}
+          onToggleGrid={toggleGrid}
+          onPrev={prev}
+          onNext={next}
+          onAnnotate={() => setDrawing((open) => !open)}
+          onFullscreen={toggleFullscreen}
+          onPresenter={canOpenPresenter ? openPresenter : undefined}
+          onBack={onExit ? () => onExit(slideIndex) : undefined}
+        />
       </div>
     </MotionConfig>
   );

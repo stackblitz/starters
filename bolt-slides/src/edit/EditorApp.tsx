@@ -1,12 +1,16 @@
 /* The studio — thumbnail rail + scaled live canvas. Present swaps this
    view in place; published `/` is the audience deck. */
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../data/store';
-import { isPresenterRoute, isStudioShell } from '../data/shell';
+import {
+  allowPresenterFeatures,
+  isPresenterRoute,
+  isStudioShell,
+} from '../data/shell';
 import { applyFont, applyAccent } from '../data/fonts';
-import Sidebar from './Sidebar';
 import Canvas from './Canvas';
 import PresentApp from '../present/PresentApp';
+import SlideBrowser, { type BrowseMode } from '../deck/SlideBrowser';
 
 export default function EditorApp() {
   const loaded = useStore((state) => state.loaded);
@@ -14,9 +18,21 @@ export default function EditorApp() {
   const presenting = useStore((state) => state.presenting);
   const setPresenting = useStore((state) => state.setPresenting);
   const setCurrent = useStore((state) => state.setCurrent);
+  const slides = useStore((state) => state.slides);
+  const current = useStore((state) => state.current);
   const title = useStore((state) => state.deck.title);
   const font = useStore((state) => state.deck.font);
   const accent = useStore((state) => state.deck.accent);
+  const [browse, setBrowse] = useState<BrowseMode>('rail');
+  const toggleRail = useCallback(
+    () => setBrowse((mode) => (mode === 'rail' ? 'none' : 'rail')),
+    []
+  );
+  const toggleGrid = useCallback(
+    () => setBrowse((mode) => (mode === 'grid' ? 'none' : 'grid')),
+    []
+  );
+  const closeBrowse = useCallback(() => setBrowse('none'), []);
 
   useEffect(() => {
     useStore.getState().load();
@@ -34,7 +50,8 @@ export default function EditorApp() {
   if (bootError) return <div className="boot-screen">{bootError}</div>;
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
 
-  if (isPresenterRoute()) return <PresentApp embedded />;
+  if (isPresenterRoute() && allowPresenterFeatures())
+    return <PresentApp embedded />;
 
   if (isStudioShell()) {
     if (presenting)
@@ -50,12 +67,24 @@ export default function EditorApp() {
     return (
       <div className="ed-root">
         <div className="ed-main">
-          <Sidebar />
-          <Canvas />
+          <Canvas
+            browse={browse}
+            onToggleRail={toggleRail}
+            onToggleGrid={toggleGrid}
+            onCloseBrowse={closeBrowse}
+          />
         </div>
+        <SlideBrowser
+          slides={slides}
+          current={current}
+          browse={browse}
+          mutable
+          onGo={setCurrent}
+          onClose={closeBrowse}
+        />
       </div>
     );
   }
 
-  return <PresentApp embedded />;
+  return <PresentApp embedded allowPresenter={false} />;
 }

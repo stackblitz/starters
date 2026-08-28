@@ -5,7 +5,7 @@
 /* chrome containers stay Inter regardless of the deck font pairing;
    slide content (.slide) re-asserts the deck fonts inside the canvas/thumbs */
 .ed-side,
-.ed-canvas-nav,
+.noir-dock,
 .dl-pop,
 .ctx-menu,
 .modal,
@@ -94,16 +94,17 @@
   border-color: transparent;
 }
 
-/* speaker-notes popover, docked above the bottom bar. Centered with auto
-   margins, NOT a transform — a transformed ancestor would re-anchor the
-   note editor's position:fixed colour palette and strand it off-screen. */
+/* speaker-notes popover, docked above the shared toolbar. Centered with a
+   negative margin, NOT a transform — a transformed ancestor would re-anchor
+   the note editor's position:fixed colour palette and strand it off-screen. */
 .notes-pop {
   position: absolute;
   z-index: 45;
-  bottom: 62px;
-  left: 0;
-  right: 0;
-  margin-inline: auto;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  right: auto;
+  margin-inline: 0;
+  margin-left: calc(min(620px, 92vw) / -2);
   width: min(620px, 92vw);
   padding: 12px;
   display: flex;
@@ -339,6 +340,10 @@
   justify-content: center;
   background: var(--ed-bg);
 }
+.ed-canvas.rail-open {
+  padding-left: min(248px, 84vw);
+  box-sizing: border-box;
+}
 .ed-frame {
   position: relative;
   overflow: hidden;
@@ -542,11 +547,11 @@
 .ctx-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 110;
 }
 .ctx-menu {
   position: fixed;
-  z-index: 91;
+  z-index: 111;
   min-width: 176px;
   padding: 5px;
   background: var(--ed-bg-alt);

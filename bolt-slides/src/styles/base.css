@@ -2048,8 +2048,24 @@ strong {
   transform: translateX(-50%);
   z-index: 97;
   opacity: 0.35;
-  transition: opacity 0.35s ease, transform 0.35s ease;
+  transition: opacity 0.35s ease;
   font-family: var(--font-ui);
+  overflow: visible;
+}
+.noir-dock.editor,
+.noir-dock.dragging {
+  opacity: 1;
+}
+.noir-dock.placed {
+  bottom: auto;
+  transform: none;
+  visibility: visible;
+}
+.noir-dock:not(.placed) {
+  visibility: hidden;
+}
+.noir-dock.dragging {
+  transition: none;
 }
 .noir-dock:hover,
 .noir-dock:focus-within {
@@ -2102,6 +2118,51 @@ strong {
 .noir-icon-btn svg {
   width: 1em;
   height: 1em;
+}
+.noir-grip {
+  width: 22px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ed-text-faint);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.noir-grip:hover {
+  color: var(--ed-text);
+  background: var(--ed-util-hover);
+}
+.noir-grip:active {
+  cursor: grabbing;
+}
+.noir-grip svg {
+  width: 18px;
+  height: 18px;
+}
+.noir-chip {
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ed-text);
+  font: 500 12.5px/1 var(--font-ui);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.noir-chip:hover:not(:disabled),
+.noir-chip[aria-expanded='true'] {
+  background: var(--ed-util-hover);
+}
+.noir-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .noir-sep {
   width: 1px;
@@ -3277,11 +3338,15 @@ strong {
 .noir-dock.hidden {
   opacity: 0 !important;
   pointer-events: none;
+}
+.noir-dock:not(.placed).hidden {
   transform: translateX(-50%) translateY(18px);
 }
 .noir-dock.hidden:focus-within {
   opacity: 1 !important;
   pointer-events: auto;
+}
+.noir-dock:not(.placed).hidden:focus-within {
   transform: translateX(-50%) translateY(0);
 }
 .deck.nocursor,

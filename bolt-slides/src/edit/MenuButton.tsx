@@ -14,11 +14,13 @@ export default function MenuButton({
   items,
   disabled,
   tip,
+  buttonClassName = 'ghost-btn',
 }: {
   label: string;
   items: MenuButtonItem[];
   disabled?: boolean;
   tip?: string;
+  buttonClassName?: string;
 }) {
   const uid = useId();
   const buttonId = `${uid}-btn`;
@@ -146,7 +148,7 @@ export default function MenuButton({
         ref={btnRef}
         id={buttonId}
         type="button"
-        className="ghost-btn"
+        className={buttonClassName}
         data-tip={tip}
         disabled={disabled}
         aria-haspopup="menu"

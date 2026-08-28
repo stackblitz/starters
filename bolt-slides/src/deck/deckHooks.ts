@@ -277,8 +277,8 @@ export function useFullscreenState() {
   return { isFullscreen, toggleFullscreen };
 }
 
-/** Cursor idle + pointer near the dock (bottom edge). */
-export function useIdleCursorNearDock() {
+/** Cursor idle + pointer near the dock (uses dock bounds when mounted). */
+export function useIdleCursorNearDock(dockRef?: RefObject<HTMLElement | null>) {
   const [nearDock, setNearDock] = useState(false);
   const [cursorIdle, setCursorIdle] = useState(false);
 
@@ -286,7 +286,19 @@ export function useIdleCursorNearDock() {
     let idleTimer = 0;
     const onMove = (event: MouseEvent) => {
       setCursorIdle(false);
-      setNearDock(event.clientY > window.innerHeight - 150);
+      const el = dockRef?.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const pad = 80;
+        setNearDock(
+          event.clientX >= rect.left - pad &&
+            event.clientX <= rect.right + pad &&
+            event.clientY >= rect.top - pad &&
+            event.clientY <= rect.bottom + pad
+        );
+      } else {
+        setNearDock(event.clientY > window.innerHeight - 150);
+      }
       clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => setCursorIdle(true), 2600);
     };
@@ -295,7 +307,7 @@ export function useIdleCursorNearDock() {
       clearTimeout(idleTimer);
       window.removeEventListener('mousemove', onMove);
     };
-  }, []);
+  }, [dockRef]);
 
   return { nearDock, cursorIdle };
 }

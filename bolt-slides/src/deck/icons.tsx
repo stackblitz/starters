@@ -60,3 +60,24 @@ export const IconClose = () => (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 );
+export const IconGrip = () => (
+  <svg {...base} stroke="none" fill="currentColor">
+    <circle cx="9" cy="6.5" r="1.15" />
+    <circle cx="15" cy="6.5" r="1.15" />
+    <circle cx="9" cy="12" r="1.15" />
+    <circle cx="15" cy="12" r="1.15" />
+    <circle cx="9" cy="17.5" r="1.15" />
+    <circle cx="15" cy="17.5" r="1.15" />
+  </svg>
+);
+export const IconNotes = () => (
+  <svg {...base}>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="M8 9.5h8M8 13h8M8 16.5h4.5" />
+  </svg>
+);
+export const IconPlay = () => (
+  <svg {...base} fill="currentColor" stroke="none">
+    <path d="M8 5.14v13.72c0 .9 1 1.45 1.77.97l10.4-6.86a1.15 1.15 0 0 0 0-1.94L9.77 4.17C9 3.69 8 4.24 8 5.14Z" />
+  </svg>
+);

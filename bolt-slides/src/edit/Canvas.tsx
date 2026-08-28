@@ -1,15 +1,17 @@
 /* Studio canvas — the current slide at presentation size, scaled to fit.
    The slide renders LIVE (count-ups, staggers, the slide's animation mode
-   all play, like in present mode). The bottom bar pages the deck and
-   carries speaker notes, Present, and Download as (PDF / JSON). */
+   all play, like in present mode). The shared dock pages the deck and
+   carries speaker notes, Present, Presenter, and Export as… */
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStore, serializeDeck } from '../data/store';
 import { DeckCtx } from '../deck/DeckContext';
+import Dock from '../deck/Dock';
+import type { BrowseMode } from '../deck/SlideBrowser';
 import SlideView from '../slide/SlideView';
 import { NotesEditor } from './notes';
-import MenuButton from './MenuButton';
 import { exportPdf } from '../export/exporter';
+import type { MenuButtonItem } from './MenuButton';
 
 function downloadJson(title: string) {
   const file = serializeDeck();
@@ -24,7 +26,17 @@ function downloadJson(title: string) {
   URL.revokeObjectURL(anchor.href);
 }
 
-export default function Canvas() {
+export default function Canvas({
+  browse,
+  onToggleRail,
+  onToggleGrid,
+  onCloseBrowse,
+}: {
+  browse: BrowseMode;
+  onToggleRail: () => void;
+  onToggleGrid: () => void;
+  onCloseBrowse: () => void;
+}) {
   const slides = useStore((state) => state.slides);
   const current = useStore((state) => state.current);
   const setCurrent = useStore((state) => state.setCurrent);
@@ -66,6 +78,20 @@ export default function Canvas() {
     downloadJson(title);
     note('JSON downloaded');
   };
+
+  const exportItems: MenuButtonItem[] = [
+    {
+      id: 'pdf',
+      label: 'PDF',
+      disabled: !slides.length,
+      onSelect: () => void onPdf(),
+    },
+    {
+      id: 'json',
+      label: 'JSON',
+      onSelect: onJson,
+    },
+  ];
 
   const boxRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState({ vw: 1280, vh: 720, scale: 0.5 });
@@ -109,6 +135,29 @@ export default function Canvas() {
       if (notesOpen) return;
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (document.querySelector('[role="menu"]')) return;
+      if (event.key === 's' || event.key === 'S') {
+        event.preventDefault();
+        onToggleRail();
+        return;
+      }
+      if (event.key === 'g' || event.key === 'G') {
+        event.preventDefault();
+        onToggleGrid();
+        return;
+      }
+      if (event.key === 'p' || event.key === 'P') {
+        event.preventDefault();
+        if (slides.length)
+          window.open(`/?presenter=1#${current + 1}`, 'deck-presenter');
+        return;
+      }
+      if (event.key === 'Escape') {
+        if (browse !== 'none') {
+          event.preventDefault();
+          onCloseBrowse();
+        }
+        return;
+      }
       if (
         event.key === 'ArrowDown' ||
         event.key === 'ArrowRight' ||
@@ -128,7 +177,16 @@ export default function Canvas() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [current, notesOpen, setCurrent]);
+  }, [
+    browse,
+    current,
+    notesOpen,
+    onCloseBrowse,
+    onToggleGrid,
+    onToggleRail,
+    setCurrent,
+    slides.length,
+  ]);
 
   useEffect(() => {
     if (!notesOpen) return;
@@ -154,16 +212,81 @@ export default function Canvas() {
     };
   }, [notesOpen]);
 
+  const dock = (
+    <Dock
+      mode="editor"
+      slideIndex={current}
+      slideCount={slides.length}
+      hasPrev={current > 0}
+      hasNext={current < slides.length - 1}
+      railOpen={browse === 'rail'}
+      gridOpen={browse === 'grid'}
+      notesOpen={notesOpen}
+      exportBusy={busy}
+      exportFlash={flash}
+      onToggleRail={onToggleRail}
+      onToggleGrid={onToggleGrid}
+      onPrev={() => setCurrent(current - 1)}
+      onNext={() => setCurrent(current + 1)}
+      onNotes={
+        slide
+          ? () => {
+              if (notesOpen) closeNotes(true);
+              else setNotesOpen(true);
+            }
+          : undefined
+      }
+      notesBtnRef={notesBtnRef}
+      notesId={notesId}
+      notesSlot={
+        notesOpen && slide ? (
+          <div
+            ref={notesPopRef}
+            id={notesId}
+            className="notes-pop"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Speaker notes"
+          >
+            <NotesEditor
+              key={slide.id}
+              autoFocus
+              value={slide.notes}
+              onChange={(text) => {
+                if (text !== slide.notes)
+                  useStore.getState().patchSlide(slide.id, { notes: text });
+              }}
+              onDone={() => closeNotes(true)}
+              placeholder="Speaker notes — what to SAY on this slide."
+            />
+            <p className="notes-pop-hint">
+              Shown in the presenter console while you present.
+            </p>
+          </div>
+        ) : null
+      }
+      onPresenter={() => {
+        if (slides.length)
+          window.open(`/?presenter=1#${current + 1}`, 'deck-presenter');
+      }}
+      onPresent={() => setPresenting(true)}
+      exportItems={exportItems}
+    />
+  );
+
+  const canvasClass = 'ed-canvas' + (browse === 'rail' ? ' rail-open' : '');
+
   if (!slide) {
     return (
-      <div className="ed-canvas" ref={boxRef}>
+      <div className={canvasClass} ref={boxRef}>
         <div className="ed-empty">This deck has no slides.</div>
+        {dock}
       </div>
     );
   }
 
   return (
-    <div className="ed-canvas" ref={boxRef}>
+    <div className={canvasClass} ref={boxRef}>
       <div
         className="ed-frame"
         style={{
@@ -192,128 +315,7 @@ export default function Canvas() {
           </motion.div>
         </AnimatePresence>
       </div>
-      <div className="ed-canvas-nav">
-        <span
-          className={'nav-toast' + (busy ? ' busy' : '')}
-          role="status"
-          aria-live="polite"
-        >
-          {busy ?? flash}
-        </span>
-        <button
-          className="ghost-btn"
-          data-tip={current === 0 ? undefined : 'Previous slide'}
-          disabled={current === 0}
-          onClick={() => setCurrent(current - 1)}
-        >
-          ←
-        </button>
-        <span className="ed-counter">
-          {current + 1} / {slides.length}
-        </span>
-        <button
-          className="ghost-btn"
-          data-tip={current >= slides.length - 1 ? undefined : 'Next slide'}
-          disabled={current >= slides.length - 1}
-          onClick={() => setCurrent(current + 1)}
-        >
-          →
-        </button>
-        <button
-          ref={notesBtnRef}
-          className={'icon-btn' + (notesOpen ? ' on' : '')}
-          data-tip="Speaker notes"
-          type="button"
-          aria-label="Edit speaker notes for this slide"
-          aria-haspopup="dialog"
-          aria-expanded={notesOpen}
-          aria-controls={notesOpen ? notesId : undefined}
-          onPointerDown={(e) => {
-            if (e.button === 0) e.preventDefault();
-          }}
-          onClick={() => {
-            if (notesOpen) closeNotes(true);
-            else setNotesOpen(true);
-          }}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.9"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <rect x="4" y="4" width="16" height="16" rx="3" />
-            <path d="M8 9.5h8M8 13h8M8 16.5h4.5" />
-          </svg>
-        </button>
-        <span className="nav-sep" aria-hidden />
-        <MenuButton
-          label="Download as"
-          tip={busy ? undefined : 'Download the deck as PDF or JSON'}
-          disabled={!!busy}
-          items={[
-            {
-              id: 'pdf',
-              label: 'PDF',
-              disabled: !slides.length,
-              onSelect: () => void onPdf(),
-            },
-            {
-              id: 'json',
-              label: 'JSON',
-              onSelect: onJson,
-            },
-          ]}
-        />
-        <button
-          className="icon-btn"
-          data-tip={slides.length ? 'Present' : undefined}
-          type="button"
-          aria-label="Present this deck"
-          disabled={!slides.length}
-          onClick={() => setPresenting(true)}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden
-          >
-            <path d="M7 4.5v15c0 0.9 1 1.45 1.77 0.97l11.5-7.5a1.15 1.15 0 0 0 0-1.94L8.77 3.53C8 3.05 7 3.6 7 4.5Z" />
-          </svg>
-        </button>
-      </div>
-      {notesOpen && (
-        <div
-          ref={notesPopRef}
-          id={notesId}
-          className="notes-pop"
-          role="dialog"
-          aria-modal="false"
-          aria-label="Speaker notes"
-        >
-          <NotesEditor
-            key={slide.id}
-            autoFocus
-            value={slide.notes}
-            onChange={(text) => {
-              if (text !== slide.notes)
-                useStore.getState().patchSlide(slide.id, { notes: text });
-            }}
-            onDone={() => closeNotes(true)}
-            placeholder="Speaker notes — what to SAY on this slide."
-          />
-          <p className="notes-pop-hint">
-            Shown in the presenter console while you present.
-          </p>
-        </div>
-      )}
+      {dock}
     </div>
   );
 }

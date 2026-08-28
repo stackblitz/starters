@@ -1,7 +1,7 @@
 /* Present mode — full-screen engine. Opened in-place from the studio (no
    URL change), at `/` on the published origin (audience deck), or at
-   /present?presenter=1 for the presenter console. Dock P opens the
-   console in a new tab on the current origin. */
+   /present / `?presenter=1` for the presenter console (studio / DEV only).
+   Dock P opens the console in a new tab on the current origin. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import { useStore } from '../data/store';
@@ -12,9 +12,12 @@ import { LAYOUTS, resolveLayoutType } from '../layouts/registry';
 export default function PresentApp({
   embedded,
   onExit,
+  allowPresenter,
 }: {
   embedded?: boolean;
   onExit?: (slideIndex: number) => void;
+  /** published origin must pass false so notes cannot leak via ?presenter=1 */
+  allowPresenter?: boolean;
 }) {
   const loaded = useStore((state) => state.loaded);
   const bootError = useStore((state) => state.bootError);
@@ -57,6 +60,7 @@ export default function PresentApp({
       transition={deck.transition}
       initialSlide={embedded && onExit ? current : undefined}
       onExit={onExit}
+      allowPresenter={allowPresenter}
       navLabel={(index) => {
         const slide = slides[index];
         if (!slide) return undefined;
