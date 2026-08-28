@@ -17,11 +17,11 @@ export default function PresentApp({
   embedded?: boolean;
   onExit?: (slideIndex: number) => void;
 }) {
-  const loaded = useStore((s) => s.loaded);
-  const bootError = useStore((s) => s.bootError);
-  const slides = useStore((s) => s.slides);
-  const deck = useStore((s) => s.deck);
-  const current = useStore((s) => s.current);
+  const loaded = useStore((state) => state.loaded);
+  const bootError = useStore((state) => state.bootError);
+  const slides = useStore((state) => state.slides);
+  const deck = useStore((state) => state.deck);
+  const current = useStore((state) => state.current);
 
   useEffect(() => {
     document.title = deck.title || 'Slides';
@@ -57,11 +57,14 @@ export default function PresentApp({
       transition={deck.transition}
       initialSlide={embedded && onExit ? current : undefined}
       onExit={onExit}
-      navLabel={(i) => {
-        const s = slides[i];
-        if (!s) return undefined;
+      navLabel={(index) => {
+        const slide = slides[index];
+        if (!slide) return undefined;
         const raw =
-          s.props?.title ?? s.props?.text ?? s.props?.value ?? s.props?.name;
+          slide.props?.title ??
+          slide.props?.text ??
+          slide.props?.value ??
+          slide.props?.name;
         const plain =
           typeof raw === 'string'
             ? stripRich(raw).replace(/\s+/g, ' ').trim()
@@ -70,15 +73,15 @@ export default function PresentApp({
           ? plain.length > 52
             ? plain.slice(0, 52) + '…'
             : plain
-          : LAYOUTS[resolveLayoutType(s.layout)]?.label;
+          : LAYOUTS[resolveLayoutType(slide.layout)]?.label;
       }}
     >
-      {slides.map((s) => (
+      {slides.map((slide) => (
         <SlideView
-          key={s.id}
-          slide={s}
-          notes={s.notes}
-          transition={s.transition ?? undefined}
+          key={slide.id}
+          slide={slide}
+          notes={slide.notes}
+          transition={slide.transition ?? undefined}
         />
       ))}
     </Deck>

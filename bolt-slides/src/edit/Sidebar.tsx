@@ -69,12 +69,12 @@ function Row({
 }
 
 export default function Sidebar() {
-  const slides = useStore((s) => s.slides);
-  const current = useStore((s) => s.current);
-  const setCurrent = useStore((s) => s.setCurrent);
-  const reorder = useStore((s) => s.reorder);
-  const duplicateSlide = useStore((s) => s.duplicateSlide);
-  const deleteSlide = useStore((s) => s.deleteSlide);
+  const slides = useStore((state) => state.slides);
+  const current = useStore((state) => state.current);
+  const setCurrent = useStore((state) => state.setCurrent);
+  const reorder = useStore((state) => state.reorder);
+  const duplicateSlide = useStore((state) => state.duplicateSlide);
+  const deleteSlide = useStore((state) => state.deleteSlide);
 
   const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(
     null
@@ -84,14 +84,14 @@ export default function Sidebar() {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
 
-  const onDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const from = slides.findIndex((s) => s.id === active.id);
-    const to = slides.findIndex((s) => s.id === over.id);
+    const from = slides.findIndex((slide) => slide.id === active.id);
+    const to = slides.findIndex((slide) => slide.id === over.id);
     reorder(
       arrayMove(
-        slides.map((s) => s.id),
+        slides.map((slide) => slide.id),
         from,
         to
       )

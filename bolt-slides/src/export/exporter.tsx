@@ -12,7 +12,7 @@ import { jsPDF } from 'jspdf';
 import type { SlideData } from '../data/types';
 import SlideView from '../slide/SlideView';
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const W = 1280;
 const H = 720;
@@ -29,10 +29,10 @@ function yieldToUi() {
 
 const YIELD_BUDGET_MS = 8;
 
-async function yieldIfDue(state: { t: number }) {
-  if (performance.now() - state.t < YIELD_BUDGET_MS) return;
+async function yieldIfDue(state: { lastYieldAt: number }) {
+  if (performance.now() - state.lastYieldAt < YIELD_BUDGET_MS) return;
   await yieldToUi();
-  state.t = performance.now();
+  state.lastYieldAt = performance.now();
 }
 
 function logSlow(stage: string, ms: number) {
@@ -40,13 +40,14 @@ function logSlow(stage: string, ms: number) {
   console.info(`[pdf] ${stage} ${Math.round(ms)}ms`);
 }
 
-function opaqueColor(c: string): string | null {
-  if (!c || c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return null;
-  const m = c.match(
+function opaqueColor(color: string): string | null {
+  if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)')
+    return null;
+  const match = color.match(
     /rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*([\d.]+)\s*\)/
   );
-  if (m && Number(m[1]) < 0.01) return null;
-  return c;
+  if (match && Number(match[1]) < 0.01) return null;
+  return color;
 }
 
 function paintColor(cs: CSSStyleDeclaration): string | null {
@@ -60,7 +61,7 @@ function paintColor(cs: CSSStyleDeclaration): string | null {
 async function flattenClipText(root: HTMLElement, view: Window) {
   const Html = (view as unknown as { HTMLElement: typeof HTMLElement })
     .HTMLElement;
-  const due = { t: performance.now() };
+  const due = { lastYieldAt: performance.now() };
   const walk = async (node: Element) => {
     if (node instanceof Html) {
       const cs = view.getComputedStyle(node);
@@ -92,10 +93,10 @@ const FONT_SHEET = /fonts\.google(?:apis)?\.com|fonts\.gstatic\.com/;
 
 async function blobDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onloadend = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(blob);
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
 }
 

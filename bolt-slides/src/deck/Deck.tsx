@@ -112,7 +112,7 @@ export default function Deck({
     () => Children.toArray(children) as ReactElement[],
     [children]
   );
-  const total = slides.length;
+  const slideCount = slides.length;
   const isPresenter = useMemo(
     () =>
       allowPresenter &&
@@ -122,14 +122,14 @@ export default function Deck({
   const canOpenPresenter = allowPresenter && !isPresenter;
   const presenterTip = 'Presenter — new tab (P)';
 
-  const [slide, setSlide] = useState(() => {
+  const [slideIndex, setSlideIndex] = useState(() => {
     if (initialSlide != null)
-      return Math.max(0, Math.min(total - 1, initialSlide));
-    const h = parseInt(window.location.hash.slice(1), 10);
-    return h >= 1 && h <= total ? h - 1 : 0;
+      return Math.max(0, Math.min(slideCount - 1, initialSlide));
+    const hashSlide = parseInt(window.location.hash.slice(1), 10);
+    return hashSlide >= 1 && hashSlide <= slideCount ? hashSlide - 1 : 0;
   });
   const [clicks, setClicks] = useState(0);
-  const [curMax, setCurMax] = useState(0);
+  const [buildMax, setBuildMax] = useState(0);
   // two ways to browse the deck, mutually exclusive: a persistent side panel
   // (stays open while you jump around) and a full-screen grid overview (a
   // picker — it closes on pick). Opening one closes the other.
@@ -137,113 +137,118 @@ export default function Deck({
   const railOpen = browse === 'rail';
   const gridOpen = browse === 'grid';
   const toggleRail = useCallback(
-    () => setBrowse((b) => (b === 'rail' ? 'none' : 'rail')),
+    () => setBrowse((mode) => (mode === 'rail' ? 'none' : 'rail')),
     []
   );
   const toggleGrid = useCallback(
-    () => setBrowse((b) => (b === 'grid' ? 'none' : 'grid')),
+    () => setBrowse((mode) => (mode === 'grid' ? 'none' : 'grid')),
     []
   );
   const closeBrowse = useCallback(() => setBrowse('none'), []);
   const [drawing, setDrawing] = useState(false);
   // false while the incoming slide is still animating — annotations wait for it
   const [stageIn, setStageIn] = useState(false);
-  const [fs, setFs] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
   const [nearDock, setNearDock] = useState(false);
   const [cursorIdle, setCursorIdle] = useState(false);
 
   // per-slide build maxima (so going back restores the right click state) and
   // per-slide annotations (so drawings persist on the slide they were made).
-  const maxMap = useRef<Record<number, number>>({});
-  const annStore = useRef<Record<number, Stroke[]>>(loadAnnotations());
+  const buildMaxBySlide = useRef<Record<number, number>>({});
+  const annotationsBySlide = useRef<Record<number, Stroke[]>>(
+    loadAnnotations()
+  );
   const railRef = useRef<HTMLElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const slideRef = useRef(slide);
-  slideRef.current = slide;
+  const slideIndexRef = useRef(slideIndex);
+  slideIndexRef.current = slideIndex;
 
   const registerMax = useCallback((at: number) => {
-    const m = maxMap.current;
-    m[slideRef.current] = Math.max(m[slideRef.current] || 0, at);
-    setCurMax((c) => Math.max(c, at));
+    const maxima = buildMaxBySlide.current;
+    maxima[slideIndexRef.current] = Math.max(
+      maxima[slideIndexRef.current] || 0,
+      at
+    );
+    setBuildMax((prev) => Math.max(prev, at));
   }, []);
 
   const go = useCallback(
-    (i: number) => {
-      const n = Math.max(0, Math.min(total - 1, i));
-      setSlide(n);
+    (index: number) => {
+      const nextIndex = Math.max(0, Math.min(slideCount - 1, index));
+      setSlideIndex(nextIndex);
       setClicks(0);
-      setCurMax(maxMap.current[n] || 0);
+      setBuildMax(buildMaxBySlide.current[nextIndex] || 0);
     },
-    [total]
+    [slideCount]
   );
   const next = useCallback(() => {
-    if (clicks < curMax) {
+    if (clicks < buildMax) {
       setClicks(clicks + 1);
       return;
     }
-    if (slide < total - 1) {
-      const n = slide + 1;
-      setSlide(n);
+    if (slideIndex < slideCount - 1) {
+      const nextIndex = slideIndex + 1;
+      setSlideIndex(nextIndex);
       setClicks(0);
-      setCurMax(maxMap.current[n] || 0);
+      setBuildMax(buildMaxBySlide.current[nextIndex] || 0);
     }
-  }, [clicks, curMax, slide, total]);
+  }, [clicks, buildMax, slideIndex, slideCount]);
   const prev = useCallback(() => {
     if (clicks > 0) {
       setClicks(clicks - 1);
       return;
     }
-    if (slide > 0) {
-      const n = slide - 1;
-      const m = maxMap.current[n] || 0;
-      setSlide(n);
-      setClicks(m);
-      setCurMax(m);
+    if (slideIndex > 0) {
+      const prevIndex = slideIndex - 1;
+      const restoredBuilds = buildMaxBySlide.current[prevIndex] || 0;
+      setSlideIndex(prevIndex);
+      setClicks(restoredBuilds);
+      setBuildMax(restoredBuilds);
     }
-  }, [clicks, slide]);
+  }, [clicks, slideIndex]);
 
-  const toggleFs = useCallback(() => {
+  const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.();
   }, []);
   const openPresenter = useCallback(() => {
-    window.open(`/?presenter=1#${slide + 1}`, 'deck-presenter');
-  }, [slide]);
+    window.open(`/?presenter=1#${slideIndex + 1}`, 'deck-presenter');
+  }, [slideIndex]);
 
   // keyboard
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
       if (
-        t &&
-        (t.tagName === 'TEXTAREA' ||
-          t.tagName === 'INPUT' ||
-          t.isContentEditable)
+        target &&
+        (target.tagName === 'TEXTAREA' ||
+          target.tagName === 'INPUT' ||
+          target.isContentEditable)
       )
         return;
-      switch (e.key) {
+      switch (event.key) {
         case 'ArrowRight':
         case 'ArrowDown':
         case ' ':
         case 'PageDown':
-          e.preventDefault();
+          event.preventDefault();
           next();
           break;
         case 'ArrowLeft':
         case 'ArrowUp':
         case 'PageUp':
-          e.preventDefault();
+          event.preventDefault();
           prev();
           break;
         case 'Home':
-          e.preventDefault();
+          event.preventDefault();
           go(0);
           break;
         case 'End':
-          e.preventDefault();
-          go(total - 1);
+          event.preventDefault();
+          go(slideCount - 1);
           break;
         // while drawing, the annotator owns the letter keys it uses (O, P, H
         // are ellipse / pen / highlighter there) — D and Escape still exit
@@ -265,12 +270,12 @@ export default function Deck({
         case 'f':
         case 'F':
           if (isPresenter) break;
-          toggleFs();
+          toggleFullscreen();
           break;
         case 'd':
         case 'D':
           if (isPresenter) break;
-          setDrawing((v) => !v);
+          setDrawing((open) => !open);
           break;
         case 'p':
         case 'P':
@@ -280,11 +285,11 @@ export default function Deck({
         case 'h':
         case 'H':
           if (isPresenter || drawing) break;
-          setUiHidden((v) => !v);
+          setUiHidden((hidden) => !hidden);
           break;
         case 'Escape':
           if (isPresenter) {
-            e.preventDefault();
+            event.preventDefault();
             if (window.opener) window.close();
             break;
           }
@@ -295,8 +300,8 @@ export default function Deck({
             break;
           }
           if (onExit) {
-            e.preventDefault();
-            onExit(slide);
+            event.preventDefault();
+            onExit(slideIndex);
           }
           break;
       }
@@ -307,8 +312,8 @@ export default function Deck({
     next,
     prev,
     go,
-    total,
-    toggleFs,
+    slideCount,
+    toggleFullscreen,
     openPresenter,
     toggleRail,
     toggleGrid,
@@ -319,16 +324,16 @@ export default function Deck({
     isPresenter,
     canOpenPresenter,
     onExit,
-    slide,
+    slideIndex,
   ]);
 
   // the slide's entrance owns the screen first: hold the ink until the stage
   // has finished animating in (with a safety net if no animation ever runs)
   useEffect(() => {
     setStageIn(false);
-    const t = window.setTimeout(() => setStageIn(true), 1000);
-    return () => clearTimeout(t);
-  }, [slide]);
+    const safetyTimer = window.setTimeout(() => setStageIn(true), 1000);
+    return () => clearTimeout(safetyTimer);
+  }, [slideIndex]);
 
   // URL hash sync — skipped in-place from the editor (no new URL). Presenter
   // consoles, the published audience deck, and leftover /present share links
@@ -336,41 +341,52 @@ export default function Deck({
   const skipHash = !!onExit && !isPresenter;
   useEffect(() => {
     if (skipHash) return;
-    const want = String(slide + 1);
+    const want = String(slideIndex + 1);
     if (window.location.hash.slice(1) !== want)
       history.replaceState(null, '', '#' + want);
-  }, [slide, skipHash]);
+  }, [slideIndex, skipHash]);
   useEffect(() => {
     if (skipHash) return;
     const onHash = () => {
-      const h = parseInt(window.location.hash.slice(1), 10);
-      if (h >= 1 && h <= total && h - 1 !== slide) go(h - 1);
+      const hashSlide = parseInt(window.location.hash.slice(1), 10);
+      if (
+        hashSlide >= 1 &&
+        hashSlide <= slideCount &&
+        hashSlide - 1 !== slideIndex
+      )
+        go(hashSlide - 1);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, [slide, total, go, skipHash]);
+  }, [slideIndex, slideCount, go, skipHash]);
 
   // cross-tab sync (audience ⇄ presenter), via BroadcastChannel.
   // Only the presenter console (or in-place owner Present) publishes;
   // audience tabs subscribe. The P popup reads the hash before this
   // effect, so the first publish is the live slide, not 0.
-  const chan = useRef<BroadcastChannel | null>(null);
+  const syncChannel = useRef<BroadcastChannel | null>(null);
   const applyingRemote = useRef(false);
   const isLeader = isPresenter || !!onExit;
   useEffect(() => {
-    const c = new BroadcastChannel('deck-sync');
-    chan.current = c;
-    c.onmessage = (e) => {
-      if (e.data?.type !== 'state') return;
-      const n = e.data.slide;
-      const k = e.data.clicks;
-      if (!Number.isInteger(n) || !Number.isInteger(k) || n < 0 || k < 0)
+    const channel = new BroadcastChannel('deck-sync');
+    syncChannel.current = channel;
+    channel.onmessage = (event) => {
+      if (event.data?.type !== 'state') return;
+      /* wire format keeps `slide` so an older presenter tab still syncs */
+      const remoteSlide = event.data.slide;
+      const remoteClicks = event.data.clicks;
+      if (
+        !Number.isInteger(remoteSlide) ||
+        !Number.isInteger(remoteClicks) ||
+        remoteSlide < 0 ||
+        remoteClicks < 0
+      )
         return;
       applyingRemote.current = true;
-      setSlide(n);
-      setClicks(k);
+      setSlideIndex(remoteSlide);
+      setClicks(remoteClicks);
     };
-    return () => c.close();
+    return () => channel.close();
   }, []);
   useEffect(() => {
     if (!isLeader) return;
@@ -378,28 +394,34 @@ export default function Deck({
       applyingRemote.current = false;
       return;
     }
-    chan.current?.postMessage({ type: 'state', slide, clicks });
-  }, [slide, clicks, isLeader]);
+    syncChannel.current?.postMessage({
+      type: 'state',
+      slide: slideIndex,
+      clicks,
+    });
+  }, [slideIndex, clicks, isLeader]);
 
   // fullscreen flag, presenter timer, idle auto-hide
   useEffect(() => {
-    const h = () => setFs(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', h);
-    return () => document.removeEventListener('fullscreenchange', h);
+    const onFullscreenChange = () =>
+      setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () =>
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
   // the dock returns on pointer near the bottom (where it lives) or when
   // keyboard focus lands in it (:focus-within); the cursor hides on idle.
   useEffect(() => {
-    let t = 0;
-    const onMove = (e: MouseEvent) => {
+    let idleTimer = 0;
+    const onMove = (event: MouseEvent) => {
       setCursorIdle(false);
-      setNearDock(e.clientY > window.innerHeight - 150);
-      clearTimeout(t);
-      t = window.setTimeout(() => setCursorIdle(true), 2600);
+      setNearDock(event.clientY > window.innerHeight - 150);
+      clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => setCursorIdle(true), 2600);
     };
     window.addEventListener('mousemove', onMove);
     return () => {
-      clearTimeout(t);
+      clearTimeout(idleTimer);
       window.removeEventListener('mousemove', onMove);
     };
   }, []);
@@ -411,16 +433,17 @@ export default function Deck({
     () => ({ clicks, isStatic: false, registerMax }),
     [clicks, registerMax]
   );
-  const hasPrev = slide > 0 || clicks > 0;
-  const hasNext = slide < total - 1 || clicks < curMax;
+  const hasPrev = slideIndex > 0 || clicks > 0;
+  const hasNext = slideIndex < slideCount - 1 || clicks < buildMax;
   const noteText =
-    (slides[slide]?.props as { notes?: string } | undefined)?.notes ?? '';
+    (slides[slideIndex]?.props as { notes?: string } | undefined)?.notes ?? '';
   const slideTransition =
-    (slides[slide]?.props as { transition?: string } | undefined)?.transition ||
-    transition;
-  const hideUI = uiHidden || (fs && !nearDock);
-  const cursorHidden = fs && cursorIdle && !drawing;
-  const showAnnotator = drawing || (annStore.current[slide]?.length ?? 0) > 0;
+    (slides[slideIndex]?.props as { transition?: string } | undefined)
+      ?.transition || transition;
+  const hideUI = uiHidden || (isFullscreen && !nearDock);
+  const cursorHidden = isFullscreen && cursorIdle && !drawing;
+  const showAnnotator =
+    drawing || (annotationsBySlide.current[slideIndex]?.length ?? 0) > 0;
 
   /* Presenter mode is its own screen: a console with the live slide, what is
      next, the notes and the clock — not a second copy of the presentation.
@@ -430,10 +453,10 @@ export default function Deck({
       <MotionConfig reducedMotion="user">
         <Presenter
           slides={slides}
-          slide={slide}
-          total={total}
+          slideIndex={slideIndex}
+          slideCount={slideCount}
           clicks={clicks}
-          curMax={curMax}
+          buildMax={buildMax}
           liveCtx={liveCtx}
           notes={noteText}
           onGo={go}
@@ -452,26 +475,26 @@ export default function Deck({
         <DeckCtx.Provider value={liveCtx}>
           <AnimatePresence mode="wait" initial={false}>
             {(() => {
-              const t = slideTransition;
-              const v = TRANSITIONS[t] ?? TRANSITIONS.fade;
+              const transitionName = slideTransition;
+              const variants = TRANSITIONS[transitionName] ?? TRANSITIONS.fade;
               return (
                 <motion.div
                   className="slide-stage"
-                  key={slide}
+                  key={slideIndex}
                   style={{ animation: 'none' }}
-                  variants={v}
+                  variants={variants}
                   initial="initial"
                   animate="animate"
                   exit="exit"
                   transition={{
-                    duration: t === 'none' ? 0 : 0.42,
+                    duration: transitionName === 'none' ? 0 : 0.42,
                     ease: [0.16, 1, 0.3, 1],
                   }}
-                  onAnimationComplete={(d) => {
-                    if (d === 'animate') setStageIn(true);
+                  onAnimationComplete={(definition) => {
+                    if (definition === 'animate') setStageIn(true);
                   }}
                 >
-                  {slides[slide]}
+                  {slides[slideIndex]}
                 </motion.div>
               );
             })()}
@@ -480,9 +503,9 @@ export default function Deck({
 
         {showAnnotator && (
           <Annotator
-            key={slide}
-            slide={slide}
-            store={annStore.current}
+            key={slideIndex}
+            slide={slideIndex}
+            store={annotationsBySlide.current}
             active={drawing}
             onDone={() => setDrawing(false)}
             hold={!stageIn}
@@ -508,18 +531,18 @@ export default function Deck({
               keep browsing; close it deliberately (button, S, Esc). */}
           <div className="noir-rail-list">
             {railOpen &&
-              slides.map((s, i) => (
+              slides.map((slideNode, i) => (
                 <button
                   key={i}
-                  className={'noir-thumb' + (i === slide ? ' active' : '')}
+                  className={'noir-thumb' + (i === slideIndex ? ' active' : '')}
                   aria-label={`Go to slide ${i + 1}${
                     navLabel?.(i) ? ' — ' + navLabel(i) : ''
                   }`}
-                  aria-current={i === slide ? 'true' : undefined}
+                  aria-current={i === slideIndex ? 'true' : undefined}
                   onClick={() => go(i)}
                 >
                   <span className="noir-thumb-no">{i + 1}</span>
-                  <Thumb>{s}</Thumb>
+                  <Thumb>{slideNode}</Thumb>
                 </button>
               ))}
           </div>
@@ -540,7 +563,9 @@ export default function Deck({
               <div
                 className={'noir-grid-head' + (gridScrolled ? ' scrolled' : '')}
               >
-                <span className="noir-rail-title">All slides · {total}</span>
+                <span className="noir-rail-title">
+                  All slides · {slideCount}
+                </span>
                 <button
                   className="noir-icon-btn sm"
                   data-tip="Close"
@@ -551,23 +576,23 @@ export default function Deck({
                 </button>
               </div>
               <div className="noir-grid-list">
-                {slides.map((s, i) => (
+                {slides.map((slideNode, i) => (
                   <button
                     key={i}
                     className={
                       'noir-thumb noir-thumb-grid' +
-                      (i === slide ? ' active' : '')
+                      (i === slideIndex ? ' active' : '')
                     }
                     aria-label={`Go to slide ${i + 1}${
                       navLabel?.(i) ? ' — ' + navLabel(i) : ''
                     }`}
-                    aria-current={i === slide ? 'true' : undefined}
+                    aria-current={i === slideIndex ? 'true' : undefined}
                     onClick={() => {
                       go(i);
                       closeBrowse();
                     }}
                   >
-                    <Thumb>{s}</Thumb>
+                    <Thumb>{slideNode}</Thumb>
                     <span className="noir-thumb-no">{i + 1}</span>
                   </button>
                 ))}
@@ -584,7 +609,7 @@ export default function Deck({
                   className="noir-icon-btn"
                   data-tip="Back to editor (Esc)"
                   aria-label="Back to the editor"
-                  onClick={() => onExit(slide)}
+                  onClick={() => onExit(slideIndex)}
                 >
                   <IconClose />
                 </button>
@@ -620,8 +645,8 @@ export default function Deck({
               <IconLeft />
             </button>
             <div className="noir-counter">
-              <span className="noir-counter-now">{slide + 1}</span>
-              <span className="noir-counter-tot">/ {total}</span>
+              <span className="noir-counter-now">{slideIndex + 1}</span>
+              <span className="noir-counter-tot">/ {slideCount}</span>
             </div>
             <button
               className="noir-icon-btn"
@@ -638,17 +663,17 @@ export default function Deck({
               data-tip="Annotate (D)"
               aria-label="Annotate the slide"
               aria-pressed={drawing}
-              onClick={() => setDrawing((v) => !v)}
+              onClick={() => setDrawing((open) => !open)}
             >
               <IconPencil />
             </button>
             <button
               className="noir-icon-btn"
-              data-tip={fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
-              aria-label={fs ? 'Exit fullscreen' : 'Enter fullscreen'}
-              onClick={toggleFs}
+              data-tip={isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              onClick={toggleFullscreen}
             >
-              {fs ? <IconShrink /> : <IconExpand />}
+              {isFullscreen ? <IconShrink /> : <IconExpand />}
             </button>
             {canOpenPresenter && (
               <button

@@ -16,20 +16,20 @@ function downloadJson(title: string) {
   const blob = new Blob([JSON.stringify(file, null, 2) + '\n'], {
     type: 'application/json',
   });
-  const a = document.createElement('a');
+  const anchor = document.createElement('a');
   const name = (title || 'deck').replace(/[^\w\- ]+/g, '').trim() || 'deck';
-  a.href = URL.createObjectURL(blob);
-  a.download = `${name}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  anchor.href = URL.createObjectURL(blob);
+  anchor.download = `${name}.json`;
+  anchor.click();
+  URL.revokeObjectURL(anchor.href);
 }
 
 export default function Canvas() {
-  const slides = useStore((s) => s.slides);
-  const current = useStore((s) => s.current);
-  const setCurrent = useStore((s) => s.setCurrent);
-  const setPresenting = useStore((s) => s.setPresenting);
-  const title = useStore((s) => s.deck.title);
+  const slides = useStore((state) => state.slides);
+  const current = useStore((state) => state.current);
+  const setCurrent = useStore((state) => state.setCurrent);
+  const setPresenting = useStore((state) => state.setPresenting);
+  const title = useStore((state) => state.deck.title);
   const slide = slides[current];
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -54,8 +54,8 @@ export default function Canvas() {
     try {
       await exportPdf(slides, title, setBusy);
       note('PDF downloaded');
-    } catch (e) {
-      note('PDF export failed: ' + String(e));
+    } catch (err) {
+      note('PDF export failed: ' + String(err));
     } finally {
       setBusy(null);
     }
@@ -68,7 +68,7 @@ export default function Canvas() {
   };
 
   const boxRef = useRef<HTMLDivElement>(null);
-  const [d, setD] = useState({ vw: 1280, vh: 720, scale: 0.5 });
+  const [frame, setFrame] = useState({ vw: 1280, vh: 720, scale: 0.5 });
   const liveCtx = useMemo(() => ({ clicks: 9999, isStatic: false }), []);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function Canvas() {
         (el.clientWidth - pad) / vw,
         (el.clientHeight - pad) / vh
       );
-      setD({ vw, vh, scale });
+      setFrame({ vw, vh, scale });
     };
     update();
     const ro = new ResizeObserver(update);
@@ -95,30 +95,34 @@ export default function Canvas() {
   }, []);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
       if (
-        t &&
-        (t.tagName === 'TEXTAREA' ||
-          t.tagName === 'INPUT' ||
-          t.tagName === 'SELECT' ||
-          t.isContentEditable)
+        target &&
+        (target.tagName === 'TEXTAREA' ||
+          target.tagName === 'INPUT' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
       )
         return;
       if (notesOpen) return;
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (document.querySelector('[role="menu"]')) return;
       if (
-        e.key === 'ArrowDown' ||
-        e.key === 'ArrowRight' ||
-        e.key === 'PageDown'
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowRight' ||
+        event.key === 'PageDown'
       ) {
-        e.preventDefault();
+        event.preventDefault();
         setCurrent(current + 1);
       }
-      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        e.preventDefault();
+      if (
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowLeft' ||
+        event.key === 'PageUp'
+      ) {
+        event.preventDefault();
         setCurrent(current - 1);
       }
     };
@@ -128,15 +132,18 @@ export default function Canvas() {
 
   useEffect(() => {
     if (!notesOpen) return;
-    const onPtr = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (notesPopRef.current?.contains(t) || notesBtnRef.current?.contains(t))
+    const onPtr = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        notesPopRef.current?.contains(target) ||
+        notesBtnRef.current?.contains(target)
+      )
         return;
       closeNotes(false);
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      e.preventDefault();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
       closeNotes(true);
     };
     document.addEventListener('pointerdown', onPtr);
@@ -159,17 +166,20 @@ export default function Canvas() {
     <div className="ed-canvas" ref={boxRef}>
       <div
         className="ed-frame"
-        style={{ width: d.vw * d.scale, height: d.vh * d.scale }}
+        style={{
+          width: frame.vw * frame.scale,
+          height: frame.vh * frame.scale,
+        }}
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={slide.id}
             className="ed-frame-inner"
             style={{
-              width: d.vw,
-              height: d.vh,
-              transform: `scale(${d.scale})`,
-              ['--inv' as never]: String(1 / Math.max(0.05, d.scale)),
+              width: frame.vw,
+              height: frame.vh,
+              transform: `scale(${frame.scale})`,
+              ['--inv' as never]: String(1 / Math.max(0.05, frame.scale)),
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

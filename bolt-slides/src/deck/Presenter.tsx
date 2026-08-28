@@ -13,10 +13,10 @@ import { IconLeft, IconRight, IconClose } from './icons';
    Notes are authored in the studio (and in deck.json) and shown here
    at reading size — not editable in this console. */
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const fmtClock = (s: number) =>
-  (s >= 3600 ? `${pad(Math.floor(s / 3600))}:` : '') +
-  `${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+const pad = (value: number) => String(value).padStart(2, '0');
+const fmtClock = (totalSeconds: number) =>
+  (totalSeconds >= 3600 ? `${pad(Math.floor(totalSeconds / 3600))}:` : '') +
+  `${pad(Math.floor(totalSeconds / 60) % 60)}:${pad(totalSeconds % 60)}`;
 
 const IconPlay = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -61,10 +61,10 @@ const SIZE_KEY = 'deck:presenter-note-size';
 
 export default function Presenter({
   slides,
-  slide,
-  total,
+  slideIndex,
+  slideCount,
   clicks,
-  curMax,
+  buildMax,
   liveCtx,
   notes,
   onGo,
@@ -74,10 +74,10 @@ export default function Presenter({
   onExit,
 }: {
   slides: ReactElement[];
-  slide: number;
-  total: number;
+  slideIndex: number;
+  slideCount: number;
   clicks: number;
-  curMax: number;
+  buildMax: number;
   liveCtx: DeckCtxValue;
   notes: string;
   onGo: (i: number) => void;
@@ -91,58 +91,62 @@ export default function Presenter({
   const [running, setRunning] = useState(true);
   const [now, setNow] = useState(() => new Date());
   const [sizeIdx, setSizeIdx] = useState(() => {
-    const v = parseInt(localStorage.getItem(SIZE_KEY) || '', 10);
-    return Number.isFinite(v) && v >= 0 && v < NOTE_SIZES.length ? v : 2;
+    const stored = parseInt(localStorage.getItem(SIZE_KEY) || '', 10);
+    return Number.isFinite(stored) && stored >= 0 && stored < NOTE_SIZES.length
+      ? stored
+      : 2;
   });
 
   useEffect(() => {
     localStorage.setItem(SIZE_KEY, String(sizeIdx));
   }, [sizeIdx]);
   useEffect(() => {
-    const t = setInterval(() => {
+    const tick = setInterval(() => {
       setNow(new Date());
-      if (running) setElapsed((e) => e + 1);
+      if (running) setElapsed((seconds) => seconds + 1);
     }, 1000);
-    return () => clearInterval(t);
+    return () => clearInterval(tick);
   }, [running]);
 
   // T runs/pauses the clock, ⇧T resets it, +/− size the notes. Slide keys stay
   // with the deck, so → still advances the audience window.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
       if (
-        el &&
-        (el.tagName === 'TEXTAREA' ||
-          el.tagName === 'INPUT' ||
-          el.isContentEditable)
+        target &&
+        (target.tagName === 'TEXTAREA' ||
+          target.tagName === 'INPUT' ||
+          target.isContentEditable)
       )
         return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 't') {
-        e.preventDefault();
-        setRunning((v) => !v);
-      } else if (e.key === 'T') {
-        e.preventDefault();
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === 't') {
+        event.preventDefault();
+        setRunning((runningNow) => !runningNow);
+      } else if (event.key === 'T') {
+        event.preventDefault();
         setElapsed(0);
         setRunning(true);
-      } else if (e.key === '+' || e.key === '=') {
-        e.preventDefault();
-        setSizeIdx((i) => Math.min(NOTE_SIZES.length - 1, i + 1));
-      } else if (e.key === '-') {
-        e.preventDefault();
-        setSizeIdx((i) => Math.max(0, i - 1));
+      } else if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        setSizeIdx((idx) => Math.min(NOTE_SIZES.length - 1, idx + 1));
+      } else if (event.key === '-') {
+        event.preventDefault();
+        setSizeIdx((idx) => Math.max(0, idx - 1));
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const nextEl = slides[slide + 1];
-  const nextName = navLabel?.(slide + 1);
-  const progress = total > 1 ? (slide / (total - 1)) * 100 : 100;
+  const nextEl = slides[slideIndex + 1];
+  const nextName = navLabel?.(slideIndex + 1);
+  const progress = slideCount > 1 ? (slideIndex / (slideCount - 1)) * 100 : 100;
   const builds =
-    curMax > 0 ? `Build ${Math.min(clicks, curMax) + 1} / ${curMax + 1}` : null;
+    buildMax > 0
+      ? `Build ${Math.min(clicks, buildMax) + 1} / ${buildMax + 1}`
+      : null;
 
   return (
     <div className="pres">
@@ -153,7 +157,7 @@ export default function Presenter({
           </span>
           <button
             className="pres-icon"
-            onClick={() => setRunning((v) => !v)}
+            onClick={() => setRunning((runningNow) => !runningNow)}
             data-tip={running ? 'Pause (T)' : 'Start (T)'}
             aria-label={running ? 'Pause timer' : 'Start timer'}
           >
@@ -174,7 +178,7 @@ export default function Presenter({
 
         <div className="pres-center">
           <span className="pres-count">
-            <b>{slide + 1}</b> / {total}
+            <b>{slideIndex + 1}</b> / {slideCount}
           </span>
           {builds && <span className="pres-builds">{builds}</span>}
         </div>
@@ -186,7 +190,7 @@ export default function Presenter({
           <span className="pres-sep" />
           <button
             className="pres-icon"
-            onClick={() => setSizeIdx((i) => Math.max(0, i - 1))}
+            onClick={() => setSizeIdx((idx) => Math.max(0, idx - 1))}
             disabled={sizeIdx === 0}
             data-tip={sizeIdx === 0 ? undefined : 'Smaller notes (−)'}
             aria-label="Smaller notes"
@@ -197,7 +201,7 @@ export default function Presenter({
           <button
             className="pres-icon"
             onClick={() =>
-              setSizeIdx((i) => Math.min(NOTE_SIZES.length - 1, i + 1))
+              setSizeIdx((idx) => Math.min(NOTE_SIZES.length - 1, idx + 1))
             }
             disabled={sizeIdx === NOTE_SIZES.length - 1}
             data-tip={
@@ -216,7 +220,7 @@ export default function Presenter({
                   window.close();
                   return;
                 }
-                onExit?.(slide);
+                onExit?.(slideIndex);
               }}
               data-tip={window.opener ? 'Close presenter' : 'Back to editor'}
               aria-label={
@@ -233,7 +237,7 @@ export default function Presenter({
         <section className="pres-stage">
           <div className="pres-label">On screen now</div>
           <div className="pres-now">
-            <Thumb ctx={liveCtx}>{slides[slide]}</Thumb>
+            <Thumb ctx={liveCtx}>{slides[slideIndex]}</Thumb>
           </div>
 
           <div className="pres-next-wrap">
@@ -246,7 +250,7 @@ export default function Presenter({
             {nextEl ? (
               <button
                 className="pres-next"
-                onClick={() => onGo(slide + 1)}
+                onClick={() => onGo(slideIndex + 1)}
                 aria-label="Go to next slide"
               >
                 <Thumb>{nextEl}</Thumb>
@@ -278,7 +282,7 @@ export default function Presenter({
         <button
           className="pres-nav"
           onClick={onPrev}
-          disabled={slide === 0 && clicks === 0}
+          disabled={slideIndex === 0 && clicks === 0}
           aria-label="Previous"
         >
           <IconLeft /> Prev
@@ -292,7 +296,7 @@ export default function Presenter({
         <button
           className="pres-nav"
           onClick={onNext}
-          disabled={slide >= total - 1 && clicks >= curMax}
+          disabled={slideIndex >= slideCount - 1 && clicks >= buildMax}
           aria-label="Next"
         >
           Next <IconRight />

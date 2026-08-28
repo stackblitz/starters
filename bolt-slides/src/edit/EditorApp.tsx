@@ -9,14 +9,14 @@ import Canvas from './Canvas';
 import PresentApp from '../present/PresentApp';
 
 export default function EditorApp() {
-  const loaded = useStore((s) => s.loaded);
-  const bootError = useStore((s) => s.bootError);
-  const presenting = useStore((s) => s.presenting);
-  const setPresenting = useStore((s) => s.setPresenting);
-  const setCurrent = useStore((s) => s.setCurrent);
-  const title = useStore((s) => s.deck.title);
-  const font = useStore((s) => s.deck.font);
-  const accent = useStore((s) => s.deck.accent);
+  const loaded = useStore((state) => state.loaded);
+  const bootError = useStore((state) => state.bootError);
+  const presenting = useStore((state) => state.presenting);
+  const setPresenting = useStore((state) => state.setPresenting);
+  const setCurrent = useStore((state) => state.setCurrent);
+  const title = useStore((state) => state.deck.title);
+  const font = useStore((state) => state.deck.font);
+  const accent = useStore((state) => state.deck.accent);
 
   useEffect(() => {
     useStore.getState().load();

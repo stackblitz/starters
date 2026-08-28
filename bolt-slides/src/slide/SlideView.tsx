@@ -85,8 +85,8 @@ class SlideBoundary extends Component<
   { err: string | null }
 > {
   state = { err: null as string | null };
-  static getDerivedStateFromError(e: unknown) {
-    return { err: String(e) };
+  static getDerivedStateFromError(error: unknown) {
+    return { err: String(error) };
   }
   componentDidUpdate(prev: { children: RN }) {
     if (this.state.err && prev.children !== this.props.children)
@@ -145,11 +145,11 @@ export default function SlideView({
     // suppress the per-layout staggers; the slide enters as one (or instantly)
     content = <DeckCtx.Provider value={STATIC_CTX}>{content}</DeckCtx.Provider>;
     if (mode !== 'none') {
-      const v = ENTRANCES[mode] ?? ENTRANCES.fade;
+      const variants = ENTRANCES[mode] ?? ENTRANCES.fade;
       content = (
         <motion.div
           style={{ width: '100%', height: '100%' }}
-          variants={v}
+          variants={variants}
           initial="initial"
           animate="animate"
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}

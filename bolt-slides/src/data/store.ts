@@ -20,14 +20,16 @@ export function setPath(obj: any, path: string, value: unknown): any {
   const clone = structuredClone(obj);
   const keys = path.split('.');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let cur: any = clone;
+  let cursor: any = clone;
   for (let i = 0; i < keys.length - 1; i++) {
-    const k: string | number = Array.isArray(cur) ? Number(keys[i]) : keys[i];
-    if (cur[k] == null) cur[k] = /^\d+$/.test(keys[i + 1]) ? [] : {};
-    cur = cur[k];
+    const key: string | number = Array.isArray(cursor)
+      ? Number(keys[i])
+      : keys[i];
+    if (cursor[key] == null) cursor[key] = /^\d+$/.test(keys[i + 1]) ? [] : {};
+    cursor = cursor[key];
   }
   const last = keys[keys.length - 1];
-  cur[Array.isArray(cur) ? Number(last) : last] = value;
+  cursor[Array.isArray(cursor) ? Number(last) : last] = value;
   return clone;
 }
 
@@ -36,8 +38,10 @@ export const getPath = (obj: any, path: string): any =>
   path
     .split('.')
     .reduce(
-      (o, k) =>
-        o == null ? undefined : o[Array.isArray(o) ? (Number(k) as never) : k],
+      (node, key) =>
+        node == null
+          ? undefined
+          : node[Array.isArray(node) ? (Number(key) as never) : key],
       obj
     );
 
@@ -51,37 +55,41 @@ function newSlideId(): string {
 }
 
 function coerceSlide(raw: SlideData): SlideData {
-  const s = raw as SlideData & { type?: string };
-  const rest = { ...s };
+  const slide = raw as SlideData & { type?: string };
+  const rest = { ...slide };
   delete rest.type;
   return {
     ...rest,
-    layout: String(s.layout || s.type || '').trim(),
-    background: s.background ?? { type: 'color', color: 'var(--bg)' },
+    layout: String(slide.layout || slide.type || '').trim(),
+    background: slide.background ?? { type: 'color', color: 'var(--bg)' },
   };
 }
 
 function parseDeckFile(raw: unknown): DeckFile {
   if (!raw || typeof raw !== 'object') throw new Error('invalid-deck');
-  const f = raw as DeckFile;
-  if (!f.deck || typeof f.deck !== 'object' || !Array.isArray(f.slides)) {
+  const file = raw as DeckFile;
+  if (
+    !file.deck ||
+    typeof file.deck !== 'object' ||
+    !Array.isArray(file.slides)
+  ) {
     throw new Error('invalid-deck');
   }
-  return { ...f, slides: f.slides.map(coerceSlide) };
+  return { ...file, slides: file.slides.map(coerceSlide) };
 }
 
-function toFile(s: {
+function toFile(state: {
   boltSlidesVersion: number;
   boltSlidesId: string | null;
   deck: DeckMeta;
   slides: SlideData[];
 }): DeckFile {
   const file: DeckFile = {
-    boltSlidesVersion: s.boltSlidesVersion || 1,
-    deck: s.deck,
-    slides: s.slides.map((sl, i) => ({ ...sl, position: i })),
+    boltSlidesVersion: state.boltSlidesVersion || 1,
+    deck: state.deck,
+    slides: state.slides.map((slide, i) => ({ ...slide, position: i })),
   };
-  if (s.boltSlidesId) file.boltSlidesId = s.boltSlidesId;
+  if (state.boltSlidesId) file.boltSlidesId = state.boltSlidesId;
   return file;
 }
 
@@ -110,15 +118,15 @@ interface Store extends AppState {
   current: number;
   /** "slideId|listPath" while a repeatable list is being edited (keeps its + visible) */
   activeList: string | null;
-  setActiveList(v: string | null): void;
+  setActiveList(value: string | null): void;
   /** studio Present — in-place swap, no URL change */
   presenting: boolean;
-  setPresenting(v: boolean): void;
+  setPresenting(value: boolean): void;
 
   load(): void;
   /** Replace deck/slides from disk or another window; keep current by id. */
   applyFile(raw: unknown): void;
-  setCurrent(i: number): void;
+  setCurrent(index: number): void;
 
   updateDeck(patch: Partial<DeckMeta>): void;
   patchSlide(id: string, patch: Partial<SlideData>): void;
@@ -132,20 +140,22 @@ interface Store extends AppState {
      item index on the current slide + a one-shot request to open the
      chart data drawer. Used only by FreeformEditor. */
   cnvSel: number | null;
-  setCnvSel(i: number | null): void;
+  setCnvSel(index: number | null): void;
   cnvDataReq: boolean;
-  reqCnvData(v: boolean): void;
+  reqCnvData(value: boolean): void;
 }
 
 function applyEnvelope(
-  set: (partial: Partial<Store> | ((s: Store) => Partial<Store>)) => void,
+  set: (partial: Partial<Store> | ((state: Store) => Partial<Store>)) => void,
   getState: () => Store,
   raw: unknown
 ) {
   const file = parseDeckFile(raw);
-  const slides = [...file.slides].sort((a, b) => a.position - b.position);
+  const slides = [...file.slides].sort(
+    (left, right) => left.position - right.position
+  );
   const prevId = getState().slides[getState().current]?.id;
-  const byId = prevId ? slides.findIndex((s) => s.id === prevId) : -1;
+  const byId = prevId ? slides.findIndex((slide) => slide.id === prevId) : -1;
   const current =
     byId >= 0
       ? byId
@@ -170,19 +180,19 @@ export const useStore = create<Store>((set, getState) => ({
   boltSlidesVersion: 1,
   boltSlidesId: null,
   cnvSel: null,
-  setCnvSel: (i) => set({ cnvSel: i }),
+  setCnvSel: (index) => set({ cnvSel: index }),
   cnvDataReq: false,
-  reqCnvData: (v) => set({ cnvDataReq: v }),
+  reqCnvData: (value) => set({ cnvDataReq: value }),
   deck: { title: '', transition: 'fade' },
   slides: [],
   current: 0,
   activeList: null,
-  setActiveList(v) {
-    set({ activeList: v });
+  setActiveList(value) {
+    set({ activeList: value });
   },
   presenting: false,
-  setPresenting(v) {
-    set({ presenting: v });
+  setPresenting(value) {
+    set({ presenting: value });
   },
 
   load() {
@@ -207,32 +217,36 @@ export const useStore = create<Store>((set, getState) => ({
     }
   },
 
-  setCurrent(i) {
-    const n = Math.max(0, Math.min(getState().slides.length - 1, i));
-    set({ current: n });
+  setCurrent(index) {
+    const next = Math.max(0, Math.min(getState().slides.length - 1, index));
+    set({ current: next });
   },
 
   updateDeck(patch) {
-    set((s) => ({ deck: { ...s.deck, ...patch } }));
+    set((state) => ({ deck: { ...state.deck, ...patch } }));
     void persist();
   },
 
   patchSlide(id, patch) {
-    set((s) => ({
-      slides: s.slides.map((sl) => (sl.id === id ? { ...sl, ...patch } : sl)),
+    set((state) => ({
+      slides: state.slides.map((slide) =>
+        slide.id === id ? { ...slide, ...patch } : slide
+      ),
     }));
     bus?.postMessage({ type: 'patch', id, patch });
     const keys = Object.keys(patch);
-    const notesOnly = keys.length > 0 && keys.every((k) => k === 'notes');
+    const notesOnly = keys.length > 0 && keys.every((key) => key === 'notes');
     schedulePersist(notesOnly ? 400 : 0);
   },
 
   setProp(id, path, value) {
-    const slide = getState().slides.find((s) => s.id === id);
+    const slide = getState().slides.find((row) => row.id === id);
     if (!slide) return;
     const props = setPath(slide.props, path, value);
-    set((s) => ({
-      slides: s.slides.map((sl) => (sl.id === id ? { ...sl, props } : sl)),
+    set((state) => ({
+      slides: state.slides.map((row) =>
+        row.id === id ? { ...row, props } : row
+      ),
     }));
     void persist();
   },
@@ -243,7 +257,7 @@ export const useStore = create<Store>((set, getState) => ({
 
   duplicateSlide(id) {
     const slides = getState().slides;
-    const idx = slides.findIndex((sl) => sl.id === id);
+    const idx = slides.findIndex((slide) => slide.id === id);
     if (idx < 0) return;
     const copy: SlideData = {
       ...structuredClone(slides[idx]),
@@ -253,33 +267,33 @@ export const useStore = create<Store>((set, getState) => ({
       ...slides.slice(0, idx + 1),
       copy,
       ...slides.slice(idx + 1),
-    ].map((sl, i) => ({ ...sl, position: i }));
+    ].map((slide, i) => ({ ...slide, position: i }));
     set({ slides: next, current: idx + 1 });
     void persist();
   },
 
   deleteSlide(id) {
-    const cur = getState().current;
+    const current = getState().current;
     const next = getState()
-      .slides.filter((sl) => sl.id !== id)
-      .map((sl, i) => ({ ...sl, position: i }));
+      .slides.filter((slide) => slide.id !== id)
+      .map((slide, i) => ({ ...slide, position: i }));
     set({
       slides: next,
-      current: Math.min(cur, Math.max(0, next.length - 1)),
+      current: Math.min(current, Math.max(0, next.length - 1)),
     });
     void persist();
   },
 
   reorder(ids) {
-    const cur = getState().slides[getState().current]?.id;
-    set((s) => ({
+    const currentId = getState().slides[getState().current]?.id;
+    set((state) => ({
       slides: ids
         .map((id, i) => {
-          const sl = s.slides.find((row) => row.id === id);
-          return sl ? { ...sl, position: i } : null;
+          const slide = state.slides.find((row) => row.id === id);
+          return slide ? { ...slide, position: i } : null;
         })
-        .filter((sl): sl is SlideData => !!sl),
-      current: Math.max(0, ids.indexOf(cur ?? '')),
+        .filter((slide): slide is SlideData => !!slide),
+      current: Math.max(0, ids.indexOf(currentId ?? '')),
     }));
     void persist();
   },
@@ -316,20 +330,22 @@ async function persist() {
   persisting = false;
 }
 
-bus?.addEventListener('message', (e) => {
-  const m = e.data as {
+bus?.addEventListener('message', (event) => {
+  const message = event.data as {
     type?: string;
     file?: unknown;
     id?: string;
     patch?: Partial<SlideData>;
   } | null;
-  if (m?.type === 'deck-file' && m.file) {
-    useStore.getState().applyFile(m.file);
+  if (message?.type === 'deck-file' && message.file) {
+    useStore.getState().applyFile(message.file);
     return;
   }
-  if (m?.type !== 'patch' || !m.id || !m.patch) return;
-  useStore.setState((s) => ({
-    slides: s.slides.map((sl) => (sl.id === m.id ? { ...sl, ...m.patch } : sl)),
+  if (message?.type !== 'patch' || !message.id || !message.patch) return;
+  useStore.setState((state) => ({
+    slides: state.slides.map((slide) =>
+      slide.id === message.id ? { ...slide, ...message.patch } : slide
+    ),
   }));
 });
 
