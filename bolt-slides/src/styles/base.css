@@ -2031,6 +2031,14 @@ strong {
 .noir-thumb.active .noir-thumb-frame {
   border-color: var(--ed-brand);
 }
+.noir-thumb.sel .noir-thumb-frame {
+  outline: 2px solid var(--ed-brand);
+  outline-offset: 3px;
+}
+.noir-thumb-grid:focus,
+.noir-thumb-grid:focus-visible {
+  outline: none;
+}
 /* Fixed 16×9 stage (1280×720) scaled into the frame — thumbs keep presentation
    aspect instead of mirroring the live window. width/height/transform inline. */
 .noir-thumb-scale {
@@ -2100,7 +2108,7 @@ strong {
   font-size: 14px;
 }
 .noir-grid-list {
-  padding-top: 10px;
+  padding: 6px 2px 10px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: clamp(14px, 2vw, 26px);

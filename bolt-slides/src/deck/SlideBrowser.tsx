@@ -29,6 +29,39 @@ import { STAGE_LAYOUT_TRANSITION } from './stageLayout';
 
 export type BrowseMode = 'none' | 'rail' | 'grid';
 
+function columnCount(list: HTMLElement | null): number {
+  if (!list || list.children.length < 2) return 1;
+  const rowTop = (list.children[0] as HTMLElement).offsetTop;
+  let cols = 1;
+  for (let i = 1; i < list.children.length; i++) {
+    if ((list.children[i] as HTMLElement).offsetTop !== rowTop) break;
+    cols++;
+  }
+  return cols;
+}
+
+function moveGridFocus(
+  from: number,
+  key: string,
+  count: number,
+  cols: number
+): number | null {
+  if (count <= 0) return null;
+  if (key === 'Home') return 0;
+  if (key === 'End') return count - 1;
+  if (key === 'ArrowRight') return Math.min(count - 1, from + 1);
+  if (key === 'ArrowLeft') return Math.max(0, from - 1);
+  if (key === 'ArrowDown') {
+    const next = from + cols;
+    return next < count ? next : from;
+  }
+  if (key === 'ArrowUp') {
+    const next = from - cols;
+    return next >= 0 ? next : from;
+  }
+  return null;
+}
+
 function renderSlide(slide: SlideData) {
   return (
     <SlideView
@@ -39,9 +72,12 @@ function renderSlide(slide: SlideData) {
   );
 }
 
-function thumbClass(grid: boolean, active: boolean) {
+function thumbClass(grid: boolean, active: boolean, selected = false) {
   return (
-    'noir-thumb' + (grid ? ' noir-thumb-grid' : '') + (active ? ' active' : '')
+    'noir-thumb' +
+    (grid ? ' noir-thumb-grid' : '') +
+    (active ? ' active' : '') +
+    (selected ? ' sel' : '')
   );
 }
 
@@ -67,18 +103,26 @@ function NavThumb({
   slide,
   index,
   active,
+  selected,
   grid,
+  tabIndex,
   navLabel,
+  thumbRef,
   onPick,
   onOpen,
+  onKeyDown,
 }: {
   slide: SlideData;
   index: number;
   active: boolean;
+  selected?: boolean;
   grid: boolean;
+  tabIndex?: number;
   navLabel?: (index: number) => string | undefined;
+  thumbRef?: (node: HTMLButtonElement | null) => void;
   onPick?: () => void;
   onOpen?: () => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
 }) {
   const name = navLabel?.(index);
   const label = grid
@@ -86,22 +130,17 @@ function NavThumb({
     : `Go to slide ${index + 1}${name ? ' — ' + name : ''}`;
   return (
     <button
+      ref={thumbRef}
       type="button"
-      className={thumbClass(grid, active)}
+      className={thumbClass(grid, active, selected)}
+      tabIndex={tabIndex}
       aria-label={label}
       aria-current={active ? 'true' : undefined}
+      aria-selected={grid ? selected : undefined}
+      role={grid ? 'option' : undefined}
       onClick={onPick}
       onDoubleClick={onOpen}
-      onKeyDown={
-        onOpen
-          ? (event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onOpen();
-              }
-            }
-          : undefined
-      }
+      onKeyDown={onKeyDown}
     >
       <ThumbBody slide={slide} index={index} grid={grid} />
     </button>
@@ -112,19 +151,27 @@ function SortableThumb({
   slide,
   index,
   active,
+  selected,
   grid,
+  tabIndex,
   navLabel,
+  thumbRef,
   onPick,
   onOpen,
+  onKeyDown,
   onMenu,
 }: {
   slide: SlideData;
   index: number;
   active: boolean;
+  selected?: boolean;
   grid: boolean;
+  tabIndex?: number;
   navLabel?: (index: number) => string | undefined;
+  thumbRef?: (node: HTMLButtonElement | null) => void;
   onPick?: () => void;
   onOpen?: () => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   onMenu: (event: React.MouseEvent) => void;
 }) {
   const {
@@ -143,30 +190,27 @@ function SortableThumb({
 
   return (
     <button
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        thumbRef?.(node);
+      }}
       type="button"
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.55 : 1,
       }}
-      className={thumbClass(grid, active)}
+      className={thumbClass(grid, active, selected)}
       aria-label={label}
       aria-current={active ? 'true' : undefined}
       {...attributes}
       {...listeners}
+      tabIndex={tabIndex}
+      role={grid ? 'option' : undefined}
+      aria-selected={grid ? selected : undefined}
       onClick={onPick}
       onDoubleClick={onOpen}
-      onKeyDown={
-        onOpen
-          ? (event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onOpen();
-              }
-            }
-          : undefined
-      }
+      onKeyDown={onKeyDown}
       onContextMenu={onMenu}
     >
       <ThumbBody slide={slide} index={index} grid={grid} />
@@ -206,10 +250,34 @@ export default function SlideBrowser({
   const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(
     null
   );
+  const [gridFocus, setGridFocus] = useState(current);
+  const thumbRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const gridWasOpen = useRef(false);
 
   useEffect(() => {
     if (railOpen) setRailThumbs(true);
   }, [railOpen]);
+
+  useEffect(() => {
+    if (gridOpen && !gridWasOpen.current) {
+      setGridFocus(Math.max(0, Math.min(current, slides.length - 1)));
+    }
+    gridWasOpen.current = gridOpen;
+  }, [gridOpen, current, slides.length]);
+
+  useEffect(() => {
+    if (!gridOpen) return;
+    setGridFocus((index) =>
+      Math.max(0, Math.min(index, Math.max(0, slides.length - 1)))
+    );
+  }, [gridOpen, slides.length]);
+
+  useEffect(() => {
+    if (!gridOpen) return;
+    const el = thumbRefs.current[gridFocus];
+    el?.focus({ preventScroll: true });
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [gridFocus, gridOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -245,14 +313,48 @@ export default function SlideBrowser({
 
   const ids = slides.map((slide) => slide.id);
 
+  const onGridKeyDown = (
+    index: number,
+    event: React.KeyboardEvent<HTMLButtonElement>
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      event.stopPropagation();
+      onGo(index);
+      onClose();
+      return;
+    }
+    const list = gridRef.current?.querySelector('.noir-grid-list');
+    const next = moveGridFocus(
+      index,
+      event.key,
+      slides.length,
+      columnCount(list instanceof HTMLElement ? list : null)
+    );
+    if (next == null || next === index) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setGridFocus(next);
+  };
+
   const thumbs = (grid: boolean) =>
     slides.map((slide, i) => {
-      const onPick = grid ? undefined : () => onGo(i);
+      const selected = grid && i === gridFocus;
+      const onPick = grid ? () => setGridFocus(i) : () => onGo(i);
       const onOpen = grid
         ? () => {
             onGo(i);
             onClose();
           }
+        : undefined;
+      const thumbRef = grid
+        ? (node: HTMLButtonElement | null) => {
+            thumbRefs.current[i] = node;
+          }
+        : undefined;
+      const onKeyDown = grid
+        ? (event: React.KeyboardEvent<HTMLButtonElement>) =>
+            onGridKeyDown(i, event)
         : undefined;
       if (!mutable || !onMenu)
         return (
@@ -261,10 +363,14 @@ export default function SlideBrowser({
             slide={slide}
             index={i}
             active={i === current}
+            selected={selected}
             grid={grid}
+            tabIndex={grid ? (selected ? 0 : -1) : undefined}
             navLabel={navLabel}
+            thumbRef={thumbRef}
             onPick={onPick}
             onOpen={onOpen}
+            onKeyDown={onKeyDown}
           />
         );
       return (
@@ -273,10 +379,14 @@ export default function SlideBrowser({
           slide={slide}
           index={i}
           active={i === current}
+          selected={selected}
           grid={grid}
+          tabIndex={grid ? (selected ? 0 : -1) : undefined}
           navLabel={navLabel}
+          thumbRef={thumbRef}
           onPick={onPick}
           onOpen={onOpen}
+          onKeyDown={onKeyDown}
           onMenu={(event) => onMenu(event, slide.id)}
         />
       );
@@ -355,7 +465,13 @@ export default function SlideBrowser({
                 <IconClose />
               </button>
             </div>
-            <div className="noir-grid-list">{wrap(true, thumbs(true))}</div>
+            <div
+              className="noir-grid-list"
+              role="listbox"
+              aria-label="All slides"
+            >
+              {wrap(true, thumbs(true))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

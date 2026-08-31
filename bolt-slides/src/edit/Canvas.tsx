@@ -187,6 +187,7 @@ export default function Canvas({
         event.key === 'ArrowRight' ||
         event.key === 'PageDown'
       ) {
+        if (browse === 'grid') return;
         event.preventDefault();
         setCurrent(current + 1);
       }
@@ -195,6 +196,7 @@ export default function Canvas({
         event.key === 'ArrowLeft' ||
         event.key === 'PageUp'
       ) {
+        if (browse === 'grid') return;
         event.preventDefault();
         setCurrent(current - 1);
       }

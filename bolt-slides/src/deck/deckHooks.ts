@@ -81,20 +81,24 @@ export function useDeckKeyboard(options: {
         case 'ArrowDown':
         case ' ':
         case 'PageDown':
+          if (browse === 'grid') break;
           event.preventDefault();
           next();
           break;
         case 'ArrowLeft':
         case 'ArrowUp':
         case 'PageUp':
+          if (browse === 'grid') break;
           event.preventDefault();
           prev();
           break;
         case 'Home':
+          if (browse === 'grid') break;
           event.preventDefault();
           go(0);
           break;
         case 'End':
+          if (browse === 'grid') break;
           event.preventDefault();
           go(slideCount - 1);
           break;
