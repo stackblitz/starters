@@ -2013,8 +2013,15 @@ strong {
   height: auto;
   border-radius: 9px;
   overflow: hidden;
-  border: 1.5px solid transparent;
-  transition: border-color 0.25s ease;
+  /* No border — border-box + aspect-ratio would shrink the content box off
+     16×9 and letterbox the scaled slide. Hover / active / sel use outline. */
+  border: none;
+  /* Transparent by default so outline-color doesn't interpolate from
+     currentColor (near-white text) on hover. */
+  outline: 1.5px solid transparent;
+  outline-offset: 0;
+  transition: outline-color 0.25s ease, outline-offset 0.25s ease,
+    outline-width 0.25s ease;
   line-height: 0;
   /* Fixed thumb chrome — do not follow the window aspect or rail thumbs
      grow taller as the viewport narrows. */
@@ -2023,20 +2030,23 @@ strong {
   background: var(--bg);
 }
 .noir-thumb:hover .noir-thumb-frame {
-  border-color: var(--ed-border);
+  outline-color: var(--ed-border);
 }
 .noir-thumb.active .noir-thumb-no {
   color: var(--ed-brand);
 }
 .noir-thumb.active .noir-thumb-frame {
-  border-color: var(--ed-brand);
+  outline-color: var(--ed-brand);
 }
-.noir-thumb.sel .noir-thumb-frame {
-  outline: 2px solid var(--ed-brand);
+.noir-thumb.sel .noir-thumb-frame,
+.noir-thumb.sel:hover .noir-thumb-frame,
+.noir-thumb.active.sel .noir-thumb-frame {
+  outline-width: 2px;
+  outline-color: var(--ed-brand);
   outline-offset: 3px;
 }
-.noir-thumb-grid:focus,
-.noir-thumb-grid:focus-visible {
+.noir-thumb:focus,
+.noir-thumb:focus-visible {
   outline: none;
 }
 /* Fixed 16×9 stage (1280×720) scaled into the frame — thumbs keep presentation
@@ -2250,9 +2260,8 @@ strong {
   gap: clamp(14px, 2vw, 28px);
   padding: clamp(14px, 2vw, 26px);
 }
-/* The stage column sizes its previews from the AVAILABLE HEIGHT, not just the
-   width: the frame keeps its aspect and shrinks to fit, so a short or narrow
-   presenter window never pushes the notes off screen. */
+/* The stage column stacks the live preview and up-next. The live preview
+   sizes from its width (16×9); leftover column height stays empty chrome. */
 .pres-stage {
   display: flex;
   flex-direction: column;
@@ -2290,14 +2299,21 @@ strong {
   border: 1px solid var(--ed-border);
   box-shadow: var(--ed-shadow-lg);
 }
+/* Hug the 16×9 slide — don't stretch a tall empty chrome box under it. */
 .pres-now {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
+  width: 100%;
   display: flex;
   justify-content: center;
 }
-/* height-driven: the frame's own aspect-ratio decides its width */
-.pres-now .noir-thumb-frame,
+.pres-now .noir-thumb-frame {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  flex: none;
+}
+/* Up-next keeps a fixed preview height; the frame fills that box. */
 .pres-next .noir-thumb-frame {
   height: 100%;
   width: auto;
@@ -2726,6 +2742,12 @@ strong {
   }
   .pres-now {
     flex: 1 1 auto;
+    min-width: 0;
+    align-self: stretch;
+  }
+  .pres-now .noir-thumb-frame {
+    height: 100%;
+    width: auto;
   }
   .pres-next-wrap {
     justify-content: flex-end;
