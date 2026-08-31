@@ -70,17 +70,20 @@ function NavThumb({
   grid,
   navLabel,
   onPick,
+  onOpen,
 }: {
   slide: SlideData;
   index: number;
   active: boolean;
   grid: boolean;
   navLabel?: (index: number) => string | undefined;
-  onPick: () => void;
+  onPick?: () => void;
+  onOpen?: () => void;
 }) {
-  const label = `Go to slide ${index + 1}${
-    navLabel?.(index) ? ' — ' + navLabel(index) : ''
-  }`;
+  const name = navLabel?.(index);
+  const label = grid
+    ? `Slide ${index + 1}${name ? ' — ' + name : ''}. Double-click to open.`
+    : `Go to slide ${index + 1}${name ? ' — ' + name : ''}`;
   return (
     <button
       type="button"
@@ -88,6 +91,17 @@ function NavThumb({
       aria-label={label}
       aria-current={active ? 'true' : undefined}
       onClick={onPick}
+      onDoubleClick={onOpen}
+      onKeyDown={
+        onOpen
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onOpen();
+              }
+            }
+          : undefined
+      }
     >
       <ThumbBody slide={slide} index={index} grid={grid} />
     </button>
@@ -101,6 +115,7 @@ function SortableThumb({
   grid,
   navLabel,
   onPick,
+  onOpen,
   onMenu,
 }: {
   slide: SlideData;
@@ -108,7 +123,8 @@ function SortableThumb({
   active: boolean;
   grid: boolean;
   navLabel?: (index: number) => string | undefined;
-  onPick: () => void;
+  onPick?: () => void;
+  onOpen?: () => void;
   onMenu: (event: React.MouseEvent) => void;
 }) {
   const {
@@ -120,9 +136,10 @@ function SortableThumb({
     isDragging,
   } = useSortable({ id: slide.id });
 
-  const label = `Go to slide ${index + 1}${
-    navLabel?.(index) ? ' — ' + navLabel(index) : ''
-  }`;
+  const name = navLabel?.(index);
+  const label = grid
+    ? `Slide ${index + 1}${name ? ' — ' + name : ''}. Double-click to open.`
+    : `Go to slide ${index + 1}${name ? ' — ' + name : ''}`;
 
   return (
     <button
@@ -136,10 +153,21 @@ function SortableThumb({
       className={thumbClass(grid, active)}
       aria-label={label}
       aria-current={active ? 'true' : undefined}
-      onClick={onPick}
-      onContextMenu={onMenu}
       {...attributes}
       {...listeners}
+      onClick={onPick}
+      onDoubleClick={onOpen}
+      onKeyDown={
+        onOpen
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onOpen();
+              }
+            }
+          : undefined
+      }
+      onContextMenu={onMenu}
     >
       <ThumbBody slide={slide} index={index} grid={grid} />
     </button>
@@ -219,10 +247,13 @@ export default function SlideBrowser({
 
   const thumbs = (grid: boolean) =>
     slides.map((slide, i) => {
-      const onPick = () => {
-        onGo(i);
-        if (grid) onClose();
-      };
+      const onPick = grid ? undefined : () => onGo(i);
+      const onOpen = grid
+        ? () => {
+            onGo(i);
+            onClose();
+          }
+        : undefined;
       if (!mutable || !onMenu)
         return (
           <NavThumb
@@ -233,6 +264,7 @@ export default function SlideBrowser({
             grid={grid}
             navLabel={navLabel}
             onPick={onPick}
+            onOpen={onOpen}
           />
         );
       return (
@@ -244,6 +276,7 @@ export default function SlideBrowser({
           grid={grid}
           navLabel={navLabel}
           onPick={onPick}
+          onOpen={onOpen}
           onMenu={(event) => onMenu(event, slide.id)}
         />
       );

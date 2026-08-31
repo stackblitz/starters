@@ -278,20 +278,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
         >
           <IconGrip />
         </button>
-        {onBack && (
-          <>
-            <button
-              type="button"
-              className="noir-icon-btn"
-              data-tip="Back to editor (Esc)"
-              aria-label="Back to the editor"
-              onClick={onBack}
-            >
-              <IconClose />
-            </button>
-            <span className="noir-sep" />
-          </>
-        )}
         <button
           type="button"
           className={'noir-icon-btn' + (railOpen ? ' on' : '')}
@@ -412,6 +398,20 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
             disabled={!!exportBusy}
             items={exportItems}
           />
+        )}
+        {onBack && (
+          <>
+            <span className="noir-sep" />
+            <button
+              type="button"
+              className="noir-icon-btn danger"
+              data-tip="Back to editor (Esc)"
+              aria-label="Back to the editor"
+              onClick={onBack}
+            >
+              <IconClose />
+            </button>
+          </>
         )}
       </div>
     </div>

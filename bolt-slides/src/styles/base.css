@@ -1826,6 +1826,17 @@ strong {
   color: var(--ed-on-brand);
   background: var(--ed-brand);
 }
+.noir-dock:hover .noir-icon-btn.danger,
+.noir-dock:focus-within .noir-icon-btn.danger,
+.noir-dock.dragging .noir-icon-btn.danger {
+  color: var(--ed-on-danger);
+  background: var(--ed-danger);
+}
+.noir-dock:hover .noir-icon-btn.danger:hover,
+.noir-dock:focus-within .noir-icon-btn.danger:hover,
+.noir-dock.dragging .noir-icon-btn.danger:hover {
+  background: var(--ed-danger-hover);
+}
 .noir-icon-btn.sm {
   width: 28px;
   height: 28px;
