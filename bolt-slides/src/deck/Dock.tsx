@@ -15,6 +15,7 @@ import {
 import {
   IconClose,
   IconExpand,
+  IconExport,
   IconGrid,
   IconGrip,
   IconLeft,
@@ -326,6 +327,17 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
           <IconRight />
         </button>
         {(isEditor || isPresentSurface) && <span className="noir-sep" />}
+        {isEditor && exportItems && (
+          <MenuButton
+            label="Export as…"
+            buttonClassName="noir-icon-btn"
+            tip={exportBusy ? undefined : 'Export as PDF or JSON'}
+            disabled={!!exportBusy}
+            items={exportItems}
+          >
+            <IconExport />
+          </MenuButton>
+        )}
         {isEditor && onNotes && (
           <button
             ref={notesBtnRef}
@@ -389,15 +401,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
           >
             <IconPlay />
           </button>
-        )}
-        {isEditor && exportItems && (
-          <MenuButton
-            label="Export as…"
-            buttonClassName="noir-chip"
-            tip={exportBusy ? undefined : 'Export the deck as PDF or JSON'}
-            disabled={!!exportBusy}
-            items={exportItems}
-          />
         )}
         {onBack && (
           <>

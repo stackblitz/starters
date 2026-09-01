@@ -23,7 +23,7 @@ import { useStore } from '../data/store';
 import ContextMenu, { type MenuItem } from '../edit/ContextMenu';
 import SlideView from '../slide/SlideView';
 import Thumb from './Thumb';
-import { IconClose } from './icons';
+import { IconClose, IconTrash } from './icons';
 import { useScrolled } from './deckHooks';
 import { STAGE_LAYOUT_TRANSITION } from './stageLayout';
 
@@ -160,6 +160,7 @@ function SortableThumb({
   onOpen,
   onKeyDown,
   onMenu,
+  onDelete,
 }: {
   slide: SlideData;
   index: number;
@@ -173,6 +174,7 @@ function SortableThumb({
   onOpen?: () => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   onMenu: (event: React.MouseEvent) => void;
+  onDelete?: () => void;
 }) {
   const {
     attributes,
@@ -187,34 +189,50 @@ function SortableThumb({
   const label = grid
     ? `Slide ${index + 1}${name ? ' — ' + name : ''}. Double-click to open.`
     : `Go to slide ${index + 1}${name ? ' — ' + name : ''}`;
+  const showTrash = !!(onDelete && grid && selected);
+  const dragStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.55 : 1,
+  };
 
   return (
-    <button
-      ref={(node) => {
-        setNodeRef(node);
-        thumbRef?.(node);
-      }}
-      type="button"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.55 : 1,
-      }}
-      className={thumbClass(grid, active, selected)}
-      aria-label={label}
-      aria-current={active ? 'true' : undefined}
-      {...attributes}
-      {...listeners}
-      tabIndex={tabIndex}
-      role={grid ? 'option' : undefined}
-      aria-selected={grid ? selected : undefined}
-      onClick={onPick}
-      onDoubleClick={onOpen}
-      onKeyDown={onKeyDown}
-      onContextMenu={onMenu}
-    >
-      <ThumbBody slide={slide} index={index} grid={grid} />
-    </button>
+    <div ref={setNodeRef} className="noir-thumb-shell" style={dragStyle}>
+      <button
+        ref={thumbRef}
+        type="button"
+        className={thumbClass(grid, active, selected)}
+        aria-label={label}
+        aria-current={active ? 'true' : undefined}
+        {...attributes}
+        {...listeners}
+        tabIndex={tabIndex}
+        role={grid ? 'option' : undefined}
+        aria-selected={grid ? selected : undefined}
+        onClick={onPick}
+        onDoubleClick={onOpen}
+        onKeyDown={onKeyDown}
+        onContextMenu={onMenu}
+      >
+        <ThumbBody slide={slide} index={index} grid={grid} />
+      </button>
+      {showTrash && (
+        <button
+          type="button"
+          className="noir-thumb-trash"
+          data-tip="Delete"
+          aria-label={`Delete slide ${index + 1}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDelete();
+          }}
+        >
+          <IconTrash />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -223,6 +241,7 @@ export default function SlideBrowser({
   current,
   browse,
   mutable = false,
+  canDelete = false,
   navLabel,
   onGo,
   onClose,
@@ -231,6 +250,8 @@ export default function SlideBrowser({
   current: number;
   browse: BrowseMode;
   mutable?: boolean;
+  /** Editor-only: trash on the selected grid thumb. Hidden in present/published. */
+  canDelete?: boolean;
   navLabel?: (index: number) => string | undefined;
   onGo: (index: number) => void;
   onClose: () => void;
@@ -388,6 +409,9 @@ export default function SlideBrowser({
           onOpen={onOpen}
           onKeyDown={onKeyDown}
           onMenu={(event) => onMenu(event, slide.id)}
+          onDelete={
+            canDelete && grid ? () => deleteSlide(slide.id) : undefined
+          }
         />
       );
     });

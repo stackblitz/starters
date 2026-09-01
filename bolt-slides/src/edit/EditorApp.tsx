@@ -36,6 +36,10 @@ export default function EditorApp() {
   const closeBrowse = useCallback(() => setBrowse('none'), []);
 
   useEffect(() => {
+    if (presenting) setBrowse('none');
+  }, [presenting]);
+
+  useEffect(() => {
     useStore.getState().load();
   }, []);
   useEffect(() => {
@@ -81,6 +85,7 @@ export default function EditorApp() {
                 current={current}
                 browse={browse}
                 mutable
+                canDelete
                 onGo={setCurrent}
                 onClose={closeBrowse}
               />

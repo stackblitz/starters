@@ -1,6 +1,13 @@
 /* WAI-ARIA APG menu button — opens a role=menu, roving tabindex, and
    returns focus to the button on Escape. Tab leaves the widget. */
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 export interface MenuButtonItem {
   id: string;
@@ -15,12 +22,14 @@ export default function MenuButton({
   disabled,
   tip,
   buttonClassName = 'ghost-btn',
+  children,
 }: {
   label: string;
   items: MenuButtonItem[];
   disabled?: boolean;
   tip?: string;
   buttonClassName?: string;
+  children?: ReactNode;
 }) {
   const uid = useId();
   const buttonId = `${uid}-btn`;
@@ -148,16 +157,17 @@ export default function MenuButton({
         ref={btnRef}
         id={buttonId}
         type="button"
-        className={buttonClassName}
+        className={buttonClassName + (open ? ' on' : '')}
         data-tip={tip}
         disabled={disabled}
+        aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => (open ? close(true) : openAt(enabled[0] ?? 0))}
         onKeyDown={onButtonKey}
       >
-        {label}
+        {children ?? label}
       </button>
       {open && (
         <div

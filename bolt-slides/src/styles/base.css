@@ -1898,6 +1898,9 @@ strong {
   background: var(--ed-divider);
   margin: 0 4px;
 }
+.noir-bar .dl-wrap {
+  flex: none;
+}
 .noir-counter {
   display: flex;
   align-items: baseline;
@@ -2131,6 +2134,48 @@ strong {
 }
 .noir-thumb-grid .noir-thumb-no {
   width: auto;
+}
+.noir-thumb-shell {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+.noir-thumb-shell .noir-thumb {
+  width: 100%;
+}
+.noir-thumb-shell > .noir-thumb-trash {
+  /* Beat `[data-tip] { position: relative }` so this stays an overlay. */
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgb(17 17 20 / 0.78);
+  color: var(--ed-text);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.noir-thumb-shell > .noir-thumb-trash:hover {
+  background: var(--ed-danger);
+  color: var(--ed-on-danger);
+}
+.noir-thumb-shell > .noir-thumb-trash svg {
+  width: 14px;
+  height: 14px;
+}
+.noir-thumb-shell > .noir-thumb-trash[data-tip]::after {
+  bottom: auto;
+  top: calc(100% + 6px);
+  transform: translateX(-50%) translateY(-4px);
+}
+.noir-thumb-shell > .noir-thumb-trash[data-tip]:hover::after {
+  transform: translateX(-50%) translateY(0);
 }
 @media (max-width: 700px) {
   .noir-grid-list {

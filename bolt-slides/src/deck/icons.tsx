@@ -70,10 +70,21 @@ export const IconGrip = () => (
     <circle cx="15" cy="17.5" r="1.15" />
   </svg>
 );
+export const IconExport = () => (
+  <svg {...base}>
+    <path d="M12 3v12M8 7l4-4 4 4" />
+    <path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" />
+  </svg>
+);
 export const IconNotes = () => (
   <svg {...base}>
     <rect x="4" y="4" width="16" height="16" rx="3" />
     <path d="M8 9.5h8M8 13h8M8 16.5h4.5" />
+  </svg>
+);
+export const IconTrash = () => (
+  <svg {...base}>
+    <path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13" />
   </svg>
 );
 export const IconPlay = () => (

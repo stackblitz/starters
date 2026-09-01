@@ -229,11 +229,18 @@ export default function Deck({
   useDeckHashSync({ slideIndex, slideCount, go, skipHash });
 
   const isLeader = isPresenter || !!onExit;
+  const applyBroadcastIndex = useCallback(
+    (index: number) => {
+      setSlideIndex(index);
+      syncStoreCurrent(index);
+    },
+    [syncStoreCurrent]
+  );
   useDeckBroadcastSync({
     slideIndex,
     clicks,
     isLeader,
-    setSlideIndex,
+    setSlideIndex: applyBroadcastIndex,
     setClicks,
   });
 
