@@ -21,9 +21,10 @@ import { CSS } from '@dnd-kit/utilities';
 import type { SlideData } from '../data/types';
 import { useStore } from '../data/store';
 import ContextMenu, { type MenuItem } from '../edit/ContextMenu';
+import MenuButton, { type MenuButtonItem } from '../edit/MenuButton';
 import SlideView from '../slide/SlideView';
 import Thumb from './Thumb';
-import { IconClose, IconTrash } from './icons';
+import { IconClose, IconMore } from './icons';
 import { useScrolled } from './deckHooks';
 import { STAGE_LAYOUT_TRANSITION } from './stageLayout';
 
@@ -160,7 +161,7 @@ function SortableThumb({
   onOpen,
   onKeyDown,
   onMenu,
-  onDelete,
+  actions,
 }: {
   slide: SlideData;
   index: number;
@@ -174,7 +175,7 @@ function SortableThumb({
   onOpen?: () => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   onMenu: (event: React.MouseEvent) => void;
-  onDelete?: () => void;
+  actions?: MenuButtonItem[];
 }) {
   const {
     attributes,
@@ -189,7 +190,6 @@ function SortableThumb({
   const label = grid
     ? `Slide ${index + 1}${name ? ' — ' + name : ''}. Double-click to open.`
     : `Go to slide ${index + 1}${name ? ' — ' + name : ''}`;
-  const showTrash = !!(onDelete && grid && selected);
   const dragStyle = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -197,7 +197,16 @@ function SortableThumb({
   };
 
   return (
-    <div ref={setNodeRef} className="noir-thumb-shell" style={dragStyle}>
+    <div
+      ref={setNodeRef}
+      className={
+        'noir-thumb-shell' +
+        (grid ? ' grid' : '') +
+        (active ? ' active' : '') +
+        (selected ? ' sel' : '')
+      }
+      style={dragStyle}
+    >
       <button
         ref={thumbRef}
         type="button"
@@ -216,21 +225,18 @@ function SortableThumb({
       >
         <ThumbBody slide={slide} index={index} grid={grid} />
       </button>
-      {showTrash && (
-        <button
-          type="button"
-          className="noir-thumb-trash"
-          data-tip="Delete"
-          aria-label={`Delete slide ${index + 1}`}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onDelete();
-          }}
+      {actions && (
+        <MenuButton
+          label={`Actions for slide ${index + 1}`}
+          buttonClassName="noir-thumb-more-btn"
+          wrapClassName="noir-thumb-more"
+          placement="down"
+          tip="Slide actions"
+          tabIndex={grid ? (selected ? 0 : -1) : undefined}
+          items={actions}
         >
-          <IconTrash />
-        </button>
+          <IconMore />
+        </MenuButton>
       )}
     </div>
   );
@@ -250,7 +256,7 @@ export default function SlideBrowser({
   current: number;
   browse: BrowseMode;
   mutable?: boolean;
-  /** Editor-only: trash on the selected grid thumb. Hidden in present/published. */
+  /** Editor-only: overflow menu (duplicate / delete) on rail and grid thumbs. */
   canDelete?: boolean;
   navLabel?: (index: number) => string | undefined;
   onGo: (index: number) => void;
@@ -409,8 +415,22 @@ export default function SlideBrowser({
           onOpen={onOpen}
           onKeyDown={onKeyDown}
           onMenu={(event) => onMenu(event, slide.id)}
-          onDelete={
-            canDelete && grid ? () => deleteSlide(slide.id) : undefined
+          actions={
+            canDelete
+              ? [
+                  {
+                    id: 'dup',
+                    label: 'Duplicate',
+                    onSelect: () => duplicateSlide(slide.id),
+                  },
+                  {
+                    id: 'del',
+                    label: 'Delete',
+                    danger: true,
+                    onSelect: () => deleteSlide(slide.id),
+                  },
+                ]
+              : undefined
           }
         />
       );
@@ -439,6 +459,7 @@ export default function SlideBrowser({
       <motion.aside
         className={'noir-rail' + (railOpen ? ' open' : '')}
         ref={railRef}
+        inert={!railOpen ? true : undefined}
         initial={false}
         animate={{ x: railOpen ? 0 : '-100%' }}
         transition={STAGE_LAYOUT_TRANSITION}

@@ -82,9 +82,11 @@ export const IconNotes = () => (
     <path d="M8 9.5h8M8 13h8M8 16.5h4.5" />
   </svg>
 );
-export const IconTrash = () => (
-  <svg {...base}>
-    <path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13" />
+export const IconMore = () => (
+  <svg {...base} stroke="none" fill="currentColor">
+    <circle cx="12" cy="6" r="1.5" />
+    <circle cx="12" cy="12" r="1.5" />
+    <circle cx="12" cy="18" r="1.5" />
   </svg>
 );
 export const IconPlay = () => (

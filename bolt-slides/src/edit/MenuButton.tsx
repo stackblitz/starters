@@ -13,6 +13,7 @@ export interface MenuButtonItem {
   id: string;
   label: string;
   disabled?: boolean;
+  danger?: boolean;
   onSelect: () => void;
 }
 
@@ -22,6 +23,9 @@ export default function MenuButton({
   disabled,
   tip,
   buttonClassName = 'ghost-btn',
+  wrapClassName,
+  placement = 'up',
+  tabIndex,
   children,
 }: {
   label: string;
@@ -29,6 +33,10 @@ export default function MenuButton({
   disabled?: boolean;
   tip?: string;
   buttonClassName?: string;
+  wrapClassName?: string;
+  /** Dock export opens up; thumb actions open down. */
+  placement?: 'up' | 'down';
+  tabIndex?: number;
   children?: ReactNode;
 }) {
   const uid = useId();
@@ -152,7 +160,17 @@ export default function MenuButton({
   };
 
   return (
-    <div className="dl-wrap" ref={wrapRef}>
+    <div
+      className={
+        'dl-wrap' +
+        (wrapClassName ? ' ' + wrapClassName : '') +
+        (open ? ' open' : '')
+      }
+      ref={wrapRef}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+    >
       <button
         ref={btnRef}
         id={buttonId}
@@ -164,6 +182,7 @@ export default function MenuButton({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
+        tabIndex={tabIndex}
         onClick={() => (open ? close(true) : openAt(enabled[0] ?? 0))}
         onKeyDown={onButtonKey}
       >
@@ -173,7 +192,7 @@ export default function MenuButton({
         <div
           id={menuId}
           role="menu"
-          className="dl-pop"
+          className={'dl-pop' + (placement === 'down' ? ' down' : '')}
           aria-labelledby={buttonId}
           onKeyDown={onMenuKey}
         >
@@ -186,6 +205,7 @@ export default function MenuButton({
               role="menuitem"
               tabIndex={i === active ? 0 : -1}
               aria-disabled={it.disabled || undefined}
+              className={it.danger ? 'danger' : undefined}
               onClick={() => activate(i)}
               onMouseEnter={() => {
                 if (!it.disabled) setActive(i);

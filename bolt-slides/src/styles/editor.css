@@ -406,6 +406,10 @@
   box-shadow: var(--ed-shadow-lg);
   z-index: 5;
 }
+.dl-pop.down {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
 .dl-pop [role='menuitem'] {
   display: block;
   width: 100%;
@@ -429,6 +433,9 @@
 .dl-pop [role='menuitem'][aria-disabled='true'] {
   opacity: 0.4;
   cursor: default;
+}
+.dl-pop [role='menuitem'].danger {
+  color: var(--ed-danger);
 }
 
 /* inline editing affordances — quiet: a hairline underline on hover, a soft

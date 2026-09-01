@@ -2036,17 +2036,17 @@ strong {
   outline-color: var(--ed-border);
 }
 .noir-thumb.active .noir-thumb-no {
-  color: var(--ed-brand);
+  color: var(--ed-text);
 }
 .noir-thumb.active .noir-thumb-frame {
-  outline-color: var(--ed-brand);
-}
-.noir-thumb-grid.active .noir-thumb-frame {
   outline-color: var(--ed-text);
 }
 .noir-thumb.sel .noir-thumb-frame,
 .noir-thumb.sel:hover .noir-thumb-frame,
-.noir-thumb.active.sel .noir-thumb-frame {
+.noir-thumb.active.sel .noir-thumb-frame,
+.noir-thumb:not(.noir-thumb-grid):focus-visible .noir-thumb-frame,
+.noir-thumb:not(.noir-thumb-grid):focus-visible:hover .noir-thumb-frame,
+.noir-thumb:not(.noir-thumb-grid).active:focus-visible .noir-thumb-frame {
   outline-width: 2px;
   outline-color: var(--ed-brand);
   outline-offset: 3px;
@@ -2075,7 +2075,7 @@ strong {
 .noir-grid {
   position: fixed;
   inset: 0;
-  z-index: 94;
+  z-index: 98;
   overflow-y: auto;
   padding: 0 clamp(18px, 4vw, 54px) 96px;
   background: rgb(17 17 20 / 0.92);
@@ -2146,13 +2146,37 @@ strong {
 .noir-thumb-shell .noir-thumb {
   width: 100%;
 }
-.noir-thumb-shell > .noir-thumb-trash {
-  /* Beat `[data-tip] { position: relative }` so this stays an overlay.
-     Visual: DS CloseButton ghost / icon-xs, trash instead of X. */
+.noir-thumb-shell > .dl-wrap.noir-thumb-more {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 2;
+}
+.noir-thumb-shell:not(.grid) > .dl-wrap.noir-thumb-more {
+  opacity: 0;
+  pointer-events: none;
+}
+.noir-thumb-shell:not(.grid):hover > .dl-wrap.noir-thumb-more,
+.noir-thumb-shell:not(.grid) > .dl-wrap.noir-thumb-more:focus-within,
+.noir-thumb-shell:not(.grid) > .dl-wrap.noir-thumb-more.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.noir-thumb-shell.grid > .dl-wrap.noir-thumb-more {
+  opacity: 0;
+  pointer-events: none;
+}
+.noir-thumb-shell.grid.active > .dl-wrap.noir-thumb-more,
+.noir-thumb-shell.grid.sel > .dl-wrap.noir-thumb-more,
+.noir-thumb-shell.grid > .dl-wrap.noir-thumb-more.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.noir-thumb-shell > .dl-wrap.noir-thumb-more.open {
+  z-index: 8;
+}
+.noir-thumb-more-btn {
+  /* DS CloseButton ghost / icon-xs */
   width: 28px;
   height: 28px;
   display: grid;
@@ -2164,24 +2188,29 @@ strong {
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.noir-thumb-shell > .noir-thumb-trash:hover {
+.noir-thumb-more-btn:hover,
+.noir-thumb-more-btn.on {
   background: var(--ed-util-hover);
+  color: var(--ed-text);
 }
-.noir-thumb-shell > .noir-thumb-trash:focus-visible {
+.noir-thumb-more-btn:focus-visible {
   outline: 2px solid var(--ed-brand-hover);
   outline-offset: 0;
 }
-.noir-thumb-shell > .noir-thumb-trash svg {
+.noir-thumb-more-btn svg {
   width: 20px;
   height: 20px;
 }
-.noir-thumb-shell > .noir-thumb-trash[data-tip]::after {
+.noir-thumb-more-btn[data-tip]::after {
   bottom: auto;
   top: calc(100% + 6px);
   transform: translateX(-50%) translateY(-4px);
 }
-.noir-thumb-shell > .noir-thumb-trash[data-tip]:hover::after {
+.noir-thumb-more-btn[data-tip]:hover::after {
   transform: translateX(-50%) translateY(0);
+}
+.noir-thumb-more.open .noir-thumb-more-btn[data-tip]::after {
+  content: none;
 }
 @media (max-width: 700px) {
   .noir-grid-list {
