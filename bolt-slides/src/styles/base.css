@@ -2041,6 +2041,9 @@ strong {
 .noir-thumb.active .noir-thumb-frame {
   outline-color: var(--ed-brand);
 }
+.noir-thumb-grid.active .noir-thumb-frame {
+  outline-color: var(--ed-text);
+}
 .noir-thumb.sel .noir-thumb-frame,
 .noir-thumb.sel:hover .noir-thumb-frame,
 .noir-thumb.active.sel .noir-thumb-frame {
@@ -2144,7 +2147,8 @@ strong {
   width: 100%;
 }
 .noir-thumb-shell > .noir-thumb-trash {
-  /* Beat `[data-tip] { position: relative }` so this stays an overlay. */
+  /* Beat `[data-tip] { position: relative }` so this stays an overlay.
+     Visual: DS CloseButton ghost / icon-xs, trash instead of X. */
   position: absolute;
   top: 8px;
   right: 8px;
@@ -2154,20 +2158,22 @@ strong {
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 50%;
-  background: rgb(17 17 20 / 0.78);
+  border-radius: 4px;
+  background: transparent;
   color: var(--ed-text);
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.15s ease;
 }
 .noir-thumb-shell > .noir-thumb-trash:hover {
-  background: var(--ed-danger);
-  color: var(--ed-on-danger);
+  background: var(--ed-util-hover);
+}
+.noir-thumb-shell > .noir-thumb-trash:focus-visible {
+  outline: 2px solid var(--ed-brand-hover);
+  outline-offset: 0;
 }
 .noir-thumb-shell > .noir-thumb-trash svg {
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
 }
 .noir-thumb-shell > .noir-thumb-trash[data-tip]::after {
   bottom: auto;

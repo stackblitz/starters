@@ -11,6 +11,7 @@ import {
 import { applyFont, applyAccent } from '../data/fonts';
 import Canvas from './Canvas';
 import PresentApp from '../present/PresentApp';
+import { exitFullscreen } from '../deck/deckHooks';
 import SlideBrowser, { type BrowseMode } from '../deck/SlideBrowser';
 
 export default function EditorApp() {
@@ -68,6 +69,7 @@ export default function EditorApp() {
               onExit={(i) => {
                 setCurrent(i);
                 setPresenting(false);
+                exitFullscreen();
               }}
             />
           ) : (

@@ -262,6 +262,18 @@ export function useDeckBroadcastSync(options: {
   }, [slideIndex, clicks, isLeader]);
 }
 
+export function enterFullscreen() {
+  if (document.fullscreenElement) return;
+  void document.documentElement.requestFullscreen?.()?.catch(() => {
+    /* iframe without allow, or Permissions-Policy — present still works */
+  });
+}
+
+export function exitFullscreen() {
+  if (!document.fullscreenElement) return;
+  void document.exitFullscreen?.()?.catch(() => {});
+}
+
 export function useFullscreenState() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -274,8 +286,8 @@ export function useFullscreenState() {
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen?.();
+    if (document.fullscreenElement) exitFullscreen();
+    else enterFullscreen();
   }, []);
 
   return { isFullscreen, toggleFullscreen };

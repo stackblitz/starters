@@ -279,27 +279,31 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
         >
           <IconGrip />
         </button>
-        <button
-          type="button"
-          className={'noir-icon-btn' + (railOpen ? ' on' : '')}
-          data-tip="Side panel (S)"
-          aria-label="Slide panel"
-          aria-pressed={railOpen}
-          onClick={onToggleRail}
-        >
-          <IconSidebar />
-        </button>
-        <button
-          type="button"
-          className={'noir-icon-btn' + (gridOpen ? ' on' : '')}
-          data-tip="Grid overview (G)"
-          aria-label="Grid overview"
-          aria-pressed={gridOpen}
-          onClick={onToggleGrid}
-        >
-          <IconGrid />
-        </button>
-        <span className="noir-sep" />
+        {isEditor && (
+          <>
+            <button
+              type="button"
+              className={'noir-icon-btn' + (railOpen ? ' on' : '')}
+              data-tip="Side panel (S)"
+              aria-label="Slide panel"
+              aria-pressed={railOpen}
+              onClick={onToggleRail}
+            >
+              <IconSidebar />
+            </button>
+            <button
+              type="button"
+              className={'noir-icon-btn' + (gridOpen ? ' on' : '')}
+              data-tip="Grid overview (G)"
+              aria-label="Grid overview"
+              aria-pressed={gridOpen}
+              onClick={onToggleGrid}
+            >
+              <IconGrid />
+            </button>
+            <span className="noir-sep" />
+          </>
+        )}
         <button
           type="button"
           className="noir-icon-btn"

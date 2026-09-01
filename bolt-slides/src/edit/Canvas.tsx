@@ -15,6 +15,7 @@ import { useStore, serializeDeck } from '../data/store';
 import { DeckCtx } from '../deck/DeckContext';
 import Dock from '../deck/Dock';
 import type { BrowseMode } from '../deck/SlideBrowser';
+import { enterFullscreen } from '../deck/deckHooks';
 import {
   STAGE_LAYOUT_ID,
   STAGE_LAYOUT_TRANSITION,
@@ -295,7 +296,10 @@ export default function Canvas({
         if (slides.length)
           window.open(`/?presenter=1#${current + 1}`, 'deck-presenter');
       }}
-      onPresent={() => setPresenting(true)}
+      onPresent={() => {
+        enterFullscreen();
+        setPresenting(true);
+      }}
       exportItems={exportItems}
     />
   );
