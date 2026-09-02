@@ -12,10 +12,10 @@ import {
 } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStore, serializeDeck } from '../data/store';
+import { openPresentWindow, openPresenterWindow } from '../data/shell';
 import { DeckCtx } from '../deck/DeckContext';
 import Dock from '../deck/Dock';
 import type { BrowseMode } from '../deck/SlideBrowser';
-import { enterFullscreen } from '../deck/deckHooks';
 import {
   STAGE_LAYOUT_ID,
   STAGE_LAYOUT_TRANSITION,
@@ -56,7 +56,6 @@ export default function Canvas({
   const slides = useStore((state) => state.slides);
   const current = useStore((state) => state.current);
   const setCurrent = useStore((state) => state.setCurrent);
-  const setPresenting = useStore((state) => state.setPresenting);
   const title = useStore((state) => state.deck.title);
   const slide = slides[current];
 
@@ -173,8 +172,7 @@ export default function Canvas({
       }
       if (event.key === 'p' || event.key === 'P') {
         event.preventDefault();
-        if (slides.length)
-          window.open(`/?presenter=1#${current + 1}`, 'deck-presenter');
+        if (slides.length) openPresenterWindow(current);
         return;
       }
       if (event.key === 'Escape') {
@@ -291,12 +289,10 @@ export default function Canvas({
         ) : null
       }
       onPresenter={() => {
-        if (slides.length)
-          window.open(`/?presenter=1#${current + 1}`, 'deck-presenter');
+        if (slides.length) openPresenterWindow(current);
       }}
       onPresent={() => {
-        enterFullscreen();
-        setPresenting(true);
+        if (slides.length) openPresentWindow(current);
       }}
       exportItems={exportItems}
     />

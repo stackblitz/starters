@@ -1,4 +1,4 @@
-/* Shared floating dock — same chrome in the editor, in-place present,
+/* Shared floating dock — same chrome in the editor, present tab,
    and the published audience view. Mode gates which controls appear;
    pointer-drag on the grip repositions it (persisted). */
 import {
@@ -236,7 +236,7 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
 
   const isEditor = mode === 'editor';
   const isPresentSurface = mode !== 'editor';
-  const showPresenter = mode !== 'audience' && !!onPresenter;
+  const showPresenter = !!onPresenter;
   const toast = exportBusy ?? exportFlash ?? null;
 
   return (
@@ -398,8 +398,8 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
           <button
             type="button"
             className="noir-icon-btn"
-            data-tip={slideCount ? 'Present' : undefined}
-            aria-label="Present this deck"
+            data-tip={slideCount ? 'Present — new tab' : undefined}
+            aria-label="Present this deck in a new tab"
             disabled={!slideCount}
             onClick={onPresent}
           >

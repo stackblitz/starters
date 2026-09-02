@@ -3,6 +3,7 @@
    inline effects; Deck owns the state these hooks write. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { isPresentRoute } from '../data/shell';
 
 /** True once a scroll container has moved off the top. */
 export function useScrolled(
@@ -140,7 +141,7 @@ export function useDeckKeyboard(options: {
           setUiHidden((hidden) => !hidden);
           break;
         case 'Escape':
-          if (isPresenter) {
+          if (isPresenter || isPresentRoute()) {
             event.preventDefault();
             if (window.opener) window.close();
             break;
@@ -182,7 +183,7 @@ export function useDeckKeyboard(options: {
   ]);
 }
 
-/** Sync slide index ↔ URL hash. Skipped for in-place studio Present. */
+/** Sync slide index ↔ URL hash. Skipped when Present is driven without a URL. */
 export function useDeckHashSync(options: {
   slideIndex: number;
   slideCount: number;

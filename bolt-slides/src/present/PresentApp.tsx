@@ -1,7 +1,7 @@
-/* Present mode — full-screen engine. Opened in-place from the studio (no
-   URL change), at `/` on the published origin (audience deck), or at
-   /present / `?presenter=1` for the presenter console (studio / DEV only).
-   Dock P opens the console in a new tab on the current origin. */
+/* Present mode — full-screen engine. Opened at `?present=1` from the studio
+   Play control (new tab, not fullscreen), at `/` on the published origin
+   (audience deck), or at /present / `?presenter=1` for the presenter console
+   (studio / DEV only). Dock P opens the console in a new tab. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import { useStore } from '../data/store';

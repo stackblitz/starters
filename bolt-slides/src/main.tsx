@@ -8,7 +8,7 @@ import './styles/editor.css';
 
 /*  /          studio in the Bolt preview iframe (and local Vite); on the
                published origin this is the audience deck (no notes)
-               Present from the studio swaps this view in place
+               Present from the studio opens `?present=1` in a new tab
     /present   presenter console (`?presenter=1` also) */
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

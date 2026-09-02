@@ -119,9 +119,6 @@ interface Store extends AppState {
   /** "slideId|listPath" while a repeatable list is being edited (keeps its + visible) */
   activeList: string | null;
   setActiveList(value: string | null): void;
-  /** studio Present — in-place swap, no URL change */
-  presenting: boolean;
-  setPresenting(value: boolean): void;
 
   load(): void;
   /** Replace deck/slides from disk or another window; keep current by id. */
@@ -177,10 +174,6 @@ export const useStore = create<Store>((set, getState) => ({
   activeList: null,
   setActiveList(value) {
     set({ activeList: value });
-  },
-  presenting: false,
-  setPresenting(value) {
-    set({ presenting: value });
   },
 
   load() {

@@ -7,7 +7,11 @@ import {
 } from 'motion/react';
 import type { SlideData } from '../data/types';
 import { useStore } from '../data/store';
-import { isPresenterRoute } from '../data/shell';
+import {
+  isPresentRoute,
+  isPresenterRoute,
+  openPresenterWindow,
+} from '../data/shell';
 import SlideView from '../slide/SlideView';
 import { DeckCtx } from './DeckContext';
 import Annotator from './Annotator';
@@ -85,9 +89,9 @@ export default function Deck({
   allowPresenter?: boolean;
   /** optional short name for a slide, shown as "up next" in the console */
   navLabel?: (index: number) => string | undefined;
-  /** start here instead of the URL hash (in-place present from the editor) */
+  /** start here instead of the URL hash */
   initialSlide?: number;
-  /** leave present mode without changing the URL (in-place from the editor) */
+  /** leave present mode without changing the URL */
   onExit?: (slideIndex: number) => void;
 }) {
   const slideCount = slides.length;
@@ -201,7 +205,7 @@ export default function Deck({
   }, [slides, mutable, slideIndex, go]);
 
   const openPresenter = useCallback(() => {
-    window.open(`/?presenter=1#${slideIndex + 1}`, 'deck-presenter');
+    openPresenterWindow(slideIndex);
   }, [slideIndex]);
 
   useDeckKeyboard({
@@ -228,7 +232,8 @@ export default function Deck({
   const skipHash = !!onExit && !isPresenter;
   useDeckHashSync({ slideIndex, slideCount, go, skipHash });
 
-  const isLeader = isPresenter || !!onExit;
+  const isLeader =
+    isPresenter || !!onExit || (isPresentRoute() && allowPresenter);
   const applyBroadcastIndex = useCallback(
     (index: number) => {
       setSlideIndex(index);
