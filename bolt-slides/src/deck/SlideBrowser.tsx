@@ -251,6 +251,7 @@ export default function SlideBrowser({
   navLabel,
   onGo,
   onClose,
+  onGridFocusChange,
 }: {
   slides: SlideData[];
   current: number;
@@ -261,6 +262,8 @@ export default function SlideBrowser({
   navLabel?: (index: number) => string | undefined;
   onGo: (index: number) => void;
   onClose: () => void;
+  /** Grid highlight (single-click). Used so Present starts from the selection. */
+  onGridFocusChange?: (index: number) => void;
 }) {
   const railOpen = browse === 'rail';
   const gridOpen = browse === 'grid';
@@ -305,6 +308,11 @@ export default function SlideBrowser({
     el?.focus({ preventScroll: true });
     el?.scrollIntoView({ block: 'nearest' });
   }, [gridFocus, gridOpen]);
+
+  useEffect(() => {
+    if (!gridOpen) return;
+    onGridFocusChange?.(gridFocus);
+  }, [gridFocus, gridOpen, onGridFocusChange]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })

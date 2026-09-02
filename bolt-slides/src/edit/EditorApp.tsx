@@ -24,6 +24,7 @@ export default function EditorApp() {
   const font = useStore((state) => state.deck.font);
   const accent = useStore((state) => state.deck.accent);
   const [browse, setBrowse] = useState<BrowseMode>('rail');
+  const [gridFocus, setGridFocus] = useState(0);
   const toggleRail = useCallback(
     () => setBrowse((mode) => (mode === 'rail' ? 'none' : 'rail')),
     []
@@ -63,6 +64,7 @@ export default function EditorApp() {
             <div className="ed-main">
               <Canvas
                 browse={browse}
+                gridFocus={gridFocus}
                 onToggleRail={toggleRail}
                 onToggleGrid={toggleGrid}
                 onCloseBrowse={closeBrowse}
@@ -76,6 +78,7 @@ export default function EditorApp() {
               canDelete
               onGo={setCurrent}
               onClose={closeBrowse}
+              onGridFocusChange={setGridFocus}
             />
           </div>
         </LayoutGroup>

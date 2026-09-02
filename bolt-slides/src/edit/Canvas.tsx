@@ -44,11 +44,13 @@ function downloadJson(title: string) {
 
 export default function Canvas({
   browse,
+  gridFocus,
   onToggleRail,
   onToggleGrid,
   onCloseBrowse,
 }: {
   browse: BrowseMode;
+  gridFocus: number;
   onToggleRail: () => void;
   onToggleGrid: () => void;
   onCloseBrowse: () => void;
@@ -112,6 +114,17 @@ export default function Canvas({
   const stageRef = useRef<HTMLDivElement>(null);
   const railOpen = browse === 'rail';
   const gridOpen = browse === 'grid';
+  const presentFrom =
+    gridOpen && slides.length
+      ? Math.max(0, Math.min(gridFocus, slides.length - 1))
+      : current;
+
+  const startFromSelection = (presenter: boolean) => {
+    if (!slides.length) return;
+    if (presentFrom !== current) setCurrent(presentFrom);
+    if (presenter) openPresenterWindow(presentFrom);
+    else openPresentWindow(presentFrom);
+  };
   const padLeft = railCanvasPadding(railOpen);
   // Border-box only — independent of left padding, so the fit target can
   // update in the same render as the rail toggle.
@@ -172,7 +185,7 @@ export default function Canvas({
       }
       if (event.key === 'p' || event.key === 'P') {
         event.preventDefault();
-        if (slides.length) openPresenterWindow(current);
+        startFromSelection(true);
         return;
       }
       if (event.key === 'Escape') {
@@ -211,6 +224,7 @@ export default function Canvas({
     onToggleGrid,
     onToggleRail,
     setCurrent,
+    startFromSelection,
     slides.length,
   ]);
 
@@ -288,12 +302,8 @@ export default function Canvas({
           </div>
         ) : null
       }
-      onPresenter={() => {
-        if (slides.length) openPresenterWindow(current);
-      }}
-      onPresent={() => {
-        if (slides.length) openPresentWindow(current);
-      }}
+      onPresenter={() => startFromSelection(true)}
+      onPresent={() => startFromSelection(false)}
       exportItems={exportItems}
     />
   );

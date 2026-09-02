@@ -1901,6 +1901,10 @@ strong {
 .noir-bar .dl-wrap {
   flex: none;
 }
+.noir-bar .dl-pop {
+  right: auto;
+  left: 0;
+}
 .noir-counter {
   display: flex;
   align-items: baseline;
@@ -2354,22 +2358,21 @@ strong {
   background: var(--bg);
   border: 1px solid var(--ed-border);
   box-shadow: var(--ed-shadow-lg);
-}
-/* Hug the 16×9 slide — don't stretch a tall empty chrome box under it. */
-.pres-now,
-.pres-next {
-  flex: 0 1 auto;
-  min-height: 0;
+  /* Width-driven 16×9 — don't shrink or stretch with leftover column height. */
+  flex: none;
   width: 100%;
+  aspect-ratio: 16 / 9;
   display: flex;
   justify-content: center;
+  align-items: stretch;
 }
 .pres-now .noir-thumb-frame,
 .pres-next .noir-thumb-frame {
   width: 100%;
-  height: auto;
+  height: 100%;
   max-width: 100%;
   flex: none;
+  align-self: stretch;
 }
 .pres-next-wrap {
   display: flex;
@@ -2688,7 +2691,7 @@ strong {
   outline: none;
   background: rgba(255, 255, 255, 0.03);
   box-shadow: inset 0 0 0 1.5px
-    color-mix(in srgb, var(--primary) 55%, transparent);
+    color-mix(in srgb, var(--ed-brand) 55%, transparent);
 }
 /* the placeholder sits UNDER the caret, not above the first line, so typing
    replaces it instead of pushing it down */
@@ -2861,15 +2864,12 @@ strong {
   cursor: default;
 }
 .ann-btn.on {
-  color: var(--accent-ink);
-  background: var(--accent);
-}
-.ann-btn.ann-done {
-  color: var(--primary);
+  color: var(--ed-on-brand);
+  background: var(--ed-brand);
 }
 .ann-bar :focus-visible,
 .ann-pop :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ed-brand);
   outline-offset: 2px;
 }
 .ann-sep {
@@ -3214,7 +3214,7 @@ strong {
 
 /* A visible focus ring everywhere, not only where a component defined one. */
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ed-brand);
   outline-offset: 2px;
   border-radius: 3px;
 }
@@ -4223,7 +4223,7 @@ strong {
 }
 .share-url:focus,
 .share-input:focus {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ed-brand);
   outline-offset: 1px;
   border-color: transparent;
 }

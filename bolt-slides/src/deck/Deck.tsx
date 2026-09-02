@@ -329,7 +329,6 @@ export default function Deck({
               slide={slideIndex}
               store={annotationsBySlide.current}
               active={drawing}
-              onDone={() => setDrawing(false)}
               hold={!stageIn}
             />
           )}

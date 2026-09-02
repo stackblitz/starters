@@ -78,14 +78,23 @@ const TOOLS: { id: Tool; label: string; key: string; path: string }[] = [
   },
 ];
 const COLORS = [
-  'var(--primary)',
+  'var(--ed-brand)',
   '#ffffff',
   '#ef4444',
   '#f5b73a',
   '#4aa8ff',
   '#c084fc',
 ];
+const COLOR_LABELS = [
+  'Bolt blue',
+  'White',
+  'Red',
+  'Yellow',
+  'Sky blue',
+  'Purple',
+];
 const SIZES = [2, 4, 7, 12];
+const SIZE_LABELS = ['Hairline', 'Thin', 'Medium', 'Thick'];
 
 const Ico = ({ d }: { d: string }) => (
   <svg
@@ -102,19 +111,16 @@ const Ico = ({ d }: { d: string }) => (
 const IconUndo = () => <Ico d="M9 8L5 12l4 4M5 12h9a4 4 0 1 1 0 8h-3" />;
 const IconRedo = () => <Ico d="M15 8l4 4-4 4M19 12h-9a4 4 0 1 0 0 8h3" />;
 const IconTrash = () => <Ico d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13" />;
-const IconDone = () => <Ico d="M5 12.5l4.5 4.5L19 7" />;
 
 export default function Annotator({
   slide,
   store,
   active,
-  onDone,
   hold = false,
 }: {
   slide: number;
   store: Record<number, Stroke[]>;
   active: boolean;
-  onDone?: () => void;
   /** true while the slide is still animating in — the ink stays hidden */
   hold?: boolean;
 }) {
@@ -152,8 +158,8 @@ export default function Annotator({
   const resolve = (c: string) =>
     c.startsWith('var(')
       ? getComputedStyle(document.documentElement)
-          .getPropertyValue('--primary')
-          .trim() || '#4fe5b0'
+          .getPropertyValue('--ed-brand')
+          .trim() || '#1488fc'
       : c;
 
   /* ── painting ────────────────────────────────────────────────────── */
@@ -788,8 +794,8 @@ export default function Annotator({
                   key={swatch}
                   className={'ann-color' + (color === swatch ? ' on' : '')}
                   style={{ background: swatch }}
-                  data-tip={`Color ${index + 1} (${index + 1})`}
-                  aria-label={`Color ${index + 1}`}
+                  data-tip={`${COLOR_LABELS[index]} (${index + 1})`}
+                  aria-label={COLOR_LABELS[index]}
                   aria-pressed={color === swatch}
                   onClick={() => setColor(swatch)}
                 />
@@ -800,14 +806,8 @@ export default function Annotator({
                 <button
                   key={strokeSize}
                   className={'ann-size' + (size === strokeSize ? ' on' : '')}
-                  data-tip={
-                    index === 0
-                      ? 'Thinner ([)'
-                      : index === SIZES.length - 1
-                        ? 'Thicker (])'
-                        : `Size ${index + 1}`
-                  }
-                  aria-label={`Size ${strokeSize}`}
+                  data-tip={SIZE_LABELS[index]}
+                  aria-label={SIZE_LABELS[index]}
                   aria-pressed={size === strokeSize}
                   onClick={() => setSize(strokeSize)}
                 >
@@ -854,19 +854,6 @@ export default function Annotator({
       >
         <IconTrash />
       </button>
-      {onDone && (
-        <>
-          <span className="ann-sep" />
-          <button
-            className="ann-btn ann-done"
-            data-tip="Done (D)"
-            aria-label="Exit drawing mode"
-            onClick={onDone}
-          >
-            <IconDone />
-          </button>
-        </>
-      )}
     </div>
   ) : null;
 
