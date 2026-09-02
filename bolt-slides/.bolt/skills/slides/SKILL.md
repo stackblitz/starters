@@ -2,7 +2,7 @@
 name: slides
 description: >-
   Author a premium slide deck in Bolt Slides. Slides live in repo-root
-  deck.json; the studio rail lets the user reorder, duplicate, delete,
+  deck.json; the studio lets the user reorder, duplicate, delete,
   edit speaker notes, Present, and download PDF/JSON. Use this whenever
   the user asks for a deck, a pitch, slides, or a presentation in this
   project.
@@ -12,14 +12,14 @@ description: >-
 
 This repo is a complete slide **studio**. Author content into it.
 
-- `/` — in the Bolt preview iframe (and local Vite): studio (thumbnail
-  rail with reorder / duplicate / delete, speaker notes, Present,
-  Download as PDF or JSON). Present replaces the studio in this view.
-  The published site at `/` is the audience deck (notes stripped). **P**
-  on the dock opens the presenter console in a new tab.
-- `/present?presenter=1` — presenter console (notes visible and
-  read-only, highlight and note text size). Annotations stay on this
-  machine.
+- `/` — in the Bolt preview iframe (and local Vite): studio. Side panel
+  (S) and grid (G) reorder / duplicate / delete; the dock holds notes,
+  Download (PDF or JSON), Present, and Presenter. Present opens a new
+  tab (`/?present=1`); the studio stays put. Grid selection is the
+  start slide. The published site at `/` is the audience deck (notes
+  stripped). **P** opens the presenter console in a new tab.
+- `/?presenter=1` — presenter console (on-screen now, up next, notes
+  read-only, timer, note text size). `/present` is the same route.
 
 **Your job is CONTENT.** A deck is `deck.json`. Write that file (and
 `src/styles/tokens.css` when theming). Layout `props` follow the catalog
@@ -60,8 +60,8 @@ Default: `background` `{"type":"color","color":"var(--bg)"}`,
 `animation` `cascade`, `status` `none`, `transition` `null`, `nav`
 `null`, `notes` `""`.
 
-4. Ask the user to look at the studio to see the result: rail to
-   reorder / duplicate / delete, Present, Download as PDF or JSON.
+4. Ask the user to look at the studio to see the result: side panel
+   or grid to reorder / duplicate / delete, notes, Present, Download.
 
 Read first. Replacing all of `props` drops keys you omit; change one
 field by patching that key. Empty `notes` erases what was there. Replace
@@ -241,9 +241,9 @@ Visual:
   empty space breathe (it's part of the layout, not waste).
 - Write `notes` for the presenter on every content slide — one or two lines of
   what to SAY, not a repeat of the slide.
-- After writing, tell the user to look at the studio: right-click thumbnails
-  to duplicate/delete, drag to reorder, edit speaker notes, Present /
-  Download as on the bottom bar.
+- After writing, tell the user to look at the studio: drag to reorder,
+  ••• or right-click a thumbnail to duplicate/delete, grid (G) to pick a
+  slide then Present, notes and Download on the dock.
 
 ## Theming (`tokens.css` `:root`)
 
