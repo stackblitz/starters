@@ -9,7 +9,7 @@ import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { htmlToNotes, notesToHtml } from './notesFormat';
 
-/* Speaker notes — authored in the studio popover as a WYSIWYG. Markup
+/* Speaker notes — authored in the studio strip under the slide. Markup
    parse / HTML convert / read-only view live in notesFormat.tsx. */
 
 /* ── the WYSIWYG ───────────────────────────────────────────────────── */
@@ -455,7 +455,8 @@ export function NotesEditor({
           return;
         }
         commit();
-        onDone?.();
+        if (onDone) onDone();
+        else ref.current?.blur();
       }}
     >
       {/* in a narrow panel the bar scrolls: drag it, or use a plain wheel —

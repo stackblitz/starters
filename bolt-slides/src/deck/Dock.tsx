@@ -5,12 +5,10 @@ import {
   forwardRef,
   useCallback,
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
-  type Ref,
 } from 'react';
 import {
   IconClose,
@@ -19,7 +17,6 @@ import {
   IconGrid,
   IconGrip,
   IconLeft,
-  IconNotes,
   IconPencil,
   IconPlay,
   IconPresent,
@@ -34,9 +31,9 @@ export type DockMode = 'editor' | 'editor-present' | 'audience';
 
 const STORAGE_KEY = 'deck:dock-pos';
 const PAD = 8;
-const DEFAULT_BOTTOM = 22;
+const DEFAULT_BOTTOM = 12;
 
-type Pos = { left: number; top: number };
+type Pos = { left: number; top: number; w?: number };
 
 function readPos(): Pos | null {
   try {
@@ -51,12 +48,24 @@ function readPos(): Pos | null {
   return null;
 }
 
-function writePos(pos: Pos) {
+function writePos(pos: Pos, width: number) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ left: pos.left, top: pos.top, w: width })
+    );
   } catch {
     /* ignore quota */
   }
+}
+
+/** Keep a dragged spot only when the dock is still the same width; a missing
+    or stale `w` (e.g. after controls change) falls back to centered. */
+function savedPosForWidth(saved: Pos | null, width: number): Pos | null {
+  if (!saved) return null;
+  if (typeof saved.w !== 'number' || Math.abs(saved.w - width) > 8)
+    return null;
+  return saved;
 }
 
 function clamp(left: number, top: number, width: number, height: number): Pos {
@@ -89,7 +98,6 @@ export type DockProps = {
   gridOpen: boolean;
   hidden?: boolean;
   drawing?: boolean;
-  notesOpen?: boolean;
   isFullscreen?: boolean;
   exportBusy?: string | null;
   exportFlash?: string | null;
@@ -97,10 +105,7 @@ export type DockProps = {
   onToggleGrid: () => void;
   onPrev: () => void;
   onNext: () => void;
-  onNotes?: () => void;
-  notesBtnRef?: Ref<HTMLButtonElement | null>;
-  notesId?: string;
-  /** Content anchored above the bar (notes, annotate, …). Follows dock drag. */
+  /** Content anchored above the bar (annotate, …). Follows dock drag. */
   popoverSlot?: ReactNode;
   /** @deprecated use popoverSlot */
   notesSlot?: ReactNode;
@@ -123,7 +128,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
     gridOpen,
     hidden,
     drawing,
-    notesOpen,
     isFullscreen,
     exportBusy,
     exportFlash,
@@ -131,9 +135,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
     onToggleGrid,
     onPrev,
     onNext,
-    onNotes,
-    notesBtnRef,
-    notesId,
     popoverSlot,
     notesSlot,
     onAnnotate,
@@ -157,8 +158,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
   const [dragging, setDragging] = useState(false);
   const draggingRef = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
-  const notesFallbackId = useId();
-  const notesControlId = notesId ?? notesFallbackId;
   const dockPopover = useDockPopoverHost();
   const popover = popoverSlot ?? notesSlot;
 
@@ -170,23 +169,33 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
     if (draggingRef.current) return;
     const el = nodeRef.current;
     if (!el) return;
-    const saved = customRef.current ? readPos() : null;
-    const next = applyFit(
-      saved ?? defaultPos(el.offsetWidth, el.offsetHeight),
-      el
-    );
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    const saved = customRef.current
+      ? savedPosForWidth(readPos(), width)
+      : null;
+    if (customRef.current && !saved) customRef.current = false;
+    const next = applyFit(saved ?? defaultPos(width, height), el);
     posRef.current = next;
     setPos(next);
   }, [applyFit]);
 
   useLayoutEffect(() => {
     place();
-  }, [place, mode, slideCount]);
+  }, [place, mode, slideCount, !!onPresenter, !!onPresent, !!exportItems]);
 
   useEffect(() => {
     const onResize = () => place();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, [place]);
+
+  useEffect(() => {
+    const el = nodeRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => place());
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [place]);
 
   const onGripPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -231,7 +240,7 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
     const next = applyFit(current, el);
     posRef.current = next;
     setPos(next);
-    writePos(next);
+    writePos(next, el.offsetWidth);
   };
 
   const isEditor = mode === 'editor';
@@ -341,24 +350,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
           >
             <IconDownload />
           </MenuButton>
-        )}
-        {isEditor && onNotes && (
-          <button
-            ref={notesBtnRef}
-            type="button"
-            className={'noir-icon-btn' + (notesOpen ? ' on' : '')}
-            data-tip="Speaker notes"
-            aria-label="Edit speaker notes for this slide"
-            aria-haspopup="dialog"
-            aria-expanded={notesOpen}
-            aria-controls={notesOpen ? notesControlId : undefined}
-            onPointerDown={(event) => {
-              if (event.button === 0) event.preventDefault();
-            }}
-            onClick={onNotes}
-          >
-            <IconNotes />
-          </button>
         )}
         {isPresentSurface && onAnnotate && (
           <button

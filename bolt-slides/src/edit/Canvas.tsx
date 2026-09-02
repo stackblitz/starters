@@ -1,15 +1,7 @@
 /* Studio canvas — the current slide at presentation size, scaled to fit.
-   The slide renders LIVE (count-ups, staggers, the slide's animation mode
-   all play, like in present mode). The shared dock pages the deck and
-   carries speaker notes, Present, Presenter, and Download. */
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+   Speaker notes pin under the slide. The shared dock pages the deck and
+   carries Present, Presenter, and Download. */
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStore, serializeDeck } from '../data/store';
 import { openPresentWindow, openPresenterWindow } from '../data/shell';
@@ -19,8 +11,7 @@ import type { BrowseMode } from '../deck/SlideBrowser';
 import {
   STAGE_LAYOUT_ID,
   STAGE_LAYOUT_TRANSITION,
-  fitScaleForBox,
-  railCanvasPadding,
+  fitScaleForArea,
   readStoredFit,
   rememberFit,
 } from '../deck/stageLayout';
@@ -63,15 +54,6 @@ export default function Canvas({
 
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
-  const [notesOpen, setNotesOpen] = useState(false);
-  const notesId = useId();
-  const notesBtnRef = useRef<HTMLButtonElement>(null);
-  const notesPopRef = useRef<HTMLDivElement>(null);
-
-  const closeNotes = (restore: boolean) => {
-    setNotesOpen(false);
-    if (restore) notesBtnRef.current?.focus();
-  };
 
   const note = (msg: string) => {
     setFlash(msg);
@@ -110,7 +92,6 @@ export default function Canvas({
     },
   ];
 
-  const canvasRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const railOpen = browse === 'rail';
   const gridOpen = browse === 'grid';
@@ -125,32 +106,29 @@ export default function Canvas({
     if (presenter) openPresenterWindow(presentFrom);
     else openPresentWindow(presentFrom);
   };
-  const padLeft = railCanvasPadding(railOpen);
-  // Border-box only — independent of left padding, so the fit target can
-  // update in the same render as the rail toggle.
   const [canvasBox, setCanvasBox] = useState({ w: 0, h: 0 });
   const liveCtx = useMemo(() => ({ clicks: 9999, isStatic: false }), []);
 
   const frame = useMemo(() => {
     const next =
       canvasBox.w > 0
-        ? fitScaleForBox(canvasBox.w, canvasBox.h, padLeft)
+        ? fitScaleForArea(canvasBox.w, canvasBox.h)
         : readStoredFit(railOpen);
     rememberFit(next);
     return next;
-  }, [padLeft, railOpen, canvasBox]);
+  }, [railOpen, canvasBox]);
 
   useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const slot = stageRef.current;
+    if (!slot) return;
     const syncBox = () => {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
+      const w = slot.clientWidth;
+      const h = slot.clientHeight;
       setCanvasBox((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
     };
     syncBox();
     const ro = new ResizeObserver(syncBox);
-    ro.observe(canvas);
+    ro.observe(slot);
     window.addEventListener('resize', syncBox);
     return () => {
       ro.disconnect();
@@ -170,7 +148,6 @@ export default function Canvas({
           target.isContentEditable)
       )
         return;
-      if (notesOpen) return;
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (document.querySelector('[role="menu"]')) return;
       if (event.key === 's' || event.key === 'S') {
@@ -219,7 +196,6 @@ export default function Canvas({
   }, [
     browse,
     current,
-    notesOpen,
     onCloseBrowse,
     onToggleGrid,
     onToggleRail,
@@ -227,31 +203,6 @@ export default function Canvas({
     startFromSelection,
     slides.length,
   ]);
-
-  useEffect(() => {
-    if (!notesOpen) return;
-    const onPtr = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (
-        notesPopRef.current?.contains(target) ||
-        notesBtnRef.current?.contains(target) ||
-        (target instanceof Element && target.closest('.note-wyg-pop'))
-      )
-        return;
-      closeNotes(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      event.preventDefault();
-      closeNotes(true);
-    };
-    document.addEventListener('pointerdown', onPtr);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPtr);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [notesOpen]);
 
   const dock = (
     <Dock
@@ -262,47 +213,12 @@ export default function Canvas({
       hasNext={current < slides.length - 1}
       railOpen={browse === 'rail'}
       gridOpen={gridOpen}
-      notesOpen={notesOpen}
       exportBusy={busy}
       exportFlash={flash}
       onToggleRail={onToggleRail}
       onToggleGrid={onToggleGrid}
       onPrev={() => setCurrent(current - 1)}
       onNext={() => setCurrent(current + 1)}
-      onNotes={
-        slide
-          ? () => {
-              if (notesOpen) closeNotes(true);
-              else setNotesOpen(true);
-            }
-          : undefined
-      }
-      notesBtnRef={notesBtnRef}
-      notesId={notesId}
-      popoverSlot={
-        notesOpen && slide ? (
-          <div
-            ref={notesPopRef}
-            id={notesId}
-            className="notes-pop"
-            role="dialog"
-            aria-modal="false"
-            aria-label="Speaker notes"
-          >
-            <NotesEditor
-              key={slide.id}
-              autoFocus
-              value={slide.notes}
-              onChange={(text) => {
-                if (text !== slide.notes)
-                  useStore.getState().patchSlide(slide.id, { notes: text });
-              }}
-              onDone={() => closeNotes(true)}
-              placeholder="What to say on this slide — shown in the presenter console."
-            />
-          </div>
-        ) : null
-      }
       onPresenter={() => startFromSelection(true)}
       onPresent={() => startFromSelection(false)}
       exportItems={exportItems}
@@ -310,66 +226,73 @@ export default function Canvas({
   );
 
   const canvasClass = 'ed-canvas' + (railOpen ? ' rail-open' : '');
-
-  if (!slide) {
-    return (
-      <div className={canvasClass} ref={canvasRef}>
-        <div
-          className="ed-stage"
-          ref={stageRef}
-          inert={gridOpen || undefined}
-        >
-          <div className="ed-empty">This deck has no slides.</div>
-        </div>
-        {dock}
-      </div>
-    );
-  }
-
   const frameW = frame.vw * frame.scale;
   const frameH = frame.vh * frame.scale;
 
   return (
-    <div className={canvasClass} ref={canvasRef}>
-      <div className="ed-stage" ref={stageRef} inert={gridOpen || undefined}>
-        {/*
-          Size via style + layout/layoutId (not animate width/height).
-          Motion docs: layout changes belong on style/className; layout
-          springs the morph for sidebar and Present alike.
-        */}
-        <motion.div
-          layout
-          layoutId={STAGE_LAYOUT_ID}
-          className="ed-frame"
-          style={{
-            width: frameW,
-            height: frameH,
-            borderRadius: 12,
-          }}
-          transition={{ layout: STAGE_LAYOUT_TRANSITION }}
+    <div className={canvasClass}>
+      <div className="ed-stage" inert={gridOpen || undefined}>
+        <div
+          className={'ed-slide-slot' + (slide ? '' : ' empty')}
+          ref={stageRef}
         >
-          <AnimatePresence mode="wait" initial={false}>
+          {slide ? (
             <motion.div
-              key={slide.id}
-              className="ed-frame-inner"
+              layout
+              layoutId={STAGE_LAYOUT_ID}
+              className="ed-frame"
               style={{
-                width: frame.vw,
-                height: frame.vh,
-                transform: `scale(${frame.scale})`,
-                transformOrigin: 'top left',
-                ['--inv' as never]: String(1 / Math.max(0.05, frame.scale)),
+                width: frameW,
+                height: frameH,
+                borderRadius: 12,
               }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16 }}
+              transition={{ layout: STAGE_LAYOUT_TRANSITION }}
             >
-              <DeckCtx.Provider value={liveCtx}>
-                <SlideView slide={slide} />
-              </DeckCtx.Provider>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={slide.id}
+                  className="ed-frame-inner"
+                  style={{
+                    width: frame.vw,
+                    height: frame.vh,
+                    transform: `scale(${frame.scale})`,
+                    transformOrigin: 'top left',
+                    ['--inv' as never]: String(1 / Math.max(0.05, frame.scale)),
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.16 }}
+                >
+                  <DeckCtx.Provider value={liveCtx}>
+                    <SlideView slide={slide} />
+                  </DeckCtx.Provider>
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
-          </AnimatePresence>
-        </motion.div>
+          ) : (
+            <div className="ed-empty">This deck has no slides.</div>
+          )}
+        </div>
+        {slide ? (
+          <motion.div
+            className="ed-notes"
+            layout
+            style={{ width: frameW }}
+            transition={{ layout: STAGE_LAYOUT_TRANSITION }}
+          >
+            <div className="ed-notes-label">Speaker notes</div>
+            <NotesEditor
+              key={slide.id}
+              value={slide.notes}
+              onChange={(text) => {
+                if (text !== slide.notes)
+                  useStore.getState().patchSlide(slide.id, { notes: text });
+              }}
+              placeholder="What to say on this slide — shown in the presenter console."
+            />
+          </motion.div>
+        ) : null}
       </div>
       {dock}
     </div>

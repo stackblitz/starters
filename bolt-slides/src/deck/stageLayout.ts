@@ -44,6 +44,17 @@ export function fitScaleForBox(
   return { vw, vh, scale: Math.max(0.05, scale) };
 }
 
+/** Fit scale for an already-inset box (the editor slide slot). */
+export function fitScaleForArea(width: number, height: number): StageFit {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const scale = Math.min(
+    Math.max(1, width) / vw,
+    Math.max(1, height) / vh
+  );
+  return { vw, vh, scale: Math.max(0.05, scale) };
+}
+
 /** First-paint fit when the canvas is not mounted yet (e.g. leaving Present). */
 export function readStoredFit(railOpen: boolean): StageFit {
   if (storedFit) return storedFit;

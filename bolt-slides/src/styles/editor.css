@@ -94,46 +94,6 @@
   border-color: transparent;
 }
 
-/* speaker-notes popover — lives in `.noir-dock-popover` above the bar.
-   Avoid transform on this node: a transformed ancestor would re-anchor the
-   note editor's position:fixed colour palette and strand it off-screen. */
-.notes-pop {
-  position: relative;
-  width: min(620px, 92vw);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--ed-bg-alt);
-  border: 1px solid var(--ed-border);
-  border-radius: 8px;
-  box-shadow: var(--ed-shadow-lg);
-  font-family: var(--font-ui);
-}
-.notes-pop .note-wyg {
-  --note-pad-x: 12px;
-  --note-pad-y: 10px;
-  flex: none;
-  min-height: 150px;
-  max-height: 38vh;
-  font-size: 13px;
-  color: var(--ed-text);
-  border-radius: 6px;
-  background: transparent;
-  border: 1px solid var(--ed-border);
-}
-.notes-pop .note-wyg:focus {
-  background: transparent;
-  border-color: var(--ed-border);
-  box-shadow: 0 0 0 2px var(--ed-brand);
-}
-.notes-pop .note-wyg h3 {
-  color: var(--ed-text);
-}
-.notes-pop .note-wyg blockquote {
-  color: var(--ed-text);
-}
-
 /* buttons + inputs — DS secondary / primary / ghost-icon, size sm */
 .ghost-btn,
 .solid-btn {
@@ -324,8 +284,8 @@
   min-width: 0;
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
-  justify-content: stretch;
   box-sizing: border-box;
   /* Even inset on every side; bottom clears the floating dock. */
   padding: 24px 24px 72px;
@@ -341,11 +301,22 @@
   min-width: 0;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
   /* Visible so layout projection can overshoot the content box while
      springing; the rail sits above on z-index. */
   overflow: visible;
+}
+.ed-slide-slot {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.ed-slide-slot.empty {
+  align-items: center;
 }
 .ed-frame {
   position: relative;
@@ -363,6 +334,56 @@
 .ed-empty {
   color: var(--ed-text-faint);
   font-size: 14px;
+}
+.ed-notes {
+  /* Width matches the live slide frame (set inline); stay centered under it. */
+  flex: none;
+  align-self: center;
+  height: clamp(120px, 16vh, 168px);
+  margin-top: 10px;
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  font-family: var(--font-ui);
+}
+.ed-notes-label {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ed-text-faint);
+}
+.ed-notes .note-wyg-wrap {
+  flex: 1;
+  min-height: 0;
+}
+.ed-notes .note-wyg {
+  --note-pad-x: 12px;
+  --note-pad-y: 10px;
+  flex: 1;
+  min-height: 0;
+  font-size: 13px;
+  color: var(--ed-text);
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--ed-border);
+}
+.ed-notes .note-wyg:focus {
+  background: transparent;
+  border-color: var(--ed-border);
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.ed-notes .note-wyg h3 {
+  color: var(--ed-text);
+}
+.ed-notes .note-wyg blockquote {
+  color: var(--ed-text);
 }
 
 .ed-canvas-nav {
