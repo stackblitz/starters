@@ -74,7 +74,7 @@ export default function EditorApp() {
             />
           ) : (
             <div className="ed-root">
-              <div className="ed-main" inert={browse === 'grid' || undefined}>
+              <div className="ed-main">
                 <Canvas
                   browse={browse}
                   onToggleRail={toggleRail}

@@ -1,7 +1,7 @@
 /* Studio canvas — the current slide at presentation size, scaled to fit.
    The slide renders LIVE (count-ups, staggers, the slide's animation mode
    all play, like in present mode). The shared dock pages the deck and
-   carries speaker notes, Present, Presenter, and Export as… */
+   carries speaker notes, Present, Presenter, and Download. */
 import {
   useEffect,
   useId,
@@ -112,6 +112,7 @@ export default function Canvas({
   const canvasRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const railOpen = browse === 'rail';
+  const gridOpen = browse === 'grid';
   const padLeft = railCanvasPadding(railOpen);
   // Border-box only — independent of left padding, so the fit target can
   // update in the same render as the rail toggle.
@@ -247,7 +248,7 @@ export default function Canvas({
       hasPrev={current > 0}
       hasNext={current < slides.length - 1}
       railOpen={browse === 'rail'}
-      gridOpen={browse === 'grid'}
+      gridOpen={gridOpen}
       notesOpen={notesOpen}
       exportBusy={busy}
       exportFlash={flash}
@@ -284,11 +285,8 @@ export default function Canvas({
                   useStore.getState().patchSlide(slide.id, { notes: text });
               }}
               onDone={() => closeNotes(true)}
-              placeholder="Speaker notes — what to SAY on this slide."
+              placeholder="What to say on this slide — shown in the presenter console."
             />
-            <p className="notes-pop-hint">
-              Shown in the presenter console while you present.
-            </p>
           </div>
         ) : null
       }
@@ -309,7 +307,11 @@ export default function Canvas({
   if (!slide) {
     return (
       <div className={canvasClass} ref={canvasRef}>
-        <div className="ed-stage" ref={stageRef}>
+        <div
+          className="ed-stage"
+          ref={stageRef}
+          inert={gridOpen || undefined}
+        >
           <div className="ed-empty">This deck has no slides.</div>
         </div>
         {dock}
@@ -322,7 +324,7 @@ export default function Canvas({
 
   return (
     <div className={canvasClass} ref={canvasRef}>
-      <div className="ed-stage" ref={stageRef}>
+      <div className="ed-stage" ref={stageRef} inert={gridOpen || undefined}>
         {/*
           Size via style + layout/layoutId (not animate width/height).
           Motion docs: layout changes belong on style/className; layout

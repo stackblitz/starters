@@ -178,6 +178,10 @@ export function NotesEditor({
     setEmpty(!text.trim());
     if (text !== value) onChange(text);
   }, [onChange, value]);
+  const commitRef = useRef(commit);
+  commitRef.current = commit;
+
+  useEffect(() => () => commitRef.current(), []);
 
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
@@ -472,17 +476,6 @@ export function NotesEditor({
             {c.icon}
           </button>
         ))}
-        {onDone && (
-          <button
-            className="note-wyg-done"
-            onClick={() => {
-              commit();
-              onDone();
-            }}
-          >
-            Done
-          </button>
-        )}
       </div>
       <div
         ref={ref}
@@ -496,7 +489,10 @@ export function NotesEditor({
         suppressContentEditableWarning
         data-placeholder={placeholder}
         spellCheck
-        onInput={() => setEmpty(!ref.current?.innerText.trim())}
+        onInput={() => {
+          setEmpty(!ref.current?.innerText.trim());
+          commit();
+        }}
         onPaste={(e) => {
           e.preventDefault(); // plain text only — same rule as EditableText
           document.execCommand(
@@ -505,6 +501,7 @@ export function NotesEditor({
             e.clipboardData.getData('text/plain')
           );
           setEmpty(!ref.current?.innerText.trim());
+          commit();
         }}
         onBlur={commit}
         onKeyDown={(e) => {

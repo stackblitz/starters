@@ -762,7 +762,11 @@ export default function Annotator({
       <div className="ann-style">
         <button
           className={'ann-swatch' + (styleOpen ? ' on' : '')}
-          data-tip="Color & size"
+          data-tip={
+            styleTool
+              ? 'Color & size (1–6, [ ])'
+              : 'Pick a drawing tool to use these'
+          }
           aria-label="Color and size"
           aria-expanded={styleOpen}
           onClick={() => setStyleOpen((open) => !open)}
@@ -784,6 +788,7 @@ export default function Annotator({
                   key={swatch}
                   className={'ann-color' + (color === swatch ? ' on' : '')}
                   style={{ background: swatch }}
+                  data-tip={`Color ${index + 1} (${index + 1})`}
                   aria-label={`Color ${index + 1}`}
                   aria-pressed={color === swatch}
                   onClick={() => setColor(swatch)}
@@ -791,10 +796,17 @@ export default function Annotator({
               ))}
             </div>
             <div className="ann-pop-row ann-pop-sizes">
-              {SIZES.map((strokeSize) => (
+              {SIZES.map((strokeSize, index) => (
                 <button
                   key={strokeSize}
                   className={'ann-size' + (size === strokeSize ? ' on' : '')}
+                  data-tip={
+                    index === 0
+                      ? 'Thinner ([)'
+                      : index === SIZES.length - 1
+                        ? 'Thicker (])'
+                        : `Size ${index + 1}`
+                  }
                   aria-label={`Size ${strokeSize}`}
                   aria-pressed={size === strokeSize}
                   onClick={() => setSize(strokeSize)}
@@ -808,11 +820,6 @@ export default function Annotator({
                   />
                 </button>
               ))}
-            </div>
-            <div className="ann-pop-hint">
-              {styleTool
-                ? '1–6 colors · [ ] size'
-                : 'Pick a drawing tool to use these'}
             </div>
           </div>
         )}

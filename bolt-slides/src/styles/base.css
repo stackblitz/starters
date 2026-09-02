@@ -1741,7 +1741,7 @@ strong {
   bottom: 22px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 97;
+  z-index: 100;
   opacity: 0.35;
   transition: opacity 0.35s ease;
   font-family: var(--font-ui);
@@ -2151,24 +2151,14 @@ strong {
   top: 8px;
   right: 8px;
   z-index: 2;
-}
-.noir-thumb-shell:not(.grid) > .dl-wrap.noir-thumb-more {
   opacity: 0;
   pointer-events: none;
 }
-.noir-thumb-shell:not(.grid):hover > .dl-wrap.noir-thumb-more,
-.noir-thumb-shell:not(.grid) > .dl-wrap.noir-thumb-more:focus-within,
-.noir-thumb-shell:not(.grid) > .dl-wrap.noir-thumb-more.open {
-  opacity: 1;
-  pointer-events: auto;
-}
-.noir-thumb-shell.grid > .dl-wrap.noir-thumb-more {
-  opacity: 0;
-  pointer-events: none;
-}
+.noir-thumb-shell:hover > .dl-wrap.noir-thumb-more,
+.noir-thumb-shell > .dl-wrap.noir-thumb-more:focus-within,
+.noir-thumb-shell > .dl-wrap.noir-thumb-more.open,
 .noir-thumb-shell.grid.active > .dl-wrap.noir-thumb-more,
-.noir-thumb-shell.grid.sel > .dl-wrap.noir-thumb-more,
-.noir-thumb-shell.grid > .dl-wrap.noir-thumb-more.open {
+.noir-thumb-shell.grid.sel > .dl-wrap.noir-thumb-more {
   opacity: 1;
   pointer-events: auto;
 }
@@ -2263,16 +2253,6 @@ strong {
   align-items: baseline;
   gap: 14px;
 }
-.pres-count {
-  font-size: 15px;
-  color: var(--ed-text-faint);
-  font-feature-settings: 'tnum' 1;
-}
-.pres-count b {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--ed-text);
-}
 .pres-builds {
   font-size: 11px;
   font-weight: 600;
@@ -2308,8 +2288,13 @@ strong {
   transition: background 0.18s ease, color 0.18s ease, opacity 0.18s ease;
 }
 .pres-icon svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.pres-timer .pres-icon.is-play svg {
+  /* triangle's optical center sits left of the viewBox midpoint */
+  transform: translateX(1px);
 }
 .pres-icon:hover:not(:disabled) {
   background: var(--ed-util-hover);
@@ -2347,7 +2332,8 @@ strong {
   flex-direction: column;
   gap: 10px;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .pres-label {
   display: flex;
@@ -2361,16 +2347,6 @@ strong {
   text-transform: uppercase;
   color: var(--ed-text-faint);
 }
-.pres-next-name {
-  color: var(--ed-text-muted);
-  letter-spacing: 0.06em;
-  text-transform: none;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
 .pres-now,
 .pres-next {
   border-radius: 12px;
@@ -2380,23 +2356,18 @@ strong {
   box-shadow: var(--ed-shadow-lg);
 }
 /* Hug the 16×9 slide — don't stretch a tall empty chrome box under it. */
-.pres-now {
+.pres-now,
+.pres-next {
   flex: 0 1 auto;
   min-height: 0;
   width: 100%;
   display: flex;
   justify-content: center;
 }
-.pres-now .noir-thumb-frame {
+.pres-now .noir-thumb-frame,
+.pres-next .noir-thumb-frame {
   width: 100%;
   height: auto;
-  max-width: 100%;
-  flex: none;
-}
-/* Up-next keeps a fixed preview height; the frame fills that box. */
-.pres-next .noir-thumb-frame {
-  height: 100%;
-  width: auto;
   max-width: 100%;
   flex: none;
 }
@@ -2406,19 +2377,17 @@ strong {
   gap: 8px;
   flex: none;
   min-width: 0;
+  width: 100%;
 }
 .pres-next {
   padding: 0;
   cursor: pointer;
-  opacity: 0.72;
-  align-self: flex-start;
-  height: clamp(74px, 17vh, 148px);
-  display: flex;
-  transition: opacity 0.2s ease, border-color 0.2s ease;
+  opacity: 0.34;
+  transition: opacity 0.2s ease;
 }
-.pres-next:hover {
+.pres-next:not(.pres-next-end):hover,
+.pres-next:focus-visible {
   opacity: 1;
-  border-color: var(--ed-border);
 }
 .pres-next-end {
   display: grid;
@@ -2586,8 +2555,7 @@ strong {
 .note-wyg-bar:active {
   cursor: grabbing;
 }
-.note-wyg-btn,
-.note-wyg-done {
+.note-wyg-btn {
   cursor: pointer;
 }
 .note-wyg-btn {
@@ -2699,18 +2667,6 @@ strong {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-.note-wyg-done {
-  margin-left: auto;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--primary);
-  padding: 0 8px;
-}
 .note-wyg {
   --note-pad-x: 10px;
   --note-pad-y: 8px;
@@ -2748,40 +2704,19 @@ strong {
 
 .pres-bottom {
   display: flex;
-  align-items: center;
-  gap: clamp(12px, 2vw, 22px);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding: 12px clamp(14px, 2vw, 26px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
-.pres-nav {
-  display: inline-flex;
+.pres-pager {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  flex: none;
-  padding: 9px 16px;
-  border-radius: 999px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: #e8e8ea;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background 0.18s ease, opacity 0.18s ease;
-}
-.pres-nav svg {
-  width: 16px;
-  height: 16px;
-}
-.pres-nav:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.14);
-}
-.pres-nav:disabled {
-  opacity: 0.32;
-  cursor: default;
+  justify-content: center;
+  gap: 4px;
 }
 .pres-progress {
-  flex: 1;
   height: 4px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
@@ -2812,29 +2747,6 @@ strong {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1.1fr) minmax(190px, 1fr);
   }
-  .pres-stage {
-    flex-direction: row;
-    align-items: stretch;
-    gap: 12px;
-  }
-  .pres-stage > .pres-label {
-    display: none;
-  }
-  .pres-now {
-    flex: 1 1 auto;
-    min-width: 0;
-    align-self: stretch;
-  }
-  .pres-now .noir-thumb-frame {
-    height: 100%;
-    width: auto;
-  }
-  .pres-next-wrap {
-    justify-content: flex-end;
-  }
-  .pres-next {
-    height: clamp(64px, 14vh, 120px);
-  }
 }
 
 /* narrow: the top bar centres, the counter leads, labels give way to icons */
@@ -2860,23 +2772,6 @@ strong {
   .pres-time {
     font-size: 26px;
   }
-  .pres-stage {
-    flex-direction: column;
-  }
-  .pres-next-wrap {
-    flex-direction: row;
-    align-items: center;
-  }
-  .pres-next {
-    height: 68px;
-  }
-  .pres-nav span,
-  .pres-nav {
-    font-size: 12px;
-  }
-  .pres-nav {
-    padding: 8px 12px;
-  }
 }
 
 /* short window: the next-slide preview is the first thing to go, so the
@@ -2896,19 +2791,6 @@ strong {
   .pres-body {
     padding: 10px clamp(10px, 2vw, 20px);
     gap: 12px;
-  }
-}
-
-/* very small: drop the nav labels, keep the arrows */
-@media (max-width: 420px) {
-  .pres-nav {
-    padding: 8px 10px;
-    gap: 0;
-    font-size: 0;
-  }
-  .pres-nav svg {
-    width: 18px;
-    height: 18px;
   }
 }
 
@@ -3094,12 +2976,6 @@ strong {
 }
 .ann-size.on {
   background: rgba(255, 255, 255, 0.14);
-}
-.ann-pop-hint {
-  font-size: 10.5px;
-  letter-spacing: 0.02em;
-  color: #8e8e93;
-  text-align: center;
 }
 
 /* Tooltips for chrome controls (instant, styled) */

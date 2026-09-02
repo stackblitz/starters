@@ -15,7 +15,7 @@ import {
 import {
   IconClose,
   IconExpand,
-  IconExport,
+  IconDownload,
   IconGrid,
   IconGrip,
   IconLeft,
@@ -333,13 +333,13 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
         {(isEditor || isPresentSurface) && <span className="noir-sep" />}
         {isEditor && exportItems && (
           <MenuButton
-            label="Export as…"
+            label="Download"
             buttonClassName="noir-icon-btn"
-            tip={exportBusy ? undefined : 'Export as PDF or JSON'}
+            tip={exportBusy ? undefined : 'Download as PDF or JSON'}
             disabled={!!exportBusy}
             items={exportItems}
           >
-            <IconExport />
+            <IconDownload />
           </MenuButton>
         )}
         {isEditor && onNotes && (

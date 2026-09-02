@@ -39,17 +39,9 @@ const IconPause = () => (
     <path d="M7 4h3.4v16H7zM13.6 4H17v16h-3.4z" />
   </svg>
 );
-const IconReset = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.9}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <path d="M9 8L5 12l4 4M5 12h9a4 4 0 1 1 0 8h-3" />
+const IconStop = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="1.6" />
   </svg>
 );
 const IconType = () => (
@@ -81,7 +73,6 @@ export default function Presenter({
   onGo,
   onNext,
   onPrev,
-  navLabel,
   onExit,
 }: {
   slides: SlideData[];
@@ -94,12 +85,11 @@ export default function Presenter({
   onGo: (index: number) => void;
   onNext: () => void;
   onPrev: () => void;
-  navLabel?: (index: number) => string | undefined;
   /** leave the console for the editor when this is not a script-opened window */
   onExit?: (slideIndex: number) => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
-  const [running, setRunning] = useState(true);
+  const [running, setRunning] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [sizeIdx, setSizeIdx] = useState(() => {
     const stored = parseInt(localStorage.getItem(SIZE_KEY) || '', 10);
@@ -138,7 +128,7 @@ export default function Presenter({
       } else if (event.key === 'T') {
         event.preventDefault();
         setElapsed(0);
-        setRunning(true);
+        setRunning(false);
       } else if (event.key === '+' || event.key === '=') {
         event.preventDefault();
         setSizeIdx((idx) => Math.min(NOTE_SIZES.length - 1, idx + 1));
@@ -153,7 +143,6 @@ export default function Presenter({
 
   const currentSlide = slides[slideIndex];
   const nextSlide = slides[slideIndex + 1];
-  const nextName = navLabel?.(slideIndex + 1);
   const progress = slideCount > 1 ? (slideIndex / (slideCount - 1)) * 100 : 100;
   const builds =
     buildMax > 0
@@ -168,7 +157,8 @@ export default function Presenter({
             {fmtClock(elapsed)}
           </span>
           <button
-            className="pres-icon"
+            type="button"
+            className={'pres-icon' + (running ? '' : ' is-play')}
             onClick={() => setRunning((runningNow) => !runningNow)}
             data-tip={running ? 'Pause (T)' : 'Start (T)'}
             aria-label={running ? 'Pause timer' : 'Start timer'}
@@ -176,24 +166,25 @@ export default function Presenter({
             {running ? <IconPause /> : <IconPlay />}
           </button>
           <button
+            type="button"
             className="pres-icon"
             onClick={() => {
               setElapsed(0);
-              setRunning(true);
+              setRunning(false);
             }}
-            data-tip="Reset (⇧T)"
+            disabled={elapsed === 0 && !running}
+            data-tip={elapsed === 0 && !running ? undefined : 'Reset (⇧T)'}
             aria-label="Reset timer"
           >
-            <IconReset />
+            <IconStop />
           </button>
         </div>
 
-        <div className="pres-center">
-          <span className="pres-count">
-            <b>{slideIndex + 1}</b> / {slideCount}
-          </span>
-          {builds && <span className="pres-builds">{builds}</span>}
-        </div>
+        {builds && (
+          <div className="pres-center">
+            <span className="pres-builds">{builds}</span>
+          </div>
+        )}
 
         <div className="pres-right">
           <span className="pres-clock">
@@ -255,12 +246,7 @@ export default function Presenter({
           </div>
 
           <div className="pres-next-wrap">
-            <div className="pres-label">
-              Up next
-              {nextName ? (
-                <span className="pres-next-name"> · {nextName}</span>
-              ) : null}
-            </div>
+            <div className="pres-label">Up next</div>
             {nextSlide ? (
               <button
                 className="pres-next"
@@ -293,28 +279,44 @@ export default function Presenter({
       </div>
 
       <footer className="pres-bottom">
-        <button
-          className="pres-nav"
-          onClick={onPrev}
-          disabled={slideIndex === 0 && clicks === 0}
-          aria-label="Previous"
-        >
-          <IconLeft /> Prev
-        </button>
+        <div className="pres-pager">
+          <button
+            type="button"
+            className="pres-icon"
+            data-tip={slideIndex === 0 && clicks === 0 ? undefined : 'Previous'}
+            aria-label="Previous slide"
+            disabled={slideIndex === 0 && clicks === 0}
+            onClick={onPrev}
+          >
+            <IconLeft />
+          </button>
+          <div className="noir-counter">
+            <span className="noir-counter-now">
+              {slideCount ? slideIndex + 1 : 0}
+            </span>
+            <span className="noir-counter-tot">/ {slideCount}</span>
+          </div>
+          <button
+            type="button"
+            className="pres-icon"
+            data-tip={
+              slideIndex >= slideCount - 1 && clicks >= buildMax
+                ? undefined
+                : 'Next'
+            }
+            aria-label="Next slide"
+            disabled={slideIndex >= slideCount - 1 && clicks >= buildMax}
+            onClick={onNext}
+          >
+            <IconRight />
+          </button>
+        </div>
         <div className="pres-progress" role="presentation">
           <div
             className="pres-progress-fill"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <button
-          className="pres-nav"
-          onClick={onNext}
-          disabled={slideIndex >= slideCount - 1 && clicks >= buildMax}
-          aria-label="Next"
-        >
-          Next <IconRight />
-        </button>
       </footer>
     </div>
   );

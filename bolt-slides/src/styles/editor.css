@@ -133,12 +133,6 @@
 .notes-pop .note-wyg blockquote {
   color: var(--ed-text);
 }
-.notes-pop-hint {
-  color: var(--ed-text-faint);
-  font-size: 11.5px;
-  line-height: 1.45;
-  margin: 0;
-}
 
 /* buttons + inputs — DS secondary / primary / ghost-icon, size sm */
 .ghost-btn,

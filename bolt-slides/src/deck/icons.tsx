@@ -70,9 +70,9 @@ export const IconGrip = () => (
     <circle cx="15" cy="17.5" r="1.15" />
   </svg>
 );
-export const IconExport = () => (
+export const IconDownload = () => (
   <svg {...base}>
-    <path d="M12 3v12M8 7l4-4 4 4" />
+    <path d="M12 3v12M8 11l4 4 4-4" />
     <path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" />
   </svg>
 );
