@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { htmlToNotes, notesToHtml } from './notesFormat';
 
@@ -75,6 +76,32 @@ export function NotesEditor({
   const bar = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; left: number } | null>(null);
   const panned = useRef(false);
+  /* Swatch clicks steal focus; keep the notes selection so colour can apply. */
+  const savedRange = useRef<Range | null>(null);
+
+  const captureSelection = () => {
+    const el = ref.current;
+    const sel = window.getSelection();
+    if (!el || !sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!el.contains(range.commonAncestorContainer)) return;
+    savedRange.current = range.cloneRange();
+  };
+
+  const restoreSelection = () => {
+    const el = ref.current;
+    const range = savedRange.current;
+    if (!el || !range) return false;
+    el.focus({ preventScroll: true });
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    try {
+      sel?.addRange(range);
+    } catch {
+      return false;
+    }
+    return !!(sel && !sel.isCollapsed);
+  };
 
   const startPan = (e: React.PointerEvent) => {
     if (e.button > 0 || !bar.current) return;
@@ -105,9 +132,16 @@ export function NotesEditor({
       setPalette(null);
       return;
     }
+    captureSelection();
     const r = colorBtn.current?.getBoundingClientRect();
     if (r) setPalette({ x: r.left, y: r.bottom + 8 });
   };
+
+  useEffect(() => {
+    const onSel = () => captureSelection();
+    document.addEventListener('selectionchange', onSel);
+    return () => document.removeEventListener('selectionchange', onSel);
+  }, []);
 
   // Seed HTML once on mount so autoFocus can land on real content. Later
   // value changes go through the sync effect, which skips while focused.
@@ -190,18 +224,81 @@ export function NotesEditor({
     document.execCommand(cmd, false, arg);
     commit();
   };
+
+  const blockAncestor = (node: Node | null): HTMLElement | null => {
+    const root = ref.current;
+    let el =
+      node instanceof HTMLElement ? node : (node?.parentElement ?? null);
+    while (el && el !== root) {
+      const tag = el.tagName;
+      if (
+        /^H[1-6]$/.test(tag) ||
+        tag === 'BLOCKQUOTE' ||
+        tag === 'P' ||
+        tag === 'DIV'
+      )
+        return el;
+      el = el.parentElement;
+    }
+    return null;
+  };
+
+  /* Swap the current paragraph's tag. execCommand('formatBlock') is a
+     coin-flip across browsers ('h3' vs '<h3>'), so Heading looked like it
+     did nothing after we started passing brackets. */
+  const retag = (el: HTMLElement, tag: string) => {
+    const next = document.createElement(tag);
+    next.append(...Array.from(el.childNodes));
+    el.replaceWith(next);
+    const range = document.createRange();
+    range.selectNodeContents(next);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    return next;
+  };
+
+  const execFormatBlock = (tag: string) => {
+    document.execCommand('styleWithCSS', false, 'false');
+    return (
+      document.execCommand('formatBlock', false, tag) ||
+      document.execCommand('formatBlock', false, `<${tag}>`)
+    );
+  };
+
+  const toggleBlock = (tag: 'h3' | 'blockquote') => {
+    const root = ref.current;
+    if (!root) return;
+    root.focus({ preventScroll: true });
+    let block = blockAncestor(window.getSelection()?.anchorNode ?? null);
+    if (!block) {
+      execFormatBlock('div');
+      block = blockAncestor(window.getSelection()?.anchorNode ?? null);
+    }
+    const on =
+      tag === 'h3'
+        ? !!block && /^H[1-6]$/.test(block.tagName)
+        : !!block && block.tagName === 'BLOCKQUOTE';
+    if (block) retag(block, on ? 'div' : tag);
+    else execFormatBlock(on ? 'div' : tag);
+    commit();
+  };
+
   /* wrap the selection in a styled span — the deck accent, or a specific
      colour, both of which the marker format already understands */
   const wrap = (open: string) => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) {
+    if (!restoreSelection()) {
       ref.current?.focus();
       return;
     }
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
     const box = document.createElement('div');
     box.appendChild(sel.getRangeAt(0).cloneContents());
     document.execCommand('insertHTML', false, `${open}${box.innerHTML}</span>`);
     commit();
+    captureSelection();
   };
   const accent = () => wrap('<span class="accent-text">');
   const paint = (hex: string) =>
@@ -211,11 +308,12 @@ export function NotesEditor({
   /* strip colour / accent / highlight from the selection, leaving bold, italic
      and the rest of the structure alone */
   const strip = () => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) {
+    if (!restoreSelection()) {
       ref.current?.focus();
       return;
     }
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
     const box = document.createElement('div');
     box.appendChild(sel.getRangeAt(0).cloneContents());
     box
@@ -225,6 +323,7 @@ export function NotesEditor({
       });
     document.execCommand('insertHTML', false, box.innerHTML);
     commit();
+    captureSelection();
   };
   const code = () => {
     const sel = window.getSelection();
@@ -236,6 +335,33 @@ export function NotesEditor({
       .replace(/>/g, '&gt;');
     document.execCommand('insertHTML', false, `<code>${t}</code>`);
     commit();
+  };
+
+  const clearFormatting = () => {
+    restoreSelection();
+    ref.current?.focus();
+    document.execCommand('styleWithCSS', false, 'false');
+    document.execCommand('removeFormat');
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) {
+      const box = document.createElement('div');
+      box.appendChild(sel.getRangeAt(0).cloneContents());
+      box
+        .querySelectorAll('[data-hl], [data-color], .accent-text, code')
+        .forEach((el) => {
+          el.replaceWith(...Array.from(el.childNodes));
+        });
+      document.execCommand('insertHTML', false, box.innerHTML);
+    }
+    const block = blockAncestor(window.getSelection()?.anchorNode ?? null);
+    if (
+      block &&
+      (/^H[1-6]$/.test(block.tagName) || block.tagName === 'BLOCKQUOTE')
+    ) {
+      retag(block, 'div');
+    }
+    commit();
+    captureSelection();
   };
 
   const cmds: Cmd[] = [
@@ -259,7 +385,7 @@ export function NotesEditor({
       id: 'h',
       label: 'Heading',
       hint: '',
-      run: () => exec('formatBlock', '<h3>'),
+      run: () => toggleBlock('h3'),
       icon: svg('M5 4v12M13 4v12M5 10h8'),
     },
     {
@@ -282,7 +408,7 @@ export function NotesEditor({
       id: 'q',
       label: 'Callout',
       hint: '',
-      run: () => exec('formatBlock', '<blockquote>'),
+      run: () => toggleBlock('blockquote'),
       icon: svg('M4 5v10M8 6.5h8M8 10h8M8 13.5h5'),
     },
     {
@@ -296,7 +422,7 @@ export function NotesEditor({
       id: 'x',
       label: 'Clear formatting',
       hint: '',
-      run: () => exec('removeFormat'),
+      run: clearFormatting,
       icon: svg('M5 4.6h10M10 4.6l-2.2 10.8M12.4 12.4l4 4M16.4 12.4l-4 4'),
     },
   ];
@@ -394,63 +520,76 @@ export function NotesEditor({
               />
             )}
           </button>
-          {palette && (
-            <div
-              className="note-wyg-pop"
-              role="dialog"
-              aria-label="Colour and highlight"
-              style={{ top: palette.y, left: palette.x }}
-            >
-              <div className="note-wyg-pop-label">Text</div>
-              <div className="note-wyg-pop-row">
-                <button
-                  className="note-wyg-swatch is-accent-swatch"
-                  data-tip="Deck accent"
-                  aria-label="Deck accent"
-                  onClick={() => {
-                    accent();
-                    setPalette(null);
-                  }}
-                />
-                {TEXT_COLORS.map((hex) => (
+          {/* Portal past the dock's transform — fixed + viewport coords would
+              otherwise anchor to `.noir-dock-popover` and open off-screen. */}
+          {palette &&
+            createPortal(
+              <div
+                className="note-wyg-pop"
+                role="dialog"
+                aria-label="Colour and highlight"
+                style={{ top: palette.y, left: palette.x }}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <div className="note-wyg-pop-label">Text</div>
+                <div className="note-wyg-pop-row">
                   <button
-                    key={hex}
-                    className="note-wyg-swatch"
-                    style={{ background: hex }}
-                    aria-label={`Text ${hex}`}
-                    onClick={() => {
-                      paint(hex);
+                    type="button"
+                    className="note-wyg-swatch is-accent-swatch"
+                    data-tip="Deck accent"
+                    aria-label="Deck accent"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      accent();
                       setPalette(null);
                     }}
                   />
-                ))}
-              </div>
-              <div className="note-wyg-pop-label">Highlight</div>
-              <div className="note-wyg-pop-row">
-                {HL_COLORS.map((hex) => (
+                  {TEXT_COLORS.map((hex) => (
+                    <button
+                      type="button"
+                      key={hex}
+                      className="note-wyg-swatch"
+                      style={{ background: hex }}
+                      aria-label={`Text ${hex}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        paint(hex);
+                        setPalette(null);
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="note-wyg-pop-label">Highlight</div>
+                <div className="note-wyg-pop-row">
+                  {HL_COLORS.map((hex) => (
+                    <button
+                      type="button"
+                      key={hex}
+                      className="note-wyg-swatch is-hl"
+                      style={{ background: hex }}
+                      aria-label={`Highlight ${hex}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        mark(hex);
+                        setPalette(null);
+                      }}
+                    />
+                  ))}
                   <button
-                    key={hex}
-                    className="note-wyg-swatch is-hl"
-                    style={{ background: hex }}
-                    aria-label={`Highlight ${hex}`}
-                    onClick={() => {
-                      mark(hex);
+                    type="button"
+                    className="note-wyg-swatch is-none"
+                    data-tip="Remove colour"
+                    aria-label="Remove colour and highlight"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      strip();
                       setPalette(null);
                     }}
                   />
-                ))}
-                <button
-                  className="note-wyg-swatch is-none"
-                  data-tip="Remove colour"
-                  aria-label="Remove colour and highlight"
-                  onClick={() => {
-                    strip();
-                    setPalette(null);
-                  }}
-                />
-              </div>
-            </div>
-          )}
+                </div>
+              </div>,
+              document.body
+            )}
         </div>
 
         {cmds.slice(2).map((c) => (

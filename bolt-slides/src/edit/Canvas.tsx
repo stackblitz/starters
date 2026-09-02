@@ -234,7 +234,8 @@ export default function Canvas({
       const target = event.target as Node;
       if (
         notesPopRef.current?.contains(target) ||
-        notesBtnRef.current?.contains(target)
+        notesBtnRef.current?.contains(target) ||
+        (target instanceof Element && target.closest('.note-wyg-pop'))
       )
         return;
       closeNotes(false);
