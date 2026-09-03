@@ -1,36 +1,56 @@
-# Bolt slides skill
+# Bolt Slides
 
-A Bolt skill that builds a premium, **responsive React presentation deck** — classic
-paged slides you present one at a time, with a Slidev-style floating dock + thumbnail
-rail, grid overview, click-builds, annotation, and presenter mode — but each slide is a
-responsive web layout (no fixed canvas, no clipping) built from a rich component
-library.
+A Pitch-style slide studio for [Bolt](https://bolt.new): prompt a deck into
+`deck.json`, refine it in the studio, present in a new tab, and
+download PDF or JSON.
 
-## The skill
+The prompt skill writes `deck.json` (and `src/styles/tokens.css` for
+theme). The studio and the published audience deck both read that file.
 
-This repo **is** the running app. The authoring guide lives at
-[`.bolt/skills/slides/SKILL.md`](./.bolt/skills/slides/SKILL.md); the app itself sits
-at the repo root — a complete Vite + React deck: the paged engine + chrome
-(`src/deck/`), fourteen slide layouts (`src/components/`: Cover, BigNumber,
-Contrast, Chat, Globe, Bento, Split, StatGrid, Section, Quote, Pricing, Steps,
-Agenda, Team) plus a dozen building blocks (Table, Comparison, Tabs, Accordion, Timeline,
-CodeWindow, BrowserFrame, SpotlightCard, charts, CountUp, TiltCard, Marquee, …),
-and the token-driven theme (`src/styles/`). The engine is left as-is; only the
-`:root` token block and the slides in `src/App.tsx` are authored per deck.
-
-## Add it in Bolt
-
-1. In Bolt's **Add skill from GitHub**, paste this repo's URL —
-   `https://github.com/inkko44/bolt-slides-skill`.
-2. The `slides` skill auto-discovers at `.bolt/skills/slides.md`.
-3. Tell Bolt to use the `slides` skill and build a deck about your topic/brand.
-
-## Run it locally
+## Quick start
 
 ```bash
 npm install
-npm run dev
+npm run dev        # studio at http://localhost:5173 — Present opens a new tab
+npm run lint       # ESLint (same kit as bolt-vite-react-ts)
+npm run typecheck
 ```
 
-`npm run dev` opens the deck at `/`. Re-theme everything by editing one `:root` block
-in `src/styles/tokens.css`.
+Prompt a deck with the `slides` skill, or edit `deck.json` directly.
+In the studio, drag to reorder, use a thumbnail’s ••• menu (or
+right-click) to duplicate or delete, edit speaker notes, then Present
+or Download as PDF / JSON.
+
+## What's inside
+
+- `/` — In Bolt this is the studio: canvas, side panel (S), grid (G),
+  and a floating dock (pager, notes, Download, Present, Presenter).
+  Present opens `/?present=1` in a new tab; the studio stays put.
+  Fullscreen is F in that tab. The published origin is the audience
+  deck. **P** opens the presenter console in a second tab.
+- `/?presenter=1` — Presenter console: on-screen now, up next, notes
+  (read-only), timer, note text size. `/present` is the same route.
+
+Collaborate by sharing the Bolt project.
+
+## The skill
+
+`.bolt/skills/slides/SKILL.md` covers bootstrap (mint `boltSlidesId` on
+first write) and authoring `deck.json` plus `src/styles/tokens.css`.
+
+## Architecture
+
+```
+deck.json               canonical deck (envelope + slides)
+src/data/               types + zustand store (Vite DEV persists via POST /__deck)
+src/layouts/            layout registry
+src/components/         section components
+src/deck/               presentation engine
+src/edit/               studio chrome
+src/styles/tokens.css   theme: edit :root values only
+```
+
+## Theming
+
+Everything visual derives from the `:root` tokens in `src/styles/tokens.css`.
+`--accent` must stay a solid color.

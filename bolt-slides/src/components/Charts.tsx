@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type CSSProperties } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { useInView } from '@/deck/useInView';
-import { useDeck } from '@/deck/DeckContext';
+import { useInView } from '../deck/useInView';
+import { useDeck } from '../deck/DeckContext';
 
 /* A small hand-built chart kit — bar, line/area, and donut. Each draws itself
    in when scrolled into view. All token-driven (one accent), no chart library.
@@ -14,7 +14,8 @@ export function BarChart({
   height = 200,
   showValues = true,
 }: {
-  data: { label: string; value: number }[];
+  /** valueNode overrides how the figure above a bar renders (math still uses value) */
+  data: { label: string; value: number; valueNode?: React.ReactNode }[];
   height?: number;
   showValues?: boolean;
 }) {
@@ -34,7 +35,7 @@ export function BarChart({
               animate={inView ? { opacity: 1, y: 0 } : undefined}
               transition={{ duration: 0.4, delay: 0.45 + i * 0.06 }}
             >
-              {d.value.toLocaleString('en-US')}
+              {d.valueNode ?? d.value.toLocaleString('en-US')}
             </motion.div>
           )}
           <div className="ch-bar-track">
@@ -57,12 +58,22 @@ export function BarChart({
 }
 
 export function LineChart({
-  points,
+  points: rawPoints,
   height = 200,
+  showValues = false,
+  large = false,
 }: {
   points: number[];
   height?: number;
+  showValues?: boolean;
+  large?: boolean;
 }) {
+  const points =
+    rawPoints.length >= 2
+      ? rawPoints
+      : rawPoints.length === 1
+      ? [rawPoints[0], rawPoints[0]]
+      : [0, 0];
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const { ref, inView } = useInView<HTMLDivElement>(0.3);
@@ -142,9 +153,23 @@ export function LineChart({
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
         />
       </svg>
+      {showValues &&
+        coords.map((c, i) => (
+          <span
+            key={i}
+            className={'ch-pt-val' + (inView ? ' shown' : '')}
+            style={{
+              left: `${(c[0] / w) * 100}%`,
+              top: `${(c[1] / h) * 100}%`,
+              transitionDelay: `${0.3 + i * 0.05}s`,
+            }}
+          >
+            {points[i].toLocaleString('en-US')}
+          </span>
+        ))}
       {/* the live end-point — a glowing dot with a radar pulse */}
       <span
-        className={'ch-dot' + (inView ? ' shown' : '')}
+        className={'ch-dot' + (large ? ' lg' : '') + (inView ? ' shown' : '')}
         style={{ left: `${(ex / w) * 100}%`, top: `${(ey / h) * 100}%` }}
         aria-hidden
       />
@@ -228,6 +253,118 @@ export function DonutChart({
         </text>
       </svg>
       {label && <div className="ch-donut-label">{label}</div>}
+    </div>
+  );
+}
+
+/* Grouped bars — multi-series comparison with a y-axis and legend.
+   <GroupedBarChart categories={['Q1','Q2']} series={[{label:'2024',values:[10,20]},…]} />
+   Token-driven: first series takes the accent, later ones step down in ink. */
+const SERIES_COLORS = [
+  'var(--primary)',
+  'color-mix(in srgb, var(--primary) 45%, var(--fg-muted))',
+  'color-mix(in srgb, var(--fg-muted) 60%, transparent)',
+];
+
+export function GroupedBarChart({
+  categories,
+  series,
+  height = 240,
+  showValues = false,
+}: {
+  categories: React.ReactNode[];
+  series: { label: React.ReactNode; values: number[] }[];
+  height?: number;
+  showValues?: boolean;
+}) {
+  const { isStatic } = useDeck();
+  const reduce = useReducedMotion();
+  const { ref, inView } = useInView<HTMLDivElement>(0.3);
+  const animate = !isStatic && !reduce;
+  const max = Math.max(...series.flatMap((s) => s.values), 1);
+  // 4 tidy ticks
+  const step = Math.pow(10, Math.floor(Math.log10(max / 4 || 1)));
+  const unit =
+    [1, 2, 2.5, 5, 10].map((m) => m * step).find((u) => u * 4 >= max) ?? step;
+  const top = unit * 4;
+  const ticks = [4, 3, 2, 1];
+  return (
+    <div className="gch" ref={ref}>
+      <div className="gch-legend">
+        {series.map((s, i) => (
+          <span key={i} className="gch-key">
+            <i
+              style={{ background: SERIES_COLORS[i % SERIES_COLORS.length] }}
+            />
+            {s.label}
+          </span>
+        ))}
+      </div>
+      <div className="gch-plot" style={{ height }}>
+        <div className="gch-axis">
+          {ticks.map((t) => (
+            <span
+              key={t}
+              className="gch-tick"
+              style={{ bottom: `${(t / 4) * 100}%` }}
+            >
+              {(unit * t) % 1 === 0 ? unit * t : (unit * t).toFixed(1)}
+            </span>
+          ))}
+        </div>
+        <div className="gch-area">
+          {ticks.map((t) => (
+            <span
+              key={t}
+              className="gch-grid"
+              style={{ bottom: `${(t / 4) * 100}%` }}
+            />
+          ))}
+          <div className="gch-groups">
+            {categories.map((c, ci) => (
+              <div key={ci} className="gch-group">
+                <div className="gch-bars">
+                  {series.map((s, si) => (
+                    <div key={si} className="gch-barwrap">
+                      {showValues && (
+                        <motion.span
+                          className="gch-val"
+                          initial={animate ? { opacity: 0 } : false}
+                          animate={{ opacity: inView ? 1 : 0 }}
+                          transition={{
+                            duration: 0.4,
+                            delay: 0.5 + ci * 0.06 + si * 0.04,
+                          }}
+                        >
+                          {(s.values[ci] ?? 0).toLocaleString('en-US')}
+                        </motion.span>
+                      )}
+                      <motion.span
+                        className="gch-bar"
+                        style={{
+                          background: SERIES_COLORS[si % SERIES_COLORS.length],
+                        }}
+                        initial={animate ? { height: 0 } : false}
+                        animate={{
+                          height: inView
+                            ? `${((s.values[ci] ?? 0) / top) * 100}%`
+                            : 0,
+                        }}
+                        transition={{
+                          duration: 0.7,
+                          delay: ci * 0.06 + si * 0.04,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="gch-x">{c}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

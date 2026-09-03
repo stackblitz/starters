@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Reveal from '@/deck/Reveal';
+import Reveal from '../deck/Reveal';
 
 /* A chapter divider slide — a full-bleed breather between parts of the deck.
    An enormous outlined "ghost" number sits behind a centered kicker + display
@@ -12,11 +12,13 @@ export default function Section({
   kicker,
   title,
   image,
+  dim,
 }: {
   n?: number | string;
   kicker?: string;
   title: ReactNode;
   image?: string;
+  dim?: number;
   nav?: string;
   notes?: string;
 }) {
@@ -25,7 +27,11 @@ export default function Section({
       {image && (
         <>
           <img className="cover-img" src={image} alt="" aria-hidden />
-          <div className="cover-scrim" aria-hidden />
+          <div
+            className="cover-scrim"
+            aria-hidden
+            style={dim ? { ['--dim' as string]: dim } : undefined}
+          />
         </>
       )}
       <div className="sec-glow" aria-hidden />
