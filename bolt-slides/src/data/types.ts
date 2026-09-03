@@ -1,8 +1,14 @@
-/* The deck as data. Canonical store is repo-root deck.json; `props` is the
-   layout-specific payload rendered by src/layouts/registry.tsx. */
+/* The deck as data. Canonical store is repo-root deck.json. Per-layout
+   `props` contracts live in ./layoutProps.ts (LayoutProps / CoverProps / …). */
 
 /* none = theme --bg (opaque). Prefer color with "var(--bg)" in new decks so
    every slide carries an explicit background value. */
+export type {
+  LayoutName,
+  LayoutProps,
+  LayoutPropsByName,
+} from './layoutProps';
+
 export type Background =
   | { type: 'none' }
   | { type: 'color'; color: string }
@@ -52,8 +58,10 @@ export const TRANSITIONS: TransitionMode[] = [
 export interface SlideData {
   id: string;
   position: number;
+  /** Authoring token: a LayoutName from ./layoutProps.ts (aliases resolved at render). */
   layout: string;
-  /* Per-layout shape; stay `any` until layouts share a discriminated union. */
+  /* Authoring shape is LayoutProps in ./layoutProps.ts. Renderers read
+     fields loosely because decks can carry unused kind-switch keys. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props: any;
   background: Background;

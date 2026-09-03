@@ -1,5 +1,6 @@
 /* Shared bits for layout renderers + the inspector's field schema. */
 import type { ReactNode } from 'react';
+import type { LayoutName } from '../data/layoutProps';
 import type { SlideData } from '../data/types';
 import { useEdit } from '../edit/EditContext';
 import { renderRich } from '../edit/rich';
@@ -38,7 +39,7 @@ export interface FieldSpec {
 }
 
 export interface LayoutDef {
-  type: string;
+  type: LayoutName;
   label: string;
   hint: string;
   defaults: Record<string, unknown>;

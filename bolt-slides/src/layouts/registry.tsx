@@ -1,14 +1,15 @@
 /* The layout registry — every slide row's `layout` field resolves here.
-   Each entry: defaults (used by "add slide" and the skill), an inspector
-   field schema, and a Render component that maps props → the premium
-   section components with editable text (T) wired in. */
+   Each entry: defaults (add-slide), inspector fields, and Render.
+   Authoring `props` shapes live in src/data/layoutProps.ts. */
 import type { SlideData } from '../data/types';
 import { type LayoutDef } from './shared';
 import { coreLayouts } from './core';
 import { gridLayouts } from './grids';
 import { blockLayouts } from './blocks';
 import { mediaLayouts } from './media';
+import { LAYOUT_NAMES, type LayoutName } from '../data/layoutProps';
 
+export type { LayoutName, LayoutProps } from '../data/layoutProps';
 export type { LayoutDef, FieldSpec } from './shared';
 
 export const LAYOUTS: Record<string, LayoutDef> = Object.fromEntries(
@@ -16,6 +17,17 @@ export const LAYOUTS: Record<string, LayoutDef> = Object.fromEntries(
     (l) => [l.type, l]
   )
 );
+
+const missing = LAYOUT_NAMES.filter((name) => !LAYOUTS[name]);
+if (missing.length) {
+  throw new Error(`LAYOUTS missing LayoutName: ${missing.join(', ')}`);
+}
+const extra = Object.keys(LAYOUTS).filter(
+  (name) => !LAYOUT_NAMES.includes(name as LayoutName)
+);
+if (extra.length) {
+  throw new Error(`LAYOUTS has untyped layouts: ${extra.join(', ')}`);
+}
 
 function aliasKeys(type: string): string[] {
   const kebab = type.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase());
