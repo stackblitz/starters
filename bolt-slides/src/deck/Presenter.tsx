@@ -4,7 +4,15 @@ import SlideView from '../slide/SlideView';
 import Thumb from './Thumb';
 import type { DeckCtxValue } from './DeckContext';
 import { NotesView } from '../edit/notesView';
-import { IconLeft, IconRight, IconClose } from './icons';
+import {
+  IconLeft,
+  IconRight,
+  IconClose,
+  IconPlay,
+  IconPause,
+  IconStop,
+  IconType,
+} from './icons';
 
 function renderSlide(slide: SlideData) {
   return (
@@ -28,35 +36,6 @@ const pad = (value: number) => String(value).padStart(2, '0');
 const fmtClock = (totalSeconds: number) =>
   (totalSeconds >= 3600 ? `${pad(Math.floor(totalSeconds / 3600))}:` : '') +
   `${pad(Math.floor(totalSeconds / 60) % 60)}:${pad(totalSeconds % 60)}`;
-
-const IconPlay = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-    <path d="M7 4.7v14.6c0 .8.9 1.3 1.6.9l11-7.3a1 1 0 0 0 0-1.7l-11-7.3c-.7-.5-1.6 0-1.6.8Z" />
-  </svg>
-);
-const IconPause = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-    <path d="M7 4h3.4v16H7zM13.6 4H17v16h-3.4z" />
-  </svg>
-);
-const IconStop = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-    <rect x="6.5" y="6.5" width="11" height="11" rx="1.6" />
-  </svg>
-);
-const IconType = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.9}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <path d="M4 7V5h16v2M12 5v14M9 19h6" />
-  </svg>
-);
 
 /* ── the console ───────────────────────────────────────────────────── */
 const NOTE_SIZES = [15, 17, 19, 22, 25];

@@ -1,7 +1,7 @@
 /* Block layouts: timeline, comparison, table, tabs, accordion, chat, code.
    Every visible string renders through T (inline-editable); repeatable items
    carry LiCtl (on-canvas drag-reorder / add / remove). */
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import Slide from '../deck/Slide';
 import Timeline from '../components/Timeline';
 import Comparison from '../components/Comparison';
@@ -19,14 +19,13 @@ import { useEdit } from '../edit/EditContext';
 import { useStore } from '../data/store';
 import {
   type LayoutDef,
+  e,
   useShow,
   Heading,
   pipe,
   rich,
   normTable,
 } from './shared';
-
-const e = (node: ReactNode) => node as unknown as string;
 
 const TL_BLANK = { time: 'Q1', title: 'Milestone', body: '' };
 
@@ -128,7 +127,7 @@ const ComparisonDef: LayoutDef = {
             cols={data.cols}
             highlight={slide.props.highlight ?? 0}
             rows={data.rows.map((r) => ({
-              label: rich(r.label) as unknown as string,
+              label: e(rich(r.label)),
               values: r.values,
             }))}
           />

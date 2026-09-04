@@ -165,7 +165,7 @@ export function renderRich(text: string | null | undefined): ReactNode {
 
 /* Same rendering as an HTML string — used by the WYSIWYG editor, which
    writes innerHTML only when the field is not focused. */
-const esc = (s: string) =>
+export const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 function lineToHtml(line: string): string {

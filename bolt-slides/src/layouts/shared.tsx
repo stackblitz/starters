@@ -15,6 +15,10 @@ export interface LayoutDef {
   Render: (p: { slide: SlideData }) => ReactNode;
 }
 
+/** layout components type text props as string but only ever render them —
+    this lets us hand them editable <T> elements instead */
+export const e = (node: ReactNode) => node as unknown as string;
+
 /* ── render helpers ────────────────────────────────────────────────── */
 
 /** show optional text slots when they have content — or always in the editor */

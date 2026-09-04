@@ -8,6 +8,7 @@ import {
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { htmlToNotes, notesToHtml } from './notesFormat';
+import { esc } from './rich';
 
 /* Speaker notes — authored in the studio popover as a WYSIWYG. Markup
    parse / HTML convert / read-only view live in notesFormat.tsx. */
@@ -328,11 +329,7 @@ export function NotesEditor({
   const code = () => {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed) return;
-    const t = sel
-      .toString()
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    const t = esc(sel.toString());
     document.execCommand('insertHTML', false, `<code>${t}</code>`);
     commit();
   };

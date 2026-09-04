@@ -94,3 +94,19 @@ export const IconPlay = () => (
     <path d="M8 5.14v13.72c0 .9 1 1.45 1.77.97l10.4-6.86a1.15 1.15 0 0 0 0-1.94L9.77 4.17C9 3.69 8 4.24 8 5.14Z" />
   </svg>
 );
+export const IconPause = () => (
+  <svg {...base} fill="currentColor" stroke="none">
+    <rect x="7" y="5" width="3.6" height="14" rx="0.8" />
+    <rect x="13.4" y="5" width="3.6" height="14" rx="0.8" />
+  </svg>
+);
+export const IconStop = () => (
+  <svg {...base} fill="currentColor" stroke="none">
+    <rect x="6.5" y="6.5" width="11" height="11" rx="1.6" />
+  </svg>
+);
+export const IconType = () => (
+  <svg {...base}>
+    <path d="M4 7V5h16v2M12 5v14M9 19h6" />
+  </svg>
+);

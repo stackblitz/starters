@@ -8,6 +8,7 @@ import BigNumber from '../components/BigNumber';
 import T from '../edit/EditableText';
 import {
   type LayoutDef,
+  e,
   useShow,
   Num,
 } from './shared';
@@ -27,7 +28,7 @@ const CoverDef: LayoutDef = {
       <Cover
         kicker={
           show(slide.props.kicker)
-            ? ((<T path="kicker" placeholder="Kicker" />) as unknown as string)
+            ? e(<T path="kicker" placeholder="Kicker" />)
             : undefined
         }
         title={<T path="title" placeholder="Title" />}
@@ -40,9 +41,7 @@ const CoverDef: LayoutDef = {
         dim={slide.props.dim}
         foot={
           show(slide.props.foot)
-            ? ((
-                <T path="foot" placeholder="Date · Presenter" />
-              ) as unknown as string)
+            ? e(<T path="foot" placeholder="Date · Presenter" />)
             : undefined
         }
       />
@@ -61,7 +60,7 @@ const SectionDef: LayoutDef = {
         n={slide.props.n}
         kicker={
           show(slide.props.kicker)
-            ? ((<T path="kicker" placeholder="Kicker" />) as unknown as string)
+            ? e(<T path="kicker" placeholder="Kicker" />)
             : undefined
         }
         title={<T path="title" placeholder="Title" />}
@@ -126,7 +125,7 @@ const BigNumberDef: LayoutDef = {
       <BigNumber
         kicker={
           show(slide.props.kicker)
-            ? ((<T path="kicker" placeholder="Kicker" />) as unknown as string)
+            ? e(<T path="kicker" placeholder="Kicker" />)
             : undefined
         }
         value={<Num path="value" value={slide.props.value} />}
@@ -137,7 +136,7 @@ const BigNumberDef: LayoutDef = {
         }
         foot={
           show(slide.props.foot)
-            ? ((<T path="foot" placeholder="Source" />) as unknown as string)
+            ? e(<T path="foot" placeholder="Source" />)
             : undefined
         }
       />

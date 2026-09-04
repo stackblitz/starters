@@ -15,16 +15,13 @@ import T from '../edit/EditableText';
 import LiCtl from '../edit/LiCtl';
 import {
   type LayoutDef,
+  e,
   useShow,
   Num,
   Heading,
   pipe,
 } from './shared';
 import { bgCss } from '../edit/bgCss';
-
-/* layout components type text props as string but only ever render them —
-   this lets us hand them editable <T> elements instead */
-const e = (node: ReactNode) => node as unknown as string;
 
 const kickerTitle = (
   slide: { props: { kicker?: string; title?: string } },

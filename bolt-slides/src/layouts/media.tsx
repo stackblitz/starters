@@ -21,12 +21,11 @@ import { offsetTo } from '../edit/measure';
 import type { SlideData } from '../data/types';
 import {
   type LayoutDef,
+  e,
   useShow,
   Heading,
   pipe,
 } from './shared';
-
-const e = (node: ReactNode) => node as unknown as string;
 
 const BAR_BLANK = { label: 'Q1', value: 10 };
 

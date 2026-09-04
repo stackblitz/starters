@@ -1,14 +1,7 @@
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import { renderRich } from './rich';
-import { parseNotes } from './notesFormat';
-
-/* Notes speak the deck's rich marks plus two of their own: `code`, and
-   {hl:#rrggbbaa}…{/hl} for highlighter (the deck has no highlight mark —
-   notes do, because that is how people mark up what they'll say). */
-const HL_TOKEN = /(\{hl:[^}]+\}[\s\S]*?\{\/hl\})/g;
-const HL_ONE = /^\{hl:([^}]+)\}([\s\S]*)\{\/hl\}$/;
-const HEX = /^#[0-9a-fA-F]{3,8}$/;
+import { parseNotes, HL_ONE, HEX, splitNoteHl } from './notesFormat';
 
 function inlineCode(text: string): ReactNode {
   return text.split(/(`[^`]+`)/g).map((seg, i) =>
@@ -22,7 +15,7 @@ function inlineCode(text: string): ReactNode {
   );
 }
 function inline(text: string): ReactNode {
-  return text.split(HL_TOKEN).map((seg, i) => {
+  return splitNoteHl(text).map((seg, i) => {
     const m = HL_ONE.exec(seg);
     if (m && HEX.test(m[1]))
       return (
