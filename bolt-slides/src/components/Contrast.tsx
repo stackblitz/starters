@@ -3,12 +3,6 @@ import { motion, useReducedMotion } from 'motion/react';
 import Reveal from '../deck/Reveal';
 import { useDeck } from '../deck/DeckContext';
 
-/* The before/after (problem → solution) slide: a muted panel against an
-   accent-lit panel. Left points get faint crosses, right points get accent
-   checks; the lit panel lands second, with the glow.
-   <Contrast kicker="The shift" title="Stop digging. Start asking."
-     left={{ label: 'Before', title: 'Dashboard sprawl', points: ['…'] }}
-     right={{ label: 'With Acme', title: 'Answers on tap', points: ['…'] }} /> */
 export type ContrastPanel = {
   label?: string;
   title?: string;
@@ -27,6 +21,7 @@ const Cross = () => (
     <path d="M7 7l10 10M17 7L7 17" />
   </svg>
 );
+
 const Check = () => (
   <svg
     viewBox="0 0 24 24"
@@ -54,6 +49,7 @@ export default function Contrast({
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   const panel = (p: ContrastPanel, lit: boolean, i: number) => (
     <motion.div
       className={'con-panel mat ' + (lit ? 'lit' : 'dim')}
@@ -79,6 +75,7 @@ export default function Contrast({
       </div>
     </motion.div>
   );
+
   return (
     <div className="slide">
       <div className="container">

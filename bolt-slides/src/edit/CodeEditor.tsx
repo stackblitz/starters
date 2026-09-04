@@ -1,8 +1,3 @@
-/* CodeEditor — in-place editing for the code layout. The real CodeWindow
-   stays as the visual (syntax highlight + line numbers); a transparent
-   textarea with a visible caret floats exactly over its code column, and the
-   highlight re-renders live from the draft on every keystroke. The window
-   title edits via T. Commit on blur. */
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useStore } from '../data/store';
 import { useEdit } from './EditContext';
@@ -27,17 +22,21 @@ export default function CodeEditor({ slide }: { slide: SlideData }) {
     lineHeight: string;
   } | null>(null);
 
-  // glue the textarea precisely over the code column (layout px, transform-safe)
   useLayoutEffect(() => {
     const update = () => {
       const wrap = wrapRef.current;
+
       if (!wrap) return;
+
       const codeEl = wrap.querySelector('.cw-body code') as HTMLElement | null;
       const firstCode = wrap.querySelector('.cw-code') as HTMLElement | null;
+
       if (!codeEl || !firstCode) return;
+
       const c = offsetTo(codeEl, wrap);
       const f = offsetTo(firstCode, wrap);
       const cs = getComputedStyle(firstCode);
+
       setGeom({
         left: f.x,
         top: c.y,
@@ -47,16 +46,21 @@ export default function CodeEditor({ slide }: { slide: SlideData }) {
         lineHeight: cs.lineHeight,
       });
     };
+
     update();
+
     const ro = new ResizeObserver(update);
     const codeEl = wrapRef.current?.querySelector('.cw-body code');
+
     if (codeEl) ro.observe(codeEl);
+
     return () => ro.disconnect();
   }, [code]);
 
   const commit = () => {
     if (slideId && draft !== null && draft !== slide.props.code)
       setProp(slideId, 'code', draft);
+
     setDraft(null);
   };
 
@@ -67,7 +71,6 @@ export default function CodeEditor({ slide }: { slide: SlideData }) {
 
   return (
     <div className="code-edit" ref={wrapRef}>
-      {/* the visual — re-renders live from the draft */}
       <CodeWindow
         title={
           (<T path="filename" placeholder="file.ts" />) as unknown as string
@@ -95,17 +98,23 @@ export default function CodeEditor({ slide }: { slide: SlideData }) {
           onBlur={commit}
           onMouseDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
-            e.stopPropagation(); // keep slide navigation off
+            e.stopPropagation();
+
             if (e.key === 'Escape') {
               e.preventDefault();
               taRef.current?.blur();
             }
+
             if (e.key === 'Tab') {
               e.preventDefault();
+
               const ta = taRef.current;
+
               if (!ta) return;
+
               const { selectionStart: a, selectionEnd: b } = ta;
               const next = code.slice(0, a) + '  ' + code.slice(b);
+
               setDraft(next);
               requestAnimationFrame(() => ta.setSelectionRange(a + 2, a + 2));
             }

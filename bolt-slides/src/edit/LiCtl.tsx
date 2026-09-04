@@ -1,11 +1,3 @@
-/* LiCtl — on-canvas controls for one item of a repeatable list (agenda rows,
-   steps, stats, tiles, tiers…).
-   · hover an item → ⠿ drag handle in the left gutter; drag with the POINTER
-     (not native HTML5 DnD, which cancels unpredictably) to reorder — an
-     accent insertion line previews exactly where it will land
-   · right-click an item → delete
-   · the LAST item carries a "+" pinned below it — visible on hover AND kept
-     visible the whole time the list is being edited (focus anywhere in it) */
 import { useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore, getPath } from '../data/store';
@@ -39,8 +31,10 @@ export default function LiCtl({
 
   const arr = (): unknown[] => {
     const a = getPath(slide.props, path);
+
     return Array.isArray(a) ? [...a] : [];
   };
+
   const commit = (a: unknown[]) => setProp(slideId, path, a);
   const isLast = index === arr().length - 1;
 
@@ -52,35 +46,40 @@ export default function LiCtl({
         : typeof a[index] === 'string'
         ? ''
         : {};
+
     a.push(tpl);
     commit(a);
-    setActiveList(listKey); // adding is editing — keep the + around
+    setActiveList(listKey);
   };
+
   const remove = () => {
     const a = arr();
+
     if (a.length <= 1) return;
+
     a.splice(index, 1);
     commit(a);
   };
 
-  /* Pointer-based reorder: mousedown on the handle, move over any sibling
-     (found via elementsFromPoint + data attributes), insertion line marks the
-     landing side, mouseup commits. No native DnD = no cancelled drags. */
   const startDrag = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
+
     e.preventDefault();
     e.stopPropagation();
     document.body.classList.add('li-dragging');
     wrapRef.current?.classList.add('li-src');
+
     let target: {
       el: HTMLElement;
       index: number;
       side: 'before' | 'after';
     } | null = null;
+
     const clearTarget = () => {
       target?.el.classList.remove('li-over-before', 'li-over-after');
       target = null;
     };
+
     const onMove = (ev: MouseEvent) => {
       const hit = document
         .elementsFromPoint(ev.clientX, ev.clientY)
@@ -90,31 +89,39 @@ export default function LiCtl({
             el.dataset.liKey === listKey &&
             Number(el.dataset.liIndex) !== index
         );
+
       if (!hit) {
         clearTarget();
         return;
       }
+
       const ti = Number(hit.dataset.liIndex);
       const side: 'before' | 'after' = index < ti ? 'after' : 'before';
+
       if (target?.el !== hit || target?.side !== side) {
         clearTarget();
         hit.classList.add(`li-over-${side}`);
         target = { el: hit, index: ti, side };
       }
     };
+
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       document.body.classList.remove('li-dragging');
       wrapRef.current?.classList.remove('li-src');
+
       if (target) {
         const a = arr();
         const [moved] = a.splice(index, 1);
+
         a.splice(target.index, 0, moved);
         commit(a);
       }
+
       clearTarget();
     };
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   };
@@ -127,10 +134,9 @@ export default function LiCtl({
       className={'li' + (listActive ? ' list-active' : '')}
       data-li-key={listKey}
       data-li-index={index}
-      onFocus={() => setActiveList(listKey)} // bubbles up from the T inside
+      onFocus={() => setActiveList(listKey)}
       onBlur={() => {
         setTimeout(() => {
-          // keep the + while focus stays anywhere inside a list item
           if (
             useStore.getState().activeList === listKey &&
             !document.activeElement?.closest?.('.li')

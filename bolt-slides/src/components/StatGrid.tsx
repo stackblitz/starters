@@ -3,9 +3,6 @@ import { motion, useReducedMotion } from 'motion/react';
 import Reveal from '../deck/Reveal';
 import { useDeck } from '../deck/DeckContext';
 
-/* A full-viewport proof slide: responsive auto-fit stat cards, each with an
-   accent tick and a staggered rise-in. Pass a <CountUp> as a stat `value`
-   so figures animate in. */
 export type Stat = { value?: ReactNode; label: string; caption?: string };
 
 export default function StatGrid({
@@ -20,6 +17,7 @@ export default function StatGrid({
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   return (
     <div className="slide">
       <div className="container">

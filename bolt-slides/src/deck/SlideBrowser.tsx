@@ -1,5 +1,3 @@
-/* Shared slide rail + grid overview. `mutable` turns on reorder (dnd-kit)
-   and duplicate / delete via the context menu; published stays nav-only. */
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -32,12 +30,16 @@ export type BrowseMode = 'none' | 'rail' | 'grid';
 
 function columnCount(list: HTMLElement | null): number {
   if (!list || list.children.length < 2) return 1;
+
   const rowTop = (list.children[0] as HTMLElement).offsetTop;
   let cols = 1;
+
   for (let i = 1; i < list.children.length; i++) {
     if ((list.children[i] as HTMLElement).offsetTop !== rowTop) break;
+
     cols++;
   }
+
   return cols;
 }
 
@@ -48,18 +50,27 @@ function moveGridFocus(
   cols: number
 ): number | null {
   if (count <= 0) return null;
+
   if (key === 'Home') return 0;
+
   if (key === 'End') return count - 1;
+
   if (key === 'ArrowRight') return Math.min(count - 1, from + 1);
+
   if (key === 'ArrowLeft') return Math.max(0, from - 1);
+
   if (key === 'ArrowDown') {
     const next = from + cols;
+
     return next < count ? next : from;
   }
+
   if (key === 'ArrowUp') {
     const next = from - cols;
+
     return next >= 0 ? next : from;
   }
+
   return null;
 }
 
@@ -129,6 +140,7 @@ function NavThumb({
   const label = grid
     ? `Slide ${index + 1}${name ? ' — ' + name : ''}. Double-click to open.`
     : `Go to slide ${index + 1}${name ? ' — ' + name : ''}`;
+
   return (
     <button
       ref={thumbRef}
@@ -292,11 +304,13 @@ export default function SlideBrowser({
     if (gridOpen && !gridWasOpen.current) {
       setGridFocus(Math.max(0, Math.min(current, slides.length - 1)));
     }
+
     gridWasOpen.current = gridOpen;
   }, [gridOpen, current, slides.length]);
 
   useEffect(() => {
     if (!gridOpen) return;
+
     setGridFocus((index) =>
       Math.max(0, Math.min(index, Math.max(0, slides.length - 1)))
     );
@@ -304,13 +318,16 @@ export default function SlideBrowser({
 
   useEffect(() => {
     if (!gridOpen) return;
+
     const el = thumbRefs.current[gridFocus];
+
     el?.focus({ preventScroll: true });
     el?.scrollIntoView({ block: 'nearest' });
   }, [gridFocus, gridOpen]);
 
   useEffect(() => {
     if (!gridOpen) return;
+
     onGridFocusChange?.(gridFocus);
   }, [gridFocus, gridOpen, onGridFocusChange]);
 
@@ -320,10 +337,14 @@ export default function SlideBrowser({
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+
     if (!over || active.id === over.id) return;
+
     const from = slides.findIndex((slide) => slide.id === active.id);
     const to = slides.findIndex((slide) => slide.id === over.id);
+
     if (from < 0 || to < 0) return;
+
     reorder(
       arrayMove(
         slides.map((slide) => slide.id),
@@ -359,6 +380,7 @@ export default function SlideBrowser({
       onClose();
       return;
     }
+
     const list = gridRef.current?.querySelector('.noir-grid-list');
     const next = moveGridFocus(
       index,
@@ -366,7 +388,9 @@ export default function SlideBrowser({
       slides.length,
       columnCount(list instanceof HTMLElement ? list : null)
     );
+
     if (next == null || next === index) return;
+
     event.preventDefault();
     event.stopPropagation();
     setGridFocus(next);
@@ -391,6 +415,7 @@ export default function SlideBrowser({
         ? (event: React.KeyboardEvent<HTMLButtonElement>) =>
             onGridKeyDown(i, event)
         : undefined;
+
       if (!mutable || !onMenu)
         return (
           <NavThumb
@@ -408,6 +433,7 @@ export default function SlideBrowser({
             onKeyDown={onKeyDown}
           />
         );
+
       return (
         <SortableThumb
           key={slide.id}
@@ -446,6 +472,7 @@ export default function SlideBrowser({
 
   const wrap = (grid: boolean, children: React.ReactNode) => {
     if (!mutable) return children;
+
     return (
       <DndContext
         sensors={sensors}

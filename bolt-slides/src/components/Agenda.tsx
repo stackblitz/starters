@@ -2,11 +2,6 @@ import { motion, useReducedMotion } from 'motion/react';
 import Reveal from '../deck/Reveal';
 import { useDeck } from '../deck/DeckContext';
 
-/* A table-of-contents slide: hairline-ruled rows with mono accent numbers.
-   Pass strings, or { title, hint } for a right-aligned hint (a time, a slide
-   count, an owner). Rows cascade in; the block self-centers.
-   <Agenda kicker="Agenda" title="What we'll cover." items={['Problem', 'Solution',
-     { title: 'The ask', hint: '5 min' }]} /> */
 export type AgendaItem = string | { title: string; hint?: string };
 
 export default function Agenda({
@@ -21,6 +16,7 @@ export default function Agenda({
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   return (
     <div className="slide">
       <div className="container">
@@ -49,6 +45,7 @@ export default function Agenda({
         <div className="agenda">
           {items.map((it, i) => {
             const item = typeof it === 'string' ? { title: it } : it;
+
             return (
               <motion.div
                 key={i}

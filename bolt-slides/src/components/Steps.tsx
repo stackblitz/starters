@@ -3,11 +3,6 @@ import { motion, useReducedMotion } from 'motion/react';
 import Reveal from '../deck/Reveal';
 import { useDeck } from '../deck/DeckContext';
 
-/* A horizontal numbered process (the "how it works" slide): mono number
-   rings joined by a connector that draws in left-to-right as each step
-   reveals. Stacks vertically on narrow screens (connectors hide).
-   <Steps kicker="How it works" title="Three steps to live data." items={[
-     { title: 'Connect', body: 'Point it at your warehouse.' }, …]} /> */
 export type Step = { title: string; body?: ReactNode };
 
 export default function Steps({
@@ -22,6 +17,7 @@ export default function Steps({
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   return (
     <div className="slide">
       <div className="container">

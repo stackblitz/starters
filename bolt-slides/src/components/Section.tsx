@@ -1,12 +1,6 @@
 import type { ReactNode } from 'react';
 import Reveal from '../deck/Reveal';
 
-/* A chapter divider slide — a full-bleed breather between parts of the deck.
-   An enormous outlined "ghost" number sits behind a centered kicker + display
-   title, over stronger accent corner glows. Works with no image (ideal for
-   data/B2B decks) — or pass `image` for a full-bleed photo under a scrim
-   (brand decks): the ghost number and title sit on top.
-   <Section n={2} kicker="Part two" title={<>How it <span className="accent-text">works.</span></>} /> */
 export default function Section({
   n,
   kicker,

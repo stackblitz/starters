@@ -1,10 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
-/* Tabbed content with a sliding accent pill (framer layoutId, scoped per
-   instance so multiple Tabs coexist) and a cross-fade between panels. The bar
-   is keyboard-navigable (←/→) and the block self-centers when standalone.
-   <Tabs tabs={[{ label: 'Overview', content: <…/> }, …]} /> */
 export type Tab = { label: string; content: ReactNode };
 
 export default function Tabs({
@@ -23,14 +19,19 @@ export default function Tabs({
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+
     e.preventDefault();
     e.stopPropagation(); // don't page the deck while switching tabs
+
     const next =
       e.key === 'ArrowRight'
         ? (active + 1) % tabs.length
         : (active - 1 + tabs.length) % tabs.length;
+
     setActive(next);
+
     const bar = e.currentTarget as HTMLElement;
+
     (bar.children[next] as HTMLElement | undefined)?.focus();
   }
 

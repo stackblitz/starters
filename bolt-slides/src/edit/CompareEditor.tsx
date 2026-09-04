@@ -1,13 +1,3 @@
-/* CompareEditor — visual editing for the comparison matrix, on the
-   TableEditor pattern:
-     · header names + row labels edit in place (T)
-     · click a ✓/✗ chip to toggle it; right-click any value cell to switch
-       between Check / Cross / Text (text cells edit in place)
-     · hover → ⠿ grips outside the edges: drag to reorder rows or value
-       columns (insertion indicators), right-click for delete / highlight
-     · "+" strips: bottom adds a row, right adds a column
-   Data model: cols: string[] (first entry = label-column header), rows:
-   [{ label, values: (boolean|string)[] }], highlight indexes value columns. */
 import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../data/store';
@@ -18,6 +8,7 @@ import ContextMenu, { type MenuItem } from './ContextMenu';
 import { offsetTo } from './measure';
 
 type Val = boolean | string;
+
 export interface CmpData {
   cols: string[];
   rows: { label: string; values: Val[] }[];
@@ -35,6 +26,7 @@ const Check = () => (
     <path d="M5 12.5l4.5 4.5L19 6.5" />
   </svg>
 );
+
 const Cross = () => (
   <svg
     viewBox="0 0 24 24"
@@ -80,9 +72,8 @@ export default function CompareEditor({
     index: number;
     ci?: number;
   } | null>(null);
-
   const { cols, rows } = data;
-  const hl = (slide.props.highlight ?? null) as number | null; // value-column index
+  const hl = (slide.props.highlight ?? null) as number | null;
 
   const write = (
     c: string[],
@@ -90,10 +81,12 @@ export default function CompareEditor({
     hlv: number | null
   ) => {
     if (!slideId) return;
+
     setProp(slideId, 'cols', c);
     setProp(slideId, 'rows', r);
     setProp(slideId, 'highlight', hlv ?? undefined);
   };
+
   const clone = () => ({
     c: [...cols],
     r: rows.map((x) => ({ label: x.label, values: [...x.values] })),
@@ -103,9 +96,12 @@ export default function CompareEditor({
     const update = () => {
       const wrap = wrapRef.current,
         grid = gridRef.current;
+
       if (!wrap || !grid) return;
+
       const g = offsetTo(grid, wrap);
       const head = grid.querySelector('.cmp-head');
+
       setRects({
         left: g.x,
         top: g.y,
@@ -127,78 +123,105 @@ export default function CompareEditor({
         ),
       });
     };
+
     update();
+
     const ro = new ResizeObserver(update);
+
     if (gridRef.current) ro.observe(gridRef.current);
+
     return () => ro.disconnect();
   }, [cols.length, rows.length]);
 
-  /* ── ops ── */
   const addRow = () => {
     const { c, r } = clone();
+
     r.push({ label: '', values: new Array(c.length - 1).fill(true) });
     write(c, r, hl);
   };
+
   const addCol = () => {
     const { c, r } = clone();
+
     c.push('');
     r.forEach((row) => row.values.push(true));
     write(c, r, hl);
   };
+
   const delRow = (i: number) => {
     if (rows.length <= 1) return;
+
     const { c, r } = clone();
+
     r.splice(i, 1);
     write(c, r, hl);
   };
+
   const delCol = (vi: number) => {
-    // vi = value-column index
     if (cols.length <= 2) return;
+
     const { c, r } = clone();
+
     c.splice(vi + 1, 1);
     r.forEach((row) => row.values.splice(vi, 1));
     write(c, r, hl === vi ? null : hl != null && hl > vi ? hl - 1 : hl);
   };
+
   const moveRow = (from: number, to: number) => {
     const { c, r } = clone();
     const [m] = r.splice(from, 1);
+
     r.splice(to, 0, m);
     write(c, r, hl);
   };
+
   const moveCol = (from: number, to: number) => {
-    // value-column indices
     const { c, r } = clone();
+
     const shift = (list: unknown[]) => {
       const [m] = list.splice(from, 1);
+
       list.splice(to, 0, m);
     };
+
     const heads = c.slice(1);
+
     shift(heads);
     r.forEach((row) => shift(row.values));
+
     let hlv = hl;
+
     if (hlv != null) {
       const order = [...Array(heads.length).keys()];
       const [m] = order.splice(from, 1);
+
       order.splice(to, 0, m);
       hlv = order.indexOf(hlv);
     }
+
     write([c[0], ...heads], r, hlv);
   };
+
   const setVal = (ri: number, vi: number, v: Val) => {
     const { c, r } = clone();
+
     r[ri].values[vi] = v;
     write(c, r, hl);
   };
 
-  /* ── pointer drags ── */
   const startDrag =
     (kind: 'row' | 'col', from: number) => (e: React.MouseEvent) => {
       if (e.button !== 0) return;
+
       e.preventDefault();
       e.stopPropagation();
+
       const grid = gridRef.current;
+
       if (!grid) return;
+
       document.body.classList.add('li-dragging');
+
       const bodyRows = () =>
         Array.from(
           grid.querySelectorAll('.cmp-row:not(.cmp-head)')
@@ -208,14 +231,18 @@ export default function CompareEditor({
           grid.querySelectorAll(`.cmp-row > *:nth-child(${vi + 2})`)
         ) as HTMLElement[];
       const srcEls = kind === 'row' ? [bodyRows()[from]] : colCells(from);
+
       srcEls.forEach((el) => el?.classList.add('li-src'));
+
       let target: { i: number; els: HTMLElement[]; cls: string } | null = null;
+
       const clear = () => {
         target?.els.forEach((el) =>
           el.classList.remove('tr-before', 'tr-after', 'tc-before', 'tc-after')
         );
         target = null;
       };
+
       const onMove = (ev: MouseEvent) => {
         const cell = document
           .elementsFromPoint(ev.clientX, ev.clientY)
@@ -225,10 +252,12 @@ export default function CompareEditor({
               el.classList.contains('cmp-cell') &&
               grid.contains(el)
           );
+
         if (!cell) {
           clear();
           return;
         }
+
         const rowEl = cell.parentElement as HTMLElement;
         const isHead = rowEl.classList.contains('cmp-head');
         const i =
@@ -237,26 +266,36 @@ export default function CompareEditor({
               ? -1
               : bodyRows().indexOf(rowEl)
             : Array.from(rowEl.children).indexOf(cell) - 1;
+
         if (i === from || i < 0) {
           clear();
           return;
         }
+
         const side = from < i ? 'after' : 'before';
         const cls = kind === 'row' ? `tr-${side}` : `tc-${side}`;
+
         if (target?.i === i && target.cls === cls) return;
+
         clear();
+
         const els = kind === 'row' ? [bodyRows()[i]] : colCells(i);
+
         els.forEach((el) => el?.classList.add(cls));
         target = { i, els, cls };
       };
+
       const onUp = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         document.body.classList.remove('li-dragging');
         srcEls.forEach((el) => el?.classList.remove('li-src'));
+
         if (target) (kind === 'row' ? moveRow : moveCol)(from, target.i);
+
         clear();
       };
+
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     };
@@ -265,7 +304,9 @@ export default function CompareEditor({
     const cell = (e.target as HTMLElement).closest(
       '.cmp-cell'
     ) as HTMLElement | null;
+
     if (!cell) return;
+
     const rowEl = cell.parentElement as HTMLElement;
     const isHead = rowEl.classList.contains('cmp-head');
     const ci = Array.from(rowEl.children).indexOf(cell);
@@ -273,7 +314,8 @@ export default function CompareEditor({
       gridRef.current?.querySelectorAll('.cmp-row:not(.cmp-head)') ?? []
     );
     const row = isHead ? null : bodyRows.indexOf(rowEl);
-    const col = ci >= 1 ? ci - 1 : null; // value columns only
+    const col = ci >= 1 ? ci - 1 : null;
+
     if (hover.row !== row || hover.col !== col) setHover({ row, col });
   };
 
@@ -282,6 +324,7 @@ export default function CompareEditor({
       return [
         { label: 'Delete row', danger: true, onClick: () => delRow(m.index) },
       ];
+
     if (m.kind === 'col')
       return [
         {
@@ -300,6 +343,7 @@ export default function CompareEditor({
           onClick: () => delCol(m.index),
         },
       ];
+
     return [
       { label: '✓  Check', onClick: () => setVal(m.index, m.ci!, true) },
       { label: '✗  Cross', onClick: () => setVal(m.index, m.ci!, false) },

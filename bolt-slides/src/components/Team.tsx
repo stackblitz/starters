@@ -1,13 +1,8 @@
+import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import Reveal from '../deck/Reveal';
 import { useDeck } from '../deck/DeckContext';
 
-/* A people-grid slide: photo avatars (or auto-initials on the accent) with
-   name + role. Cards rise in staggered; the grid wraps responsively.
-   <Team kicker="The team" title="Built by operators." people={[
-     { name: 'Dana Kim', role: 'CEO · ex-Stripe' },
-     { name: 'Ade Obi', role: 'CTO', img: '/ade.webp' }, …]} /> */
-import type { ReactNode } from 'react';
 export type Person = {
   name: ReactNode;
   role?: ReactNode;
@@ -28,6 +23,7 @@ export default function Team({
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   return (
     <div className="slide">
       <div className="container">
@@ -65,6 +61,7 @@ export default function Team({
                     .join('')
                     .toUpperCase()
                 : '');
+
             return (
               <motion.div
                 key={i}

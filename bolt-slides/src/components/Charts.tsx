@@ -3,12 +3,6 @@ import { motion, useReducedMotion } from 'motion/react';
 import { useInView } from '../deck/useInView';
 import { useDeck } from '../deck/DeckContext';
 
-/* A small hand-built chart kit — bar, line/area, and donut. Each draws itself
-   in when scrolled into view. All token-driven (one accent), no chart library.
-   <BarChart data={[{label:'Mon',value:44}, …]} />       (values label the bars)
-   <LineChart points={[12,18,15,26,22,34,30]} />         (gridlines + live end-dot)
-   <DonutChart value={72} label="Adoption" />            (the number counts up) */
-
 export function BarChart({
   data,
   height = 200,
@@ -24,6 +18,7 @@ export function BarChart({
   const { ref, inView } = useInView<HTMLDivElement>(0.3);
   const animate = !isStatic && !reduce;
   const max = Math.max(...data.map((d) => d.value)) || 1;
+
   return (
     <div className="ch ch-bars" ref={ref} style={{ height }}>
       {data.map((d, i) => (
@@ -74,11 +69,13 @@ export function LineChart({
       : rawPoints.length === 1
       ? [rawPoints[0], rawPoints[0]]
       : [0, 0];
+
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const { ref, inView } = useInView<HTMLDivElement>(0.3);
   const gid = useId();
   const animate = !isStatic && !reduce;
+
   const w = 300,
     h = 120;
   const max = Math.max(...points),
@@ -95,6 +92,7 @@ export function LineChart({
     .join(' ');
   const area = `${line} L${w},${h} L0,${h} Z`;
   const [ex, ey] = coords[coords.length - 1];
+
   return (
     <div className="ch-wrap" ref={ref}>
       <svg
@@ -195,19 +193,24 @@ export function DonutChart({
 
   useEffect(() => {
     if (isStatic || !inView) return;
+
     if (reduce) {
       setShown(value);
       return;
     }
+
     let raf = 0;
     const t0 = performance.now();
     const dur = 1100;
     const tick = (now: number) => {
       const p = Math.min(1, (now - t0) / dur);
+
       setShown(value * (1 - Math.pow(1 - p, 3)));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
+
     raf = requestAnimationFrame(tick);
+
     return () => cancelAnimationFrame(raf);
   }, [isStatic, inView, value, reduce]);
 
@@ -257,9 +260,6 @@ export function DonutChart({
   );
 }
 
-/* Grouped bars — multi-series comparison with a y-axis and legend.
-   <GroupedBarChart categories={['Q1','Q2']} series={[{label:'2024',values:[10,20]},…]} />
-   Token-driven: first series takes the accent, later ones step down in ink. */
 const SERIES_COLORS = [
   'var(--primary)',
   'color-mix(in srgb, var(--primary) 45%, var(--fg-muted))',
@@ -288,6 +288,7 @@ export function GroupedBarChart({
     [1, 2, 2.5, 5, 10].map((m) => m * step).find((u) => u * 4 >= max) ?? step;
   const top = unit * 4;
   const ticks = [4, 3, 2, 1];
+
   return (
     <div className="gch" ref={ref}>
       <div className="gch-legend">

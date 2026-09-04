@@ -2,8 +2,6 @@ import { motion } from 'motion/react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useDeck } from './DeckContext';
 
-/* Entrance animation: content rises + fades in when its slide becomes active
-   (on mount). Wrap a headline, a grid, a card. Static in thumbnails. */
 export default function Reveal({
   children,
   y = 26,
@@ -18,12 +16,14 @@ export default function Reveal({
   style?: CSSProperties;
 }) {
   const { isStatic } = useDeck();
+
   if (isStatic)
     return (
       <div className={className} style={style}>
         {children}
       </div>
     );
+
   return (
     <motion.div
       className={className}

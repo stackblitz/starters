@@ -1,4 +1,3 @@
-/* Context for the shared dock popover host (notes, annotate, …). */
 import { createContext, useContext } from 'react';
 
 export type DockPopoverContextValue = {

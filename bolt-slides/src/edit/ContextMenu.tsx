@@ -1,4 +1,3 @@
-/* Minimal right-click menu — fixed-positioned, closes on any click/Escape. */
 import { useEffect } from 'react';
 
 export interface MenuItem {
@@ -23,11 +22,14 @@ export default function ContextMenu({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+
     window.addEventListener('keydown', onKey);
+
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
   const my = Math.min(y, window.innerHeight - items.length * 34 - 20);
+
   return (
     <div
       className="ctx-overlay"

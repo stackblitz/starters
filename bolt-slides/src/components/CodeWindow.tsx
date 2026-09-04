@@ -1,16 +1,14 @@
 import { Fragment, type ReactNode } from 'react';
 
-/* A macOS-style code window with a gutter-ruled line-number column and
-   restrained syntax tinting. Highlighting is intentionally minimal (keywords,
-   strings, numbers, comments) to stay on-brand — one accent, no rainbow.
-   <CodeWindow title="server.ts" highlight={[3]} code={`…`} /> */
 const KW =
   /\b(const|let|var|function|return|if|else|for|while|import|from|export|default|class|new|await|async|type|interface|extends|implements|public|private|true|false|null|undefined)\b/g;
 const NUM = /(\b\d+(?:\.\d+)?\b)/g;
 
 function tintNumbers(s: string, key: number): ReactNode {
   const parts = s.split(NUM);
+
   if (parts.length === 1) return s;
+
   return (
     <Fragment key={key}>
       {parts.map((p, k) =>
@@ -31,10 +29,12 @@ function hl(line: string): ReactNode {
   const ci = line.indexOf('//');
   const code = ci >= 0 ? line.slice(0, ci) : line;
   const comment = ci >= 0 ? line.slice(ci) : '';
+
   // strings first (odd indices), then keywords, then numeric literals
   const segs = code.split(
     /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g
   );
+
   return (
     <>
       {segs.map((seg, i) =>
@@ -71,6 +71,7 @@ export default function CodeWindow({
   highlight?: number[];
 }) {
   const lines = code.replace(/\n$/, '').split('\n');
+
   return (
     <div className="cw mat">
       <div className="cw-bar">

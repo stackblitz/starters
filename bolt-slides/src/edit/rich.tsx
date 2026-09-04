@@ -1,36 +1,28 @@
-/* Rich-text convention for slide strings — trivially authorable, fully
-   round-trippable through the WYSIWYG editor:
-     ==text==            accent color (theme)
-     **text**            bold
-     _text_              italic
-     {c:#ff6b6b}t{/c}    text color (hex, or {c:accent})
-     {s:1.4}t{/s}        font size, em multiplier (0.4–4; responsive-safe)
-     ++text++ ~~text~~   legacy size shifts (still render; the editor now
-                         writes {s:} instead)
-     \n                  line break
-   Markers nest across types (e.g. **a {c:#f66}b{/c} c**). */
+// == ** _ {c:} {s:} (legacy ++ ~~)
 import { Fragment, type ReactNode } from 'react';
 
 const TOKEN =
   /(==[^=]+==|\*\*[^*]+\*\*|\+\+[^+]+\+\+|~~[^~]+~~|_[^_]+_|\{c:[^}]+\}[\s\S]+?\{\/c\}|\{s:[^}]+\}[\s\S]+?\{\/s\})/g;
 
-/* whole-field alignment: a `{a:l|c|r}` prefix on the stored string */
 export const ALIGNS: Record<string, 'left' | 'center' | 'right'> = {
   l: 'left',
   c: 'center',
   r: 'right',
 };
+
 function splitAlign(text: string): {
   align: 'l' | 'c' | 'r' | null;
   rest: string;
 } {
   const m = text.match(/^\{a:([lcr])\}/);
+
   return m
     ? { align: m[1] as 'l' | 'c' | 'r', rest: text.slice(m[0].length) }
     : { align: null, rest: text };
 }
 
 export const COLOR_RE = /^(#[0-9a-fA-F]{3,8}|accent)$/;
+
 export const clampEm = (n: number) => Math.min(4, Math.max(0.4, n));
 
 export const colorValue = (c: string) =>
@@ -43,6 +35,7 @@ function braceParts(
   const m = seg.match(
     new RegExp(`^\\{${tag}:([^}]+)\\}([\\s\\S]+)\\{\\/${tag}\\}$`)
   );
+
   return m ? { value: m[1], inner: m[2] } : null;
 }
 
@@ -50,6 +43,7 @@ function renderLine(line: string): ReactNode {
   return line.split(TOKEN).map((seg, i) => {
     if (seg.startsWith('{c:')) {
       const p = braceParts(seg, 'c');
+
       if (p && COLOR_RE.test(p.value)) {
         return (
           <span
@@ -62,9 +56,11 @@ function renderLine(line: string): ReactNode {
         );
       }
     }
+
     if (seg.startsWith('{s:')) {
       const p = braceParts(seg, 's');
       const em = p ? clampEm(parseFloat(p.value)) : NaN;
+
       if (p && Number.isFinite(em)) {
         return (
           <span key={i} data-fs={em} style={{ fontSize: `${em}em` }}>
@@ -73,6 +69,7 @@ function renderLine(line: string): ReactNode {
         );
       }
     }
+
     if (seg.length >= 4) {
       if (seg.startsWith('==') && seg.endsWith('=='))
         return (
@@ -80,14 +77,17 @@ function renderLine(line: string): ReactNode {
             {renderLine(seg.slice(2, -2))}
           </span>
         );
+
       if (seg.startsWith('**') && seg.endsWith('**'))
         return <strong key={i}>{renderLine(seg.slice(2, -2))}</strong>;
+
       if (seg.startsWith('++') && seg.endsWith('++'))
         return (
           <span key={i} data-size="up" style={{ fontSize: '1.3em' }}>
             {renderLine(seg.slice(2, -2))}
           </span>
         );
+
       if (seg.startsWith('~~') && seg.endsWith('~~'))
         return (
           <span key={i} data-size="down" style={{ fontSize: '0.75em' }}>
@@ -95,37 +95,33 @@ function renderLine(line: string): ReactNode {
           </span>
         );
     }
+
     if (seg.length >= 3 && seg.startsWith('_') && seg.endsWith('_'))
       return <em key={i}>{renderLine(seg.slice(1, -1))}</em>;
+
     return <Fragment key={i}>{seg}</Fragment>;
   });
 }
 
-/* A {c:…}/{s:…} wrapper may not span a line break: rendering is line-by-line,
-   so a wrapper straddling one leaves an unmatched half on each side and the
-   markers show up as literal text ("{c:#4fe5b0}A headline.{/c}"). Splitting it
-   into one wrapper per line means the same thing and always renders. Applied
-   when writing AND when reading, so strings already broken repair themselves.
-
-   Nested `{s:}` (whole-field wrap over an existing size span) also leaks:
-   the tokenizer stops at the inner `{/s}` and the leftover `{s:…}` / `{/s}`
-   render as text. Collapse those before splitting lines. */
 const WRAPPED = /\{([cs]):([^}]+)\}([\s\S]*?)\{\/\1\}/g;
 const NESTED_SIZE = /\{s:([^}]+)\}\{s:[^}]+\}([\s\S]*?)\{\/s\}\{\/s\}/g;
 
 function flattenNestedSize(text: string): string {
   let prev = '';
   let cur = text;
+
   while (cur !== prev) {
     prev = cur;
     cur = cur.replace(NESTED_SIZE, '{s:$1}$2{/s}');
     cur = cur.replace(/\{\/s\}\{\/s\}/g, '{/s}');
   }
+
   return cur;
 }
 
 export function balanceLines(text: string): string {
   let out = flattenNestedSize(text);
+
   for (let pass = 0; pass < 3; pass++) {
     const next = out.replace(
       WRAPPED,
@@ -137,14 +133,18 @@ export function balanceLines(text: string): string {
               .join('\n')
           : whole
     );
+
     if (next === out) break;
+
     out = next;
   }
+
   return out;
 }
 
 export function renderRich(text: string | null | undefined): ReactNode {
   if (!text) return null;
+
   const { align, rest } = splitAlign(balanceLines(text));
   const body = rest.split('\n').map((line, li, lines) => (
     <Fragment key={li}>
@@ -152,7 +152,9 @@ export function renderRich(text: string | null | undefined): ReactNode {
       {li < lines.length - 1 && <br />}
     </Fragment>
   ));
+
   if (!align) return body;
+
   return (
     <span
       data-align={align}
@@ -163,8 +165,6 @@ export function renderRich(text: string | null | undefined): ReactNode {
   );
 }
 
-/* Same rendering as an HTML string — used by the WYSIWYG editor, which
-   writes innerHTML only when the field is not focused. */
 export const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -174,37 +174,46 @@ function lineToHtml(line: string): string {
     .map((seg) => {
       if (seg.startsWith('{c:')) {
         const p = braceParts(seg, 'c');
+
         if (p && COLOR_RE.test(p.value))
           return `<span data-color="${p.value}" style="color:${colorValue(
             p.value
           )}">${lineToHtml(p.inner)}</span>`;
       }
+
       if (seg.startsWith('{s:')) {
         const p = braceParts(seg, 's');
         const em = p ? clampEm(parseFloat(p.value)) : NaN;
+
         if (p && Number.isFinite(em))
           return `<span data-fs="${em}" style="font-size:${em}em">${lineToHtml(
             p.inner
           )}</span>`;
       }
+
       if (seg.length >= 4) {
         if (seg.startsWith('==') && seg.endsWith('=='))
           return `<span class="accent-text">${lineToHtml(
             seg.slice(2, -2)
           )}</span>`;
+
         if (seg.startsWith('**') && seg.endsWith('**'))
           return `<strong>${lineToHtml(seg.slice(2, -2))}</strong>`;
+
         if (seg.startsWith('++') && seg.endsWith('++'))
           return `<span data-size="up" style="font-size:1.3em">${lineToHtml(
             seg.slice(2, -2)
           )}</span>`;
+
         if (seg.startsWith('~~') && seg.endsWith('~~'))
           return `<span data-size="down" style="font-size:0.75em">${lineToHtml(
             seg.slice(2, -2)
           )}</span>`;
       }
+
       if (seg.length >= 3 && seg.startsWith('_') && seg.endsWith('_'))
         return `<em>${lineToHtml(seg.slice(1, -1))}</em>`;
+
       return esc(seg);
     })
     .join('');
@@ -212,24 +221,29 @@ function lineToHtml(line: string): string {
 
 export function richToHtml(text: string | null | undefined): string {
   if (!text) return '';
+
   const { align, rest } = splitAlign(balanceLines(text));
   const body = rest.split('\n').map(lineToHtml).join('<br>');
+
   if (!align) return body;
+
   return `<span data-align="${align}" style="display:block;text-align:${ALIGNS[align]}">${body}</span>`;
 }
 
-/* Plain text with all style markers removed — for surfaces that shouldn't
-   show the syntax (sidebar inputs, CLI listings). */
 export function stripRich(text: string): string {
   let prev = '';
   let cur = text.replace(/\{a:[lcr]\}/g, '');
+
   while (cur !== prev) {
     prev = cur;
     cur = cur.replace(TOKEN, (m) => {
       if (m.startsWith('{c:')) return braceParts(m, 'c')?.inner ?? m;
+
       if (m.startsWith('{s:')) return braceParts(m, 's')?.inner ?? m;
+
       return m.startsWith('_') ? m.slice(1, -1) : m.slice(2, -2);
     });
   }
+
   return cur;
 }

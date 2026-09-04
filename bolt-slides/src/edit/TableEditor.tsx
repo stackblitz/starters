@@ -1,12 +1,3 @@
-/* TableEditor — the purpose-built editing surface for the table layout.
-   Renders the same .dtable markup as the presentation component, plus:
-     · every cell edited in place (T)
-     · hover a row → ⠿ grip at its left edge; hover a column → ⠿ grip above
-       its header. Drag a grip to reorder (full row/column insertion
-       indicator); right-click it for Delete / Highlight column.
-     · Notion-style "+" strips on the bottom (add row) and right (add column)
-   All geometry is measured in layout px (offset* — transform-safe) and every
-   overlay dimension multiplies by --inv to stay at true screen size. */
 import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../data/store';
@@ -42,25 +33,28 @@ export default function TableEditor({ slide }: { slide: SlideData }) {
     kind: 'row' | 'col';
     index: number;
   } | null>(null);
-
   const { columns, rows } = normTable(slide.props);
   const hl = (slide.props.highlightCol ?? null) as number | null;
 
   const write = (c: string[], r: string[][], hlv: number | null) => {
     if (!slideId) return;
+
     setProp(slideId, 'columns', c);
     setProp(slideId, 'rows', r);
     setProp(slideId, 'highlightCol', hlv ?? undefined);
   };
+
   const clone = () => ({ c: [...columns], r: rows.map((x) => [...x]) });
 
-  /* overlay geometry in layout px — offset chains ignore the canvas scale */
   useLayoutEffect(() => {
     const update = () => {
       const wrap = wrapRef.current,
         tbl = tableRef.current;
+
       if (!wrap || !tbl) return;
+
       const t = offsetTo(tbl, wrap);
+
       setRects({
         left: t.x,
         top: t.y,
@@ -80,88 +74,118 @@ export default function TableEditor({ slide }: { slide: SlideData }) {
         ),
       });
     };
+
     update();
+
     const ro = new ResizeObserver(update);
+
     if (tableRef.current) ro.observe(tableRef.current);
+
     return () => ro.disconnect();
   }, [columns.length, rows.length]);
 
-  /* ── structure ops ── */
   const addRow = () => {
     const { c, r } = clone();
+
     r.push(new Array(c.length).fill(''));
     write(c, r, hl);
   };
+
   const addCol = () => {
     const { c, r } = clone();
+
     c.push('');
     r.forEach((row) => row.push(''));
     write(c, r, hl);
   };
+
   const delRow = (i: number) => {
     if (rows.length <= 1) return;
+
     const { c, r } = clone();
+
     r.splice(i, 1);
     write(c, r, hl);
   };
+
   const delCol = (i: number) => {
     if (columns.length <= 1) return;
+
     const { c, r } = clone();
+
     c.splice(i, 1);
     r.forEach((row) => row.splice(i, 1));
     write(c, r, hl === i ? null : hl != null && hl > i ? hl - 1 : hl);
   };
+
   const moveRow = (from: number, to: number) => {
     const { c, r } = clone();
     const [m] = r.splice(from, 1);
+
     r.splice(to, 0, m);
     write(c, r, hl);
   };
+
   const moveCol = (from: number, to: number) => {
     const { c, r } = clone();
+
     const shift = (list: unknown[]) => {
       const [m] = list.splice(from, 1);
+
       list.splice(to, 0, m);
     };
+
     shift(c);
     r.forEach(shift);
+
     let hlv = hl;
+
     if (hlv != null) {
-      const order = [...Array(c.length).keys()]; // remap the highlight through the move
+      const order = [...Array(c.length).keys()];
       const [m] = order.splice(from, 1);
+
       order.splice(to, 0, m);
       hlv = order.indexOf(hlv);
     }
+
     write(c, r, hlv);
   };
 
-  /* ── pointer drags (same pattern as list items — no native DnD) ── */
   const startDrag =
     (kind: 'row' | 'col', from: number) => (e: React.MouseEvent) => {
       if (e.button !== 0) return;
+
       e.preventDefault();
       e.stopPropagation();
+
       const tbl = tableRef.current;
+
       if (!tbl) return;
+
       document.body.classList.add('li-dragging');
+
       const srcEls =
         kind === 'row'
           ? [tbl.querySelectorAll('tbody tr')[from] as HTMLElement]
           : (Array.from(
               tbl.querySelectorAll(`tr > *:nth-child(${from + 1})`)
             ) as HTMLElement[]);
+
       srcEls.forEach((el) => el?.classList.add('li-src'));
+
       let target: {
         i: number;
         side: 'before' | 'after';
         els: HTMLElement[];
       } | null = null;
+
       const clear = () => {
         target?.els.forEach((el) =>
           el.classList.remove('tr-before', 'tr-after', 'tc-before', 'tc-after')
         );
         target = null;
       };
+
       const onMove = (ev: MouseEvent) => {
         const cell = document
           .elementsFromPoint(ev.clientX, ev.clientY)
@@ -171,21 +195,28 @@ export default function TableEditor({ slide }: { slide: SlideData }) {
               (el.tagName === 'TD' || el.tagName === 'TH') &&
               tbl.contains(el)
           ) as HTMLTableCellElement | undefined;
+
         if (!cell) {
           clear();
           return;
         }
+
         const i =
           kind === 'row'
-            ? (cell.parentElement as HTMLTableRowElement).rowIndex - 1 // minus header row
+            ? (cell.parentElement as HTMLTableRowElement).rowIndex - 1
             : cell.cellIndex;
+
         if (i === from || i < 0) {
           clear();
           return;
         }
+
         const side: 'before' | 'after' = from < i ? 'after' : 'before';
+
         if (target?.i === i && target.side === side) return;
+
         clear();
+
         const els =
           kind === 'row'
             ? [tbl.querySelectorAll('tbody tr')[i] as HTMLElement]
@@ -200,32 +231,39 @@ export default function TableEditor({ slide }: { slide: SlideData }) {
             : side === 'before'
             ? 'tc-before'
             : 'tc-after';
+
         els.forEach((el) => el?.classList.add(cls));
         target = { i, side, els };
       };
+
       const onUp = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         document.body.classList.remove('li-dragging');
         srcEls.forEach((el) => el?.classList.remove('li-src'));
+
         if (target) (kind === 'row' ? moveRow : moveCol)(from, target.i);
+
         clear();
       };
+
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     };
 
-  /* hover tracking → which grips to show */
   const onTableMove = (e: React.MouseEvent) => {
     const cell = (e.target as HTMLElement).closest(
       'td,th'
     ) as HTMLTableCellElement | null;
+
     if (!cell) return;
+
     const col = cell.cellIndex;
     const row =
       cell.tagName === 'TD'
         ? (cell.parentElement as HTMLTableRowElement).rowIndex - 1
         : null;
+
     if (hover.row !== row || hover.col !== col) setHover({ row, col });
   };
 

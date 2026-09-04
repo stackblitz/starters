@@ -1,7 +1,3 @@
-/* Deck-level font pairings — curated Google Fonts, applied by swapping the
-   theme's --font-head/--font-body variables and injecting one stylesheet
-   link. 'inter' is the bundled default (imported in base.css). */
-
 interface FontPairing {
   id: string;
   label: string;
@@ -74,6 +70,7 @@ const FONTS: FontPairing[] = [
 export function applyFont(id: string | undefined) {
   const f = FONTS.find((x) => x.id === id) ?? FONTS[0];
   let link = document.getElementById('gfont') as HTMLLinkElement | null;
+
   if (f.import) {
     if (!link) {
       link = document.createElement('link');
@@ -81,11 +78,14 @@ export function applyFont(id: string | undefined) {
       link.rel = 'stylesheet';
       document.head.appendChild(link);
     }
+
     if (link.href !== f.import) link.href = f.import;
   } else {
     link?.remove();
   }
+
   const r = document.documentElement.style;
+
   r.setProperty(
     '--font-head',
     `'${f.head}', 'Inter', -apple-system, sans-serif`
@@ -96,11 +96,9 @@ export function applyFont(id: string | undefined) {
   );
 }
 
-/* Deck-wide accent override — swaps the two accent tokens at the root so
-   every layout, chart and control follows (color-mix derivations included).
-   Null restores the tokens.css default. */
 export function applyAccent(hex?: string | null) {
   const r = document.documentElement.style;
+
   if (hex) {
     r.setProperty('--accent', hex);
     r.setProperty('--primary', hex);

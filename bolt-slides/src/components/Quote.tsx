@@ -1,11 +1,6 @@
 import type { ReactNode } from 'react';
 import Reveal from '../deck/Reveal';
 
-/* A pull-quote slide: an accent quotation mark, the quote at display scale,
-   and an attribution row with a photo or auto-initials avatar (`img`). Pass
-   `image` for a full-bleed background photo under a scrim (brand decks).
-   Don't wrap the text in quotation marks — the mark provides them.
-   <Quote text="It changed how we ship." name="Dana Kim" role="VP Engineering, Acme" /> */
 export default function Quote({
   text,
   name,
@@ -34,6 +29,7 @@ export default function Quote({
           .join('')
           .toUpperCase()
       : '');
+
   return (
     <div className="slide center">
       {image && (

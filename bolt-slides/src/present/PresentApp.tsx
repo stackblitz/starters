@@ -1,7 +1,3 @@
-/* Present mode — full-screen engine. Opened at `?present=1` from the studio
-   Play control (new tab, not fullscreen), at `/` on the published origin
-   (audience deck), or at /present / `?presenter=1` for the presenter console
-   (studio / DEV only). Dock P opens the console in a new tab. */
 import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import { useStore } from '../data/store';
@@ -28,15 +24,19 @@ export default function PresentApp({
   useEffect(() => {
     document.title = deck.title || 'Slides';
   }, [deck.title]);
+
   useEffect(() => {
     applyFont(deck.font);
   }, [deck.font]);
+
   useEffect(() => {
     applyAccent(deck.accent);
   }, [deck.accent]);
 
   if (bootError) return <div className="boot-screen">{bootError}</div>;
+
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
+
   if (!slides.length)
     return (
       <div className="boot-screen">
@@ -63,7 +63,9 @@ export default function PresentApp({
       allowPresenter={allowPresenter}
       navLabel={(index) => {
         const slide = slides[index];
+
         if (!slide) return undefined;
+
         const raw =
           slide.props?.title ??
           slide.props?.text ??
@@ -73,6 +75,7 @@ export default function PresentApp({
           typeof raw === 'string'
             ? stripRich(raw).replace(/\s+/g, ' ').trim()
             : '';
+
         return plain
           ? plain.length > 52
             ? plain.slice(0, 52) + '…'
