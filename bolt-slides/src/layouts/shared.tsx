@@ -94,14 +94,39 @@ export function Heading({
   );
 }
 
-export const pipe = (s: string | undefined) =>
-  (s ?? '').split('|').map((x) => x.trim());
+export function asList<T = unknown>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+export const pipe = (value: unknown) =>
+  Array.isArray(value)
+    ? value.map((item) => String(item ?? '').trim())
+    : String(value ?? '')
+        .split('|')
+        .map((x) => x.trim());
+
+export function strings(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) =>
+      typeof item === 'string' || typeof item === 'number'
+        ? [String(item).trim()]
+        : []
+    );
+  }
+
+  if (typeof value !== 'string') return [];
+
+  return value
+    .split('|')
+    .map((x) => x.trim())
+    .filter((x) => x !== '');
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const normTable = (p: any): { columns: string[]; rows: string[][] } => ({
   columns: Array.isArray(p.columns) ? p.columns : pipe(p.columns),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  rows: (p.rows ?? []).map((r: any) =>
+  rows: asList(p.rows).map((r: any) =>
     Array.isArray(r) ? r : pipe(r?.cells ?? '')
   ),
 });

@@ -17,6 +17,8 @@ import {
   Num,
   Heading,
   pipe,
+  asList,
+  strings,
 } from './shared';
 import { bgCss } from '../edit/bgCss';
 
@@ -74,7 +76,7 @@ const BentoDef: LayoutDef = {
     return (
       <Bento
         {...kickerTitle(slide, show)}
-        tiles={(slide.props.tiles ?? []).map(
+        tiles={asList<Record<string, unknown>>(slide.props.tiles).map(
           (t: Record<string, unknown>, i: number) => {
             const anchor = t.k
               ? 'k'
@@ -139,7 +141,7 @@ const StatGridDef: LayoutDef = {
     return (
       <StatGrid
         {...kickerTitle(slide, show)}
-        stats={(slide.props.stats ?? []).map(
+        stats={asList<Record<string, unknown>>(slide.props.stats).map(
           (s: Record<string, unknown>, i: number) => ({
             value: (
               <Num path={`stats.${i}.value`} value={String(s.value ?? '')} />
@@ -193,7 +195,7 @@ const ContrastDef: LayoutDef = {
       title: show(slide.props[side]?.title)
         ? e(<T path={`${side}.title`} placeholder="Panel title" />)
         : undefined,
-      points: (slide.props[side]?.points ?? []).map((_: string, i: number) => (
+      points: strings(slide.props[side]?.points).map((_, i: number) => (
         <LiCtl key={i} path={`${side}.points`} index={i} blank="">
           <T path={`${side}.points.${i}`} />
         </LiCtl>
@@ -230,7 +232,7 @@ const AgendaDef: LayoutDef = {
     return (
       <Agenda
         {...kickerTitle(slide, show)}
-        items={(slide.props.items ?? []).map(
+        items={asList<Record<string, unknown>>(slide.props.items).map(
           (it: Record<string, unknown>, i: number) => ({
             title: e(
               <LiCtl path="items" index={i} blank={AGENDA_BLANK}>
@@ -271,7 +273,7 @@ const StepsDef: LayoutDef = {
     return (
       <Steps
         {...kickerTitle(slide, show)}
-        items={(slide.props.items ?? []).map(
+        items={asList<Record<string, unknown>>(slide.props.items).map(
           (it: Record<string, unknown>, i: number) => ({
             title: e(
               <LiCtl path="items" index={i} blank={STEP_BLANK}>
@@ -323,7 +325,7 @@ const PricingDef: LayoutDef = {
     return (
       <Pricing
         {...kickerTitle(slide, show)}
-        tiers={(slide.props.tiers ?? []).map(
+        tiers={asList<Record<string, unknown>>(slide.props.tiers).map(
           (t: Record<string, unknown>, i: number) => ({
             ...t,
             name: e(
@@ -339,7 +341,7 @@ const PricingDef: LayoutDef = {
             badge: t.highlight
               ? e(<T path={`tiers.${i}.badge`} placeholder="Most popular" />)
               : undefined,
-            features: ((t.features as string[]) ?? []).map((_, fi) =>
+            features: strings(t.features).map((_, fi) =>
               e(
                 <LiCtl
                   key={fi}
@@ -378,7 +380,9 @@ const TeamDef: LayoutDef = {
     return (
       <Team
         {...kickerTitle(slide, show)}
-        people={(slide.props.people ?? []).map(
+        people={asList<{ name?: string; role?: string; img?: string }>(
+          slide.props.people
+        ).map(
           (p: { name?: string; role?: string; img?: string }, i: number) => ({
             img: p.img || undefined,
             initials: (p.name ?? '')
@@ -420,10 +424,10 @@ const FiguresDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
-    const items = (slide.props.items ?? []) as {
+    const items = asList<{
       label: string;
       value: string;
-    }[];
+    }>(slide.props.items);
 
     return (
       <Slide full>
@@ -503,10 +507,10 @@ const PillarsDef: LayoutDef = {
     ],
   },
   Render: ({ slide }) => {
-    const items = (slide.props.items ?? []) as {
+    const items = asList<{
       title: string;
       body?: string;
-    }[];
+    }>(slide.props.items);
 
     return (
       <Slide full>

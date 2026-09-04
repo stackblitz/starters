@@ -145,7 +145,7 @@ export type TeamProps = Scaled<{
   people: { name: string; role?: string; img?: string }[];
 }>;
 
-/** `items` is a pipe-delimited marquee: "Acme | Northwind | Globex". */
+/** Pipe-delimited marquee: "Acme | Northwind | Globex". Other layouts use `items` as an object array. */
 export type LogosProps = Scaled<{
   kicker?: string;
   title?: string;
@@ -233,7 +233,7 @@ type ChartShared = Scaled<{
 export type ChartProps = ChartShared &
   (
     | { kind: 'bars'; bars: BarDatum[] }
-    | { kind: 'line'; points: string }
+    | { kind: 'line'; points: string } // pipe string; insight line series is `points_line`
     | { kind: 'donut'; donutValue: number; donutLabel: string }
     | { kind: 'donuts'; donuts: DonutDatum[] }
     | { kind: 'grouped'; categories: string; series: GroupedSeries[] }
@@ -245,6 +245,7 @@ type InsightShared = Scaled<{
   subtitle?: string;
   color?: string;
   heading?: string;
+  /** Takeaways. Line series is `points_line`, not this key. */
   points: InsightTakeaway[];
   values?: boolean;
 }>;
@@ -252,7 +253,7 @@ type InsightShared = Scaled<{
 export type InsightProps = InsightShared &
   (
     | { kind: 'bars'; bars: BarDatum[] }
-    | { kind: 'line'; points_line: string }
+    | { kind: 'line'; points_line: string } // pipe string; `points` is the takeaway list
     | { kind: 'donut'; donutValue: number; donutLabel: string }
   );
 

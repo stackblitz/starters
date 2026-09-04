@@ -40,6 +40,13 @@ This repo is a complete slide **studio**. Author content into it.
 4. **`layout` is an exact `LayoutName`.** Pick a camelCase key from
    `LAYOUT_NAMES` in `src/data/layoutProps.ts` (`cover`, `bigNumber`,
    `statGrid`, …) and put it on the `layout` field.
+5. **Homonym keys follow that layout's `*Props` type.** Chart
+   `kind: "line"` `points` is a pipe string of numbers
+   (`"12 | 18 | 26"`). Insight takeaways `points` are
+   `{label, body}[]`. Insight line series is `points_line`. Contrast
+   bullets are `string[]` on `left.points` / `right.points`. Logos
+   `items` is one pipe string (`"Acme | Globex"`); every other
+   layout's `items` is an object array.
 
 ## Step 0 · bootstrap (mandatory, first)
 
@@ -135,7 +142,8 @@ sparingly (`zoom` into section dividers works well).
 
 Open `src/data/layoutProps.ts`. `layout` is a `LayoutName`. `props` is the
 type of the same name (`cover` → `CoverProps`, `insight` → `InsightProps`).
-Use that type. Do not copy keys from a different layout.
+Use that type. Homonym keys (`points`, `items`, `values`) are hard
+rule 5 — each layout's type is the shape.
 
 Pick by purpose:
 

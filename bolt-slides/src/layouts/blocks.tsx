@@ -22,6 +22,7 @@ import {
   pipe,
   rich,
   normTable,
+  asList,
 } from './shared';
 
 const TL_BLANK = { time: 'Q1', title: 'Milestone', body: '' };
@@ -50,8 +51,8 @@ const TimelineDef: LayoutDef = {
     <Slide>
       <Heading slide={slide} />
       <Timeline
-        items={(slide.props.items ?? []).map(
-          (it: Record<string, unknown>, i: number) => ({
+        items={asList<Record<string, unknown>>(slide.props.items).map(
+          (it, i) => ({
             time: e(<T path={`items.${i}.time`} />),
             title: e(
               <LiCtl path="items" index={i} blank={TL_BLANK}>
@@ -70,7 +71,7 @@ const normCmp = (p: { cols?: unknown; rows?: unknown[] }) => ({
   cols: Array.isArray(p.cols)
     ? (p.cols as string[])
     : pipe(p.cols as string | undefined),
-  rows: ((p.rows ?? []) as { label?: string; values?: unknown }[]).map((r) => ({
+  rows: asList<{ label?: string; values?: unknown }>(p.rows).map((r) => ({
     label: r.label ?? '',
     values: Array.isArray(r.values)
       ? (r.values as (boolean | string)[])
@@ -99,8 +100,8 @@ const ComparisonDef: LayoutDef = {
     const setProp = useStore((s) => s.setProp);
     const legacy =
       !Array.isArray(slide.props.cols) ||
-      (slide.props.rows ?? []).some(
-        (r: { values?: unknown }) => !Array.isArray(r?.values)
+      asList<{ values?: unknown }>(slide.props.rows).some(
+        (r) => !Array.isArray(r?.values)
       );
 
     useEffect(() => {
@@ -156,7 +157,7 @@ const TableDef: LayoutDef = {
     const show = useShow();
     const legacy =
       !Array.isArray(slide.props.columns) ||
-      (slide.props.rows ?? []).some((r: unknown) => !Array.isArray(r));
+      asList(slide.props.rows).some((r: unknown) => !Array.isArray(r));
 
     useEffect(() => {
       if (!editable || !slideId || !legacy) return;
@@ -247,12 +248,14 @@ const TabsDef: LayoutDef = {
             editable && slideId
               ? () =>
                   setProp(slideId, 'tabs', [
-                    ...(slide.props.tabs ?? []),
+                    ...asList(slide.props.tabs),
                     structuredClone(TAB_BLANK),
                   ])
               : undefined
           }
-          tabs={(slide.props.tabs ?? []).map(
+          tabs={asList<{ label: string; content: string }>(
+            slide.props.tabs
+          ).map(
             (t: { label: string; content: string }, i: number) => ({
               label: e(<T path={`tabs.${i}.label`} />),
               content: (
@@ -305,7 +308,7 @@ const QaDef: LayoutDef = {
         <T path="title" placeholder="Title" />
       </h2>
       <div className={'qa-rows' + (slide.props.large ? ' large' : '')}>
-        {(slide.props.items ?? []).map((_: unknown, i: number) => (
+        {asList(slide.props.items).map((_: unknown, i: number) => (
           <div key={i} className="qa-row">
             <div className="qa-q">
               <span className="qa-mark" aria-hidden>
@@ -339,7 +342,7 @@ const AccordionDef: LayoutDef = {
     items: [
       {
         title: 'Where does the data live?',
-        body: 'In Postgres (`deck` and `slides`). The editor and prompted decks share that store.',
+        body: 'In repo-root deck.json. The studio and Present read the same file.',
       },
       {
         title: 'Can I change what the AI made?',
@@ -351,7 +354,7 @@ const AccordionDef: LayoutDef = {
     <Slide>
       <Heading slide={slide} />
       <Accordion
-        items={(slide.props.items ?? []).map((_: unknown, i: number) => ({
+        items={asList(slide.props.items).map((_: unknown, i: number) => ({
           title: e(
             <LiCtl path="items" index={i} blank={ACC_BLANK}>
               <T path={`items.${i}.title`} />
@@ -400,7 +403,7 @@ const ChatDef: LayoutDef = {
             : undefined
         }
         name={e(<T path="name" placeholder="Assistant" />)}
-        messages={(slide.props.messages ?? []).map(
+        messages={asList<{ from: 'user' | 'ai' }>(slide.props.messages).map(
           (m: { from: 'user' | 'ai' }, i: number) => ({
             from: m.from,
             text: e(

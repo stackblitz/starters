@@ -24,6 +24,7 @@ import {
   useShow,
   Heading,
   pipe,
+  asList,
 } from './shared';
 
 const BAR_BLANK = { label: 'Q1', value: 10 };
@@ -365,16 +366,18 @@ const ChartDef: LayoutDef = {
 
       prevKind.current = kind;
 
-      const barsData = (p.bars ?? []) as {
+      const barsData = asList<{
         label: string;
         value: number | string;
-      }[];
-      const ptsData = String(p.points ?? '').trim();
-      const seriesData = (p.series ?? []) as {
+      }>(p.bars);
+      const ptsData = pipe(p.points)
+        .filter((x) => x !== '')
+        .join(' | ');
+      const seriesData = asList<{
         label: string;
         values: string;
-      }[];
-      const linesData = (p.lines ?? []) as { label: string; points: string }[];
+      }>(p.series);
+      const linesData = asList<{ label: string; points: string }>(p.lines);
       const nums = (s2: unknown) =>
         String(s2 ?? '')
           .split('|')
@@ -481,7 +484,7 @@ const ChartDef: LayoutDef = {
         setProp(slideId, 'donutValue', 72);
         setProp(slideId, 'donutLabel', p.donutLabel ?? 'Adoption');
       }
-      if (kind === 'donuts' && !(p.donuts ?? []).length)
+      if (kind === 'donuts' && !asList(p.donuts).length)
         setProp(slideId, 'donuts', structuredClone(ChartDef.defaults.donuts));
       if (kind === 'grouped') {
         if (!seriesData.length)
@@ -495,8 +498,8 @@ const ChartDef: LayoutDef = {
 
     const large = !!slide.props.large;
     const showValues = slide.props.values !== false;
-    const bars = (
-      (slide.props.bars ?? []) as { label: string; value: number | string }[]
+    const bars = asList<{ label: string; value: number | string }>(
+      slide.props.bars
     ).map((b) => ({ label: b.label, value: Number(b.value) || 0 }));
     const barChart = (
       <BarChart
@@ -569,12 +572,10 @@ const ChartDef: LayoutDef = {
               height={large ? 350 : 250}
               showValues={showValues}
               categories={pipe(slide.props.categories)}
-              series={(
-                (slide.props.series ?? []) as {
-                  label: string;
-                  values: string;
-                }[]
-              ).map((s2, i) => ({
+              series={asList<{
+                label: string;
+                values: string;
+              }>(slide.props.series).map((s2, i) => ({
                 label: e(
                   <LiCtl
                     path="series"
@@ -592,8 +593,8 @@ const ChartDef: LayoutDef = {
           )}
           {kind === 'lines' && (
             <div className="lines-row">
-              {(
-                (slide.props.lines ?? []) as { label: string; points: string }[]
+              {asList<{ label: string; points: string }>(
+                slide.props.lines
               ).map((l, i) => (
                 <div key={i} className="lines-cell">
                   <LineChart
@@ -617,8 +618,8 @@ const ChartDef: LayoutDef = {
           )}
           {kind === 'donuts' && (
             <div className="donut-row">
-              {(
-                (slide.props.donuts ?? []) as { value: number; label: string }[]
+              {asList<{ value: number; label: string }>(
+                slide.props.donuts
               ).map((d, i) => (
                 <div key={i} className="donut-cell">
                   <DonutChart
@@ -704,8 +705,10 @@ const InsightDef: LayoutDef = {
 
       prevKind.current = kind;
 
-      const bd = (p.bars ?? []) as { label: string; value: number | string }[];
-      const pl = String(p.points_line ?? '').trim();
+      const bd = asList<{ label: string; value: number | string }>(p.bars);
+      const pl = pipe(p.points_line)
+        .filter((x) => x !== '')
+        .join(' | ');
 
       if (from !== kind && from === 'bars' && kind === 'line' && bd.length) {
         setProp(
@@ -741,8 +744,8 @@ const InsightDef: LayoutDef = {
       }
     }, [editable, slideId, kind, slide.props, setProp]);
 
-    const bars = (
-      (slide.props.bars ?? []) as { label: string; value: number | string }[]
+    const bars = asList<{ label: string; value: number | string }>(
+      slide.props.bars
     ).map((b) => ({ label: b.label, value: Number(b.value) || 0 }));
     const showValues = slide.props.values !== false;
     const chart =
@@ -812,7 +815,7 @@ const InsightDef: LayoutDef = {
                 <T path="heading" placeholder="Heading" />
               </h3>
             )}
-            {((slide.props.points ?? []) as { label: string }[]).map((_, i) => (
+            {asList<{ label: string }>(slide.props.points).map((_, i) => (
               <div key={i} className="insight-point">
                 <div className="kicker insight-point-label">
                   <LiCtl path="points" index={i} blank={POINT_BLANK}>
