@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useDeck } from '@/deck/DeckContext';
+import { useDeck } from '../deck/DeckContext';
 
-/* A number that animates 0 → to when its slide becomes active, with a
-   quintic ease-out so the last digits settle gently. Inherits color, so
-   inside a .figure / .stat-value it picks up the accent gradient. Renders
-   the final value instantly in thumbnails and under reduced motion. */
 export default function CountUp({
   to,
   from = 0,
@@ -30,22 +26,29 @@ export default function CountUp({
       setVal(to);
       return;
     }
+
     const el = ref.current;
+
     if (!el) return;
+
     let raf = 0;
     const run = () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setVal(to);
         return;
       }
+
       const t0 = performance.now();
       const tick = (now: number) => {
         const p = Math.min(1, (now - t0) / duration);
+
         setVal(from + (to - from) * (1 - Math.pow(1 - p, 5)));
         if (p < 1) raf = requestAnimationFrame(tick);
       };
+
       raf = requestAnimationFrame(tick);
     };
+
     const io = new IntersectionObserver(
       (entries) =>
         entries.forEach((e) => {
@@ -56,7 +59,9 @@ export default function CountUp({
         }),
       { threshold: 0.4 }
     );
+
     io.observe(el);
+
     return () => {
       io.disconnect();
       cancelAnimationFrame(raf);
@@ -70,6 +75,7 @@ export default function CountUp({
       maximumFractionDigits: decimals,
     }) +
     suffix;
+
   return (
     <span ref={ref} style={{ fontVariantNumeric: 'tabular-nums' }}>
       {text}

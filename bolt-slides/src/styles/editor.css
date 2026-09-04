@@ -1,0 +1,997 @@
+/* ── Editor chrome — Bolt DS colors via chrome-tokens.css (--ed-*, --ui-*).
+   Deck theming stays in tokens.css. Slide content (.slide, .t-edit copy,
+   thumbnail letterbox) must keep --bg / --fg / --accent. ── */
+
+/* chrome containers stay Inter regardless of the deck font pairing;
+   slide content (.slide) re-asserts the deck fonts inside the canvas/thumbs */
+.noir-dock,
+.dl-pop,
+.ctx-menu,
+.fmt-menu,
+.fmt-pop,
+.color-pop {
+  font-family: var(--font-ui);
+}
+
+.boot-screen {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ed-text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ed-bg);
+}
+
+.ed-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ed-bg);
+}
+.ed-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* live region: parked above the bar so progress never resizes the controls */
+.nav-toast {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(23 23 25 / 0.92);
+  border: 1px solid var(--ed-border);
+  box-shadow: var(--ed-shadow-lg);
+  color: var(--ed-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.nav-toast:empty {
+  display: none;
+}
+.nav-toast.busy::before {
+  content: '● ';
+  color: var(--ed-brand);
+}
+
+/* speaker-notes popover — lives in `.noir-dock-popover` above the bar.
+   Avoid transform on this node: a transformed ancestor would re-anchor the
+   note editor's position:fixed colour palette and strand it off-screen. */
+.notes-pop {
+  position: relative;
+  width: min(620px, 92vw);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  font-family: var(--font-ui);
+}
+.notes-pop-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ed-text-faint);
+}
+.notes-pop .note-wyg {
+  --note-pad-x: 12px;
+  --note-pad-y: 10px;
+  flex: none;
+  min-height: 150px;
+  max-height: 38vh;
+  font-size: 13px;
+  color: var(--ed-text);
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--ed-border);
+}
+.notes-pop .note-wyg:focus {
+  background: transparent;
+  border-color: var(--ed-border);
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.notes-pop .note-wyg h3 {
+  color: var(--ed-text);
+}
+.notes-pop .note-wyg blockquote {
+  color: var(--ed-text);
+}
+
+/* buttons + inputs — DS secondary / ghost, size sm */
+.ghost-btn {
+  font: 500 12px/1.25 var(--font-ui);
+  letter-spacing: 0;
+  border-radius: 6px;
+  padding: 0 10px;
+  height: 32px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.ghost-btn {
+  background: transparent;
+  border: 1px solid var(--ed-border);
+  color: var(--ed-text);
+  box-shadow: var(--ed-shadow-sm);
+}
+.ghost-btn:hover:not(:disabled) {
+  background: var(--ed-bg-hover);
+  border-color: var(--ed-border);
+  color: var(--ed-text);
+}
+.ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ghost-btn.xs {
+  padding: 0 8px;
+  height: 28px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.ghost-btn.danger:hover {
+  border-color: var(--ed-danger);
+  color: var(--ed-danger);
+  background: var(--ed-danger-bg-subtle);
+}
+
+.ed-root select,
+.ed-root input:not([type='checkbox']):not([type='range']):not([type='color']),
+.ed-root textarea {
+  background: transparent;
+  border: 1px solid var(--ed-border);
+  border-radius: 6px;
+  color: var(--ed-text);
+  font: 400 14px/1.45 var(--font-ui);
+  padding: 8px 12px;
+  width: 100%;
+  min-width: 0;
+  box-shadow: none;
+}
+.ed-root select {
+  width: auto;
+  cursor: pointer;
+}
+.ed-root input:focus,
+.ed-root textarea:focus,
+.ed-root select:focus {
+  outline: none;
+  border-color: var(--ed-border);
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.ed-root input::placeholder,
+.ed-root textarea::placeholder {
+  color: var(--ed-text-faint);
+}
+.ed-root textarea {
+  resize: vertical;
+}
+
+/* ── canvas ── */
+.ed-canvas {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  box-sizing: border-box;
+  /* Even inset on every side; bottom clears the floating dock. */
+  padding: 24px 24px 72px;
+  background: var(--ed-bg);
+}
+.ed-canvas.rail-open {
+  /* Snaps so layout/layoutId can spring the frame; stage stays overflow
+     visible so the FLIP projection is not clipped mid-morph. */
+  padding-left: calc(min(248px, 84vw) + 24px);
+}
+.ed-stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Visible so layout projection can overshoot the content box while
+     springing; the rail sits above on z-index. */
+  overflow: visible;
+}
+.ed-frame {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--ed-border-subtle);
+  box-shadow: var(--ed-shadow-lg);
+}
+.ed-frame-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+.ed-empty {
+  color: var(--ed-text-faint);
+  font-size: 14px;
+}
+
+.dl-wrap {
+  position: relative;
+}
+.dl-pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 132px;
+  padding: 4px;
+  background: rgb(23 23 25 / 0.96);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  z-index: 5;
+}
+.dl-pop.down {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+.dl-pop [role='menuitem'] {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--ed-text);
+  font: 500 13px/1.2 var(--font-ui);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dl-pop [role='menuitem']:hover:not([aria-disabled='true']),
+.dl-pop [role='menuitem']:focus-visible {
+  background: var(--ed-bg-tertiary);
+  outline: none;
+}
+.dl-pop [role='menuitem']:focus-visible {
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.dl-pop [role='menuitem'][aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+.dl-pop [role='menuitem'].danger {
+  color: var(--ed-danger);
+}
+
+/* inline editing affordances — quiet: a hairline underline on hover, a soft
+   tint + underline while editing (no boxy outline blobs on wrapped lines) */
+.t-edit {
+  cursor: text;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  box-shadow: 0 calc(2px * var(--inv, 1)) 0 transparent;
+  transition: box-shadow 0.12s ease, background 0.12s ease;
+}
+.t-edit:hover {
+  box-shadow: 0 calc(2px * var(--inv, 1)) 0
+    color-mix(in srgb, var(--ui-accent) 40%, transparent);
+}
+.t-edit.focused {
+  outline: none;
+  background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+  box-shadow: 0 calc(2px * var(--inv, 1)) 0
+    color-mix(in srgb, var(--ui-accent) 65%, transparent);
+}
+/* empty fields keep an intrinsic size and a ghost placeholder — even while
+   focused (otherwise empty table columns/cells collapse mid-edit) */
+.t-edit.empty {
+  position: relative;
+  display: inline-block;
+  min-width: 3ch;
+  min-height: 1em;
+}
+.t-edit.empty::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  text-align: inherit; /* centered layouts keep their ghost text centered */
+  color: var(--fg-faint);
+  opacity: 0.7;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.t-edit.empty.focused::before {
+  opacity: 0.4;
+}
+
+/* ── context menu ── */
+.ctx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+}
+.ctx-menu {
+  position: fixed;
+  z-index: 111;
+  min-width: 176px;
+  padding: 5px;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+.ctx-item {
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ed-text);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+.ctx-item:hover {
+  background: var(--ed-util-hover);
+}
+.ctx-item.danger {
+  color: var(--ed-danger);
+}
+.ctx-sep {
+  height: 1px;
+  background: var(--ed-divider);
+  margin: 4px 6px;
+}
+
+/* ══ remaining chrome — DS tokens, no glassy sheen ══ */
+
+.ed-root select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a4a3ac' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+/* floating text-format menu — icon buttons, grouped with separators */
+@keyframes fmt-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(5px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) translateY(0) scale(1);
+  }
+}
+@keyframes fmt-pop-below {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0) translateY(-5px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) translateY(0) scale(1);
+  }
+}
+.fmt-menu {
+  position: fixed;
+  z-index: 120;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  animation: fmt-pop 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fmt-menu.below {
+  transform: translate(-50%, 0);
+  animation-name: fmt-pop-below;
+}
+.fmt-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--ed-divider);
+  margin: 0 3px;
+}
+.fmt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  background: none;
+  color: var(--ed-text);
+  font: 500 14px/1 var(--font-ui);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.fmt-btn:hover {
+  background: var(--ed-util-hover);
+  color: var(--ed-text);
+}
+.fmt-btn.on {
+  background: var(--ed-brand-bg-subtle);
+  color: var(--ed-text);
+}
+.fmt-btn.fmt-a {
+  color: var(--ui-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
+.fmt-btn.fmt-a.on {
+  color: #fff;
+}
+
+/* text selection + caret inside the editable canvas */
+.ed-frame-inner ::selection {
+  background: color-mix(in srgb, var(--ui-accent) 38%, transparent);
+}
+.t-edit {
+  caret-color: var(--ui-accent);
+}
+
+/* on-canvas list-item controls — drag handle in the LEFT gutter, + after
+   the last item. While dragging, an accent insertion line shows where the
+   item will land. Dimensions ×--inv (1/canvas-zoom) stay at true screen size. */
+.li {
+  position: relative;
+}
+.li-tools {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  /* hoverable bridge between the text and the cluster — no dead gap */
+  padding-right: calc(8px * var(--inv, 1));
+  display: flex;
+  align-items: center;
+  gap: calc(3px * var(--inv, 1));
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease 0.35s, visibility 0s linear 0.55s;
+}
+.li:hover > .li-tools,
+.li-tools:hover {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s, 0s;
+}
+.li-h {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(22px * var(--inv, 1));
+  height: calc(22px * var(--inv, 1));
+  border: none;
+  border-radius: calc(6px * var(--inv, 1));
+  padding: 0;
+  background: rgba(13, 17, 25, 0.72);
+  color: color-mix(in srgb, var(--ed-text) 62%, transparent);
+  font: 600 calc(15px * var(--inv, 1)) / 1 var(--font-ui);
+  box-shadow: inset 0 0 0 calc(1px * var(--inv, 1)) rgba(255, 255, 255, 0.1);
+  transition: color 0.12s ease, background 0.12s ease;
+  cursor: grab;
+  font-size: calc(12px * var(--inv, 1));
+  letter-spacing: -0.08em;
+}
+.li-h:active {
+  cursor: grabbing;
+}
+.li-h:hover {
+  color: var(--ed-text);
+  background: rgba(30, 38, 52, 0.9);
+}
+
+/* drop indicator: the accent line marks the exact landing slot */
+.li-over-before::after,
+.li-over-after::after {
+  content: '';
+  position: absolute;
+  left: calc(-4px * var(--inv, 1));
+  right: 0;
+  height: calc(3px * var(--inv, 1));
+  border-radius: calc(2px * var(--inv, 1));
+  background: var(--ui-accent);
+  box-shadow: 0 0 calc(10px * var(--inv, 1))
+    color-mix(in srgb, var(--ui-accent) 60%, transparent);
+  pointer-events: none;
+}
+.li-over-before::after {
+  top: calc(-6px * var(--inv, 1));
+}
+.li-over-after::after {
+  bottom: calc(-6px * var(--inv, 1));
+}
+
+/* ── item add: an inline chip flowing right after the LAST list item —
+   in-flow, so cards/tab panels can never clip or overlap it. Shows on hover
+   and STAYS while the list is being edited. ── */
+.li-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-inline-start: calc(8px * var(--inv, 1));
+  min-width: calc(24px * var(--inv, 1));
+  height: calc(24px * var(--inv, 1));
+  padding: 0 calc(6px * var(--inv, 1));
+  border: calc(1px * var(--inv, 1)) dashed
+    color-mix(in srgb, var(--ui-accent) 45%, transparent);
+  border-radius: calc(7px * var(--inv, 1));
+  background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--ed-text) 75%, transparent);
+  font: 600 calc(15px * var(--inv, 1)) / 1 var(--font-ui);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease 0.35s, visibility 0s linear 0.55s,
+    background 0.12s ease, color 0.12s ease;
+}
+.li:hover > .li-add,
+.li.list-active > .li-add,
+.li-add:hover,
+.li-add:focus {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s, 0s, 0s, 0s;
+}
+.li-add:hover {
+  background: color-mix(in srgb, var(--ui-accent) 20%, transparent);
+  color: var(--ed-text);
+}
+
+/* ── drag smoothness ── */
+.li-src {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+/* while a drag is live: generous drop zones around every item, and no
+   competing hover chrome */
+body.li-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+body.li-dragging .li::before {
+  content: '';
+  position: absolute;
+  inset: calc(-14px * var(--inv, 1)) calc(-10px * var(--inv, 1));
+}
+body.li-dragging .li-tools,
+body.li-dragging .li-add {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+body.li-dragging .t-edit {
+  pointer-events: none;
+}
+@keyframes li-line-in {
+  from {
+    transform: scaleX(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+.li-over-before::after,
+.li-over-after::after {
+  transform-origin: left center;
+  animation: li-line-in 0.14s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── table editor: grips outside the table edges + add strips ── */
+.tbl-wrap {
+  position: relative;
+}
+.tbl-grip {
+  position: absolute;
+  z-index: 41;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(20px * var(--inv, 1));
+  height: calc(20px * var(--inv, 1));
+  border-radius: calc(6px * var(--inv, 1));
+  background: rgba(13, 17, 25, 0.8);
+  color: color-mix(in srgb, var(--ed-text) 65%, transparent);
+  font: 600 calc(11px * var(--inv, 1)) / 1 var(--font-ui);
+  letter-spacing: -0.08em;
+  box-shadow: inset 0 0 0 calc(1px * var(--inv, 1)) rgba(255, 255, 255, 0.12);
+  cursor: grab;
+  user-select: none;
+}
+.tbl-grip:active {
+  cursor: grabbing;
+}
+.tbl-grip:hover {
+  color: var(--ed-text);
+  background: rgba(30, 38, 52, 0.95);
+}
+.tbl-grip-col {
+  transform: translate(-50%, calc(-100% - 5px * var(--inv, 1)));
+}
+.tbl-grip-row {
+  transform: translate(calc(-100% - 5px * var(--inv, 1)), -50%);
+}
+
+.tbl-add {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: calc(1px * var(--inv, 1)) dashed
+    color-mix(in srgb, var(--ui-accent) 45%, transparent);
+  border-radius: calc(6px * var(--inv, 1));
+  background: color-mix(in srgb, var(--ui-accent) 7%, transparent);
+  color: color-mix(in srgb, var(--ed-text) 70%, transparent);
+  font: 600 calc(14px * var(--inv, 1)) / 1 var(--font-ui);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s ease, background 0.12s ease;
+}
+.tbl-wrap:hover .tbl-add {
+  opacity: 1;
+}
+.tbl-add:hover {
+  background: color-mix(in srgb, var(--ui-accent) 18%, transparent);
+  color: var(--ed-text);
+}
+.tbl-add-row {
+  height: calc(20px * var(--inv, 1));
+  transform: translateY(calc(7px * var(--inv, 1)));
+}
+.tbl-add-col {
+  width: calc(20px * var(--inv, 1));
+  transform: translateX(calc(7px * var(--inv, 1)));
+}
+
+/* insertion indicators — the full row / column lights up on the landing edge */
+tr.tr-before > td,
+.tbl-wrap th.tr-before {
+  box-shadow: inset 0 calc(3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+tr.tr-after > td {
+  box-shadow: inset 0 calc(-3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+.tbl-wrap .tc-before {
+  box-shadow: inset calc(3px * var(--inv, 1)) 0 0 var(--ui-accent);
+}
+.tbl-wrap .tc-after {
+  box-shadow: inset calc(-3px * var(--inv, 1)) 0 0 var(--ui-accent);
+}
+
+/* ── the text bar variant: anchored under (or above) the text block,
+   left-aligned and stable — not floating at the selection midpoint ── */
+@keyframes bar-in-below {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes bar-in-above {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-100% + 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-100%);
+  }
+}
+.fmt-menu.fmt-bar.below {
+  transform: none;
+  animation: bar-in-below 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fmt-menu.fmt-bar:not(.below) {
+  transform: translateY(-100%);
+  animation: bar-in-above 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fmt-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  color: var(--ed-text-muted);
+  font: 600 11px/1 var(--font-mono, monospace);
+}
+.fmt-size-input {
+  width: 4.2ch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  outline: none;
+  appearance: textfield;
+}
+.fmt-size-input:focus {
+  color: var(--ed-text);
+  box-shadow: 0 1px 0 var(--ed-text-muted);
+}
+.fmt-size-unit {
+  flex: none;
+}
+.fmt-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.fmt-btn:disabled:hover {
+  background: none;
+  color: var(--ed-text);
+}
+
+/* ── color popover on the text bar ── */
+.color-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 121;
+  min-width: 232px;
+  padding: 10px 11px 11px;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+}
+.fmt-menu:not(.below) .color-pop {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.color-row-label {
+  color: var(--ed-text-faint);
+  font: 600 9.5px/1 var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 4px 0 7px;
+}
+.color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.color-row + .color-row-label {
+  margin-top: 11px;
+}
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  border: 1px solid var(--ed-border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.color-swatch:hover {
+  transform: scale(1.14);
+}
+.color-swatch.on {
+  box-shadow: 0 0 0 2px var(--ed-bg-alt), 0 0 0 3.5px var(--ed-brand);
+}
+.color-custom {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ed-util-hover);
+  color: var(--ed-text);
+  font: 600 13px/1 var(--font-ui);
+  overflow: hidden;
+}
+.color-custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* table cells in the editor never collapse and are click-to-edit anywhere */
+.tbl-wrap th,
+.tbl-wrap td {
+  min-width: 64px;
+}
+.tbl-wrap th .t-edit,
+.tbl-wrap td .t-edit {
+  display: block;
+  min-height: 1.2em;
+}
+.tbl-wrap th .t-edit.empty,
+.tbl-wrap td .t-edit.empty {
+  display: block;
+}
+
+/* ── code editor: transparent textarea glued over the highlighted code.
+   The selector must outrank the generic .ed-root textarea styling or the
+   overlay renders its own visible, padded copy of the code. ── */
+.code-edit {
+  position: relative;
+}
+.ed-root textarea.code-ta,
+.code-ta {
+  position: absolute;
+  z-index: 5;
+  width: auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  border-radius: 0;
+  box-shadow: none;
+  resize: none;
+  overflow: hidden;
+  color: transparent;
+  caret-color: var(--ui-accent);
+  white-space: pre;
+  padding: 0;
+  margin: 0;
+  letter-spacing: normal;
+}
+.code-ta::selection {
+  background: color-mix(in srgb, var(--ui-accent) 30%, transparent);
+}
+
+/* ── chart editor: drag a bar vertically to change its value ── */
+.chart-edit {
+  position: relative;
+}
+.chart-drag {
+  position: absolute;
+  z-index: 5;
+  cursor: ns-resize;
+  border-radius: 6px;
+}
+.chart-drag:hover {
+  background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
+  box-shadow: inset 0 2px 0
+    color-mix(in srgb, var(--ui-accent) 70%, transparent);
+}
+
+/* ── inline toolbar variant: lives INSIDE the field while editing ── */
+.fmt-menu.fmt-inline {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  animation: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  padding: 3px;
+  margin-top: 7px;
+  width: 100%;
+  background: var(--ed-bg-secondary);
+  backdrop-filter: none;
+  border: 1px solid var(--ed-border);
+  border-radius: 6px;
+  box-shadow: none;
+}
+.fmt-inline .fmt-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+.fmt-inline .fmt-btn svg {
+  width: 12px;
+  height: 12px;
+}
+.fmt-inline .fmt-size {
+  font-size: 10px;
+}
+.fmt-inline .fmt-size-input {
+  width: 4ch;
+}
+.fmt-inline .fmt-sep {
+  height: 14px;
+  margin: 0 1px;
+}
+.fmt-inline .color-pop {
+  left: 0;
+  right: 0;
+  min-width: 0;
+  top: calc(100% + 6px);
+  bottom: auto;
+}
+
+/* ── flyout inside the toolbar (alignment) ── */
+.fmt-drop {
+  position: relative;
+  display: inline-flex;
+}
+.fmt-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 121;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+}
+.fmt-menu.fmt-bar:not(.below) .fmt-pop {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+.fmt-inline .fmt-pop {
+  left: 0;
+  transform: none;
+}
+
+/* comparison editor bits */
+.tbl-wrap .cmp-row.tr-before > .cmp-cell {
+  box-shadow: inset 0 calc(3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+.tbl-wrap .cmp-row.tr-after > .cmp-cell {
+  box-shadow: inset 0 calc(-3px * var(--inv, 1)) 0 var(--ui-accent);
+}
+.cmp-chip-btn {
+  cursor: pointer;
+  border: none;
+}
+.cmp-chip-btn:hover {
+  transform: scale(1.12);
+}
+
+/* "+" tab in the tab bar (editor only) */
+.tab.tab-add {
+  color: color-mix(in srgb, var(--fg) 55%, transparent);
+  font-weight: 600;
+}
+.tab.tab-add:hover {
+  color: var(--fg);
+}
+
+/* chart bar labels: the add chip floats beside the last label instead of
+   stretching its column (bars must stay bottom-aligned and equal) */
+.chart-edit .ch-x {
+  position: relative;
+}
+.chart-edit .ch-x .li-add {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin: 0;
+  transform: translate(calc(4px * var(--inv, 1)), -50%);
+}

@@ -1,7 +1,5 @@
 import { Fragment } from 'react';
 
-/* A continuously-scrolling strip — logo wall, value props, tech stack.
-   Items are separated by small accent diamonds; hovering pauses the strip. */
 export default function Marquee({
   items,
   duration = 26,
@@ -21,6 +19,7 @@ export default function Marquee({
       ))}
     </Fragment>
   );
+
   return (
     <div className="marquee">
       <div

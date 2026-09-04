@@ -1,12 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import Reveal from '@/deck/Reveal';
-import { useDeck } from '@/deck/DeckContext';
+import Reveal from '../deck/Reveal';
+import { useDeck } from '../deck/DeckContext';
 
-/* A full-viewport slide laid out as an asymmetric bento grid. Spans via c
-   (columns of 12) and r (rows). Tiles rise in one after another; metric tiles
-   get an accent tick. Collapses to one column on narrow screens.
-   nav/notes are read by the engine (rail label / presenter notes). */
 export type BentoTile = {
   k?: string;
   fig?: ReactNode;
@@ -15,8 +11,6 @@ export type BentoTile = {
   c?: number;
   r?: number;
   variant?: 'accent' | 'glow';
-  /** full-bleed photo tile: the image covers the tile under a bottom scrim,
-      text anchors to the bottom. Great for brand/product decks. */
   img?: string;
 };
 
@@ -28,12 +22,11 @@ export default function Bento({
   kicker?: string;
   title?: string;
   tiles: BentoTile[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   return (
     <div className="slide">
       <div className="container">

@@ -1,16 +1,7 @@
 import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { useInView } from '@/deck/useInView';
+import { useInView } from '../deck/useInView';
 
-/* A data-rich table done properly: uppercase mono-ruled header, hairline rows,
-   right-aligned tabular numerals (first column left for labels), an optional
-   accent column or row, staggered row reveal, and a source caption. For real
-   data — a feature matrix belongs in <Comparison>. Self-centers standalone.
-   <Table
-     columns={['Region', 'ARR', 'Growth', { label: 'NRR', align: 'center' }]}
-     rows={[['North America', '$2.4M', '+38%', '124%'], …]}
-     highlightCol={1} caption="Company data, FY25" />
-   Keep it ≤5 columns and ≤7 rows — a paged slide can't scroll. */
 export type TableColumn =
   | string
   | { label: string; align?: 'left' | 'right' | 'center' };
@@ -31,12 +22,15 @@ export default function Table({
 }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.25);
   const reduce = useReducedMotion();
+
   const align = (c: TableColumn) =>
     typeof c === 'string' ? undefined : c.align;
   const alignClass = (i: number) => {
     const a = align(columns[i]);
+
     return a ? ` al-${a[0]}` : '';
   };
+
   return (
     <div ref={ref}>
       <div className="dtable mat">

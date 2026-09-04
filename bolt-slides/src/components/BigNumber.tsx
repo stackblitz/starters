@@ -1,10 +1,6 @@
 import type { ReactNode } from 'react';
-import Reveal from '@/deck/Reveal';
+import Reveal from '../deck/Reveal';
 
-/* The giant-figure drama slide — one enormous accent number, a caption, and
-   an optional source line. Pass a <CountUp> as the value so it animates in.
-   <BigNumber kicker="The market" value={<CountUp to={3} prefix="$" suffix="T" />}
-     caption="moves through supply chains every year" foot="Source: McKinsey, 2025" /> */
 export default function BigNumber({
   kicker,
   value,
@@ -15,8 +11,6 @@ export default function BigNumber({
   value: ReactNode;
   caption?: ReactNode;
   foot?: string;
-  nav?: string;
-  notes?: string;
 }) {
   return (
     <div className="slide center">

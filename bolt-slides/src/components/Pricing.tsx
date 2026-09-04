@@ -1,14 +1,8 @@
 import type { CSSProperties } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import Reveal from '@/deck/Reveal';
-import { useDeck } from '@/deck/DeckContext';
+import Reveal from '../deck/Reveal';
+import { useDeck } from '../deck/DeckContext';
 
-/* A pricing slide: 2–4 tier cards, one highlighted with an accent badge.
-   Feature lists get accent checks; cards rise in staggered.
-   <Pricing kicker="Pricing" title="Simple, honest plans." tiers={[
-     { name: 'Starter', price: '$29', period: '/mo', features: ['…'] },
-     { name: 'Pro', price: '$79', period: '/mo', features: ['…'], highlight: true, badge: 'Most popular' },
-   ]} /> */
 export type Tier = {
   name: string;
   price: string;
@@ -40,12 +34,11 @@ export default function Pricing({
   kicker?: string;
   title?: string;
   tiers: Tier[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   return (
     <div className="slide">
       <div className="container">
