@@ -184,7 +184,10 @@ export const useStore = create<Store>((set, getState) => ({
             ? 'deck.json is missing a deck or slides array.'
             : 'Could not load deck.json.',
       });
+      return;
     }
+
+    void bootLiveDeck();
   },
   applyFile(raw) {
     try {
@@ -277,6 +280,25 @@ export const useStore = create<Store>((set, getState) => ({
   },
 }));
 
+async function hydrateFromDisk() {
+  if (!import.meta.env.DEV) return;
+
+  try {
+    const res = await fetch('/__deck', { cache: 'no-store' });
+
+    if (!res.ok) return;
+
+    useStore.getState().applyFile(await res.json());
+  } catch {
+    /* keep the imported seed */
+  }
+}
+
+async function bootLiveDeck() {
+  await hydrateFromDisk();
+  bus?.postMessage({ type: 'request-deck' });
+}
+
 async function persist() {
   if (!import.meta.env.DEV) return;
 
@@ -325,6 +347,15 @@ bus?.addEventListener('message', (event) => {
     id?: string;
     patch?: Partial<SlideData>;
   } | null;
+
+  if (message?.type === 'request-deck') {
+    const state = useStore.getState();
+
+    if (!state.loaded) return;
+
+    bus?.postMessage({ type: 'deck-file', file: toFile(state) });
+    return;
+  }
 
   if (message?.type === 'deck-file' && message.file) {
     useStore.getState().applyFile(message.file);

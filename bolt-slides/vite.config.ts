@@ -34,10 +34,26 @@ function deckFilePlugin(): Plugin {
       const filePath = path.join(server.config.root, rel);
       server.middlewares.use(async (req, res, next) => {
         const url = req.url?.split('?')[0];
-        if (url !== '/__deck' || req.method !== 'POST') {
+
+        if (url !== '/__deck') {
           next();
           return;
         }
+
+        if (req.method === 'GET') {
+          try {
+            sendJson(res, 200, JSON.parse(await readFile(filePath, 'utf8')));
+          } catch {
+            sendJson(res, 404, { error: 'missing-deck' });
+          }
+          return;
+        }
+
+        if (req.method !== 'POST') {
+          next();
+          return;
+        }
+
         try {
           const raw = JSON.parse(await readBody(req as IncomingMessage));
           if (!raw || typeof raw !== 'object') {
