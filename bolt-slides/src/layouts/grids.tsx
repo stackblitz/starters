@@ -1,6 +1,3 @@
-/* Grid layouts: bento, stat grid, contrast, agenda, steps, pricing, team, logos.
-   Every visible string renders through T (inline-editable); each repeatable
-   item's primary text is wrapped in LiCtl (on-canvas drag-reorder / add / remove). */
 import type { ReactNode } from 'react';
 import Slide from '../deck/Slide';
 import Bento from '../components/Bento';
@@ -73,12 +70,12 @@ const BentoDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Bento
         {...kickerTitle(slide, show)}
         tiles={(slide.props.tiles ?? []).map(
           (t: Record<string, unknown>, i: number) => {
-            // the item controls ride the first text slot the tile actually has
             const anchor = t.k
               ? 'k'
               : t.title
@@ -94,6 +91,7 @@ const BentoDef: LayoutDef = {
               ) : (
                 node
               );
+
             return {
               ...t,
               k: t.k ? e(wrap('k', <T path={`tiles.${i}.k`} />)) : undefined,
@@ -137,6 +135,7 @@ const StatGridDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <StatGrid
         {...kickerTitle(slide, show)}
@@ -200,6 +199,7 @@ const ContrastDef: LayoutDef = {
         </LiCtl>
       )),
     });
+
     return (
       <Contrast
         {...kickerTitle(slide, show)}
@@ -226,6 +226,7 @@ const AgendaDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Agenda
         {...kickerTitle(slide, show)}
@@ -266,6 +267,7 @@ const StepsDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Steps
         {...kickerTitle(slide, show)}
@@ -317,6 +319,7 @@ const PricingDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Pricing
         {...kickerTitle(slide, show)}
@@ -371,6 +374,7 @@ const TeamDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Team
         {...kickerTitle(slide, show)}
@@ -398,8 +402,6 @@ const TeamDef: LayoutDef = {
 
 const FIG_BLANK = { label: 'A SMALL LABEL', value: '42%', caption: '' };
 
-/* editorial stat columns from the user's reference: title + intro top-left,
-   small-caps labels mid-slide, giant figures anchored to the bottom edge. */
 const FiguresDef: LayoutDef = {
   type: 'figures',
   label: 'Figures',
@@ -422,6 +424,7 @@ const FiguresDef: LayoutDef = {
       label: string;
       value: string;
     }[];
+
     return (
       <Slide full>
         <div className="figures">
@@ -479,9 +482,6 @@ const PILLAR_BLANK = {
   body: 'Two or three sentences on what this covers and why it earns a column.',
 };
 
-/* numbered focus-area columns from the user's reference: headline top-left,
-   then 2–4 columns anchored low — mono number, title, body. Like steps, but
-   editorial: no connectors, generous empty middle. */
 const PillarsDef: LayoutDef = {
   type: 'pillars',
   label: 'Pillars',
@@ -507,6 +507,7 @@ const PillarsDef: LayoutDef = {
       title: string;
       body?: string;
     }[];
+
     return (
       <Slide full>
         <div className={'pillars' + (slide.props.large ? ' large' : '')}>

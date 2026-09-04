@@ -1,14 +1,3 @@
-/* Layout `props` contract — authoring source of truth for deck.json.
-
-   `layout` is a LayoutName. `props` is the type of the same name
-   (cover → CoverProps, insight → InsightProps). Do not copy keys from
-   another layout: chart `points` is a pipe-delimited line series;
-   insight `points` is takeaway objects; contrast `points` is strings.
-
-   Every layout also accepts `scale`: "lg" | "xl" (+15% / +30% text).
-   Text fields use the deck's rich markers (==accent==, **bold**, …). */
-
-/** Per-slide text size: lg +15%, xl +30%. Sparse slides (pricing). */
 export type TextScale = 'lg' | 'xl';
 
 type Scaled<T> = T & { scale?: TextScale };
@@ -46,7 +35,6 @@ export type StatementProps = Scaled<{
   body?: string;
 }>;
 
-/** Drama beat — use at least once. `value` is a figure string ("$3T"). */
 export type BigNumberProps = Scaled<{
   kicker?: string;
   value: string;
@@ -54,13 +42,11 @@ export type BigNumberProps = Scaled<{
   foot?: string;
 }>;
 
-/** Editorial breather. Lower half stays empty on purpose. */
 export type ManifestoProps = Scaled<{
   label: string;
   text: string;
 }>;
 
-/** Do not wrap `text` in quotation marks — the mark is provided. */
 export type QuoteProps = Scaled<{
   text: string;
   name?: string;
@@ -82,7 +68,6 @@ export type StepsProps = Scaled<{
   items: { title: string; body?: string }[];
 }>;
 
-/** Numbered focus-area columns. `large` best with 2–3 items. */
 export type PillarsProps = Scaled<{
   title: string;
   items: { title: string; body: string }[];
@@ -95,7 +80,6 @@ export type TimelineProps = Scaled<{
   items: { time: string; title: string; body?: string }[];
 }>;
 
-/** Before / after. `right` is the accent-lit after. `points` are strings. */
 export type ContrastProps = Scaled<{
   kicker?: string;
   title?: string;
@@ -106,9 +90,7 @@ export type ContrastProps = Scaled<{
 export type ComparisonProps = Scaled<{
   kicker?: string;
   title?: string;
-  /** First entry is the label-column header, usually "". */
   cols: string[];
-  /** 0-based value column to highlight. */
   highlight: number;
   rows: { label: string; values: Array<boolean | string> }[];
 }>;
@@ -137,7 +119,6 @@ export type AccordionProps = Scaled<{
   items: { title: string; body: string }[];
 }>;
 
-/** Flat scannable FAQ (accordion is the interactive one). */
 export type QaProps = Scaled<{
   title: string;
   items: { q: string; a: string }[];
@@ -176,14 +157,12 @@ export type BentoTile = {
   fig?: string;
   title?: string;
   body?: string;
-  /** Width in 12ths. Rows of tiles must sum to 12 (8+4, 4+4+4, …). */
   c: number;
   r: number;
   variant?: 'accent' | 'glow';
   img?: string;
 };
 
-/** Feature grid. At most one `accent` or `glow` tile. */
 export type BentoProps = Scaled<{
   kicker?: string;
   title?: string;
@@ -251,7 +230,6 @@ type ChartShared = Scaled<{
   caption?: string;
 }>;
 
-/** Full-slide chart. `points` here is ONLY the line series (pipe-delimited). */
 export type ChartProps = ChartShared &
   (
     | { kind: 'bars'; bars: BarDatum[] }
@@ -267,12 +245,10 @@ type InsightShared = Scaled<{
   subtitle?: string;
   color?: string;
   heading?: string;
-  /** Takeaways beside the chart — objects, never a pipe-delimited string. */
   points: InsightTakeaway[];
   values?: boolean;
 }>;
 
-/** Chart left, takeaways right. Line series is `points_line`, not `points`. */
 export type InsightProps = InsightShared &
   (
     | { kind: 'bars'; bars: BarDatum[] }

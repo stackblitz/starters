@@ -1,4 +1,3 @@
-/* Core layouts: cover, section, statement, big number, quote. */
 import Slide from '../deck/Slide';
 import Reveal from '../deck/Reveal';
 import Cover from '../components/Cover';
@@ -24,6 +23,7 @@ const CoverDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Cover
         kicker={
@@ -55,6 +55,7 @@ const SectionDef: LayoutDef = {
   defaults: { n: 1, kicker: 'Part one', title: 'A new ==chapter==.' },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Section
         n={slide.props.n}
@@ -81,6 +82,7 @@ const StatementDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Slide center>
         {show(slide.props.kicker) && (
@@ -121,6 +123,7 @@ const BigNumberDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <BigNumber
         kicker={
@@ -154,6 +157,7 @@ const QuoteDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Quote
         text={<T path="text" placeholder="Quote" />}
@@ -182,9 +186,6 @@ const QuoteDef: LayoutDef = {
   },
 };
 
-/* editorial manifesto from the user's reference: small label pinned top-left,
-   a large statement paragraph in the right column, top-aligned — the lower
-   half of the slide breathes empty. */
 const ManifestoDef: LayoutDef = {
   type: 'manifesto',
   label: 'Manifesto',
@@ -194,6 +195,7 @@ const ManifestoDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Slide full>
         <div className="manifesto">

@@ -1,5 +1,3 @@
-/* The studio — thumbnail rail + scaled live canvas. Present opens a new
-   tab; published `/` is the audience deck. */
 import { useCallback, useEffect, useState } from 'react';
 import { LayoutGroup, MotionConfig } from 'motion/react';
 import { useStore } from '../data/store';
@@ -25,30 +23,37 @@ export default function EditorApp() {
   const accent = useStore((state) => state.deck.accent);
   const [browse, setBrowse] = useState<BrowseMode>('rail');
   const [gridFocus, setGridFocus] = useState(0);
+
   const toggleRail = useCallback(
     () => setBrowse((mode) => (mode === 'rail' ? 'none' : 'rail')),
     []
   );
+
   const toggleGrid = useCallback(
     () => setBrowse((mode) => (mode === 'grid' ? 'none' : 'grid')),
     []
   );
+
   const closeBrowse = useCallback(() => setBrowse('none'), []);
 
   useEffect(() => {
     useStore.getState().load();
   }, []);
+
   useEffect(() => {
     document.title = (title ? title + ' — ' : '') + 'Slides';
   }, [title]);
+
   useEffect(() => {
     applyFont(font);
   }, [font]);
+
   useEffect(() => {
     applyAccent(accent);
   }, [accent]);
 
   if (bootError) return <div className="boot-screen">{bootError}</div>;
+
   if (!loaded) return <div className="boot-screen">Loading deck…</div>;
 
   if (isPresenterRoute() && allowPresenterFeatures())

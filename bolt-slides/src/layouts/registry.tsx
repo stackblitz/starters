@@ -1,6 +1,3 @@
-/* The layout registry — every slide row's `layout` field resolves here.
-   Each entry: defaults (kind-switch / example copy) and Render.
-   Authoring `props` shapes live in src/data/layoutProps.ts. */
 import type { SlideData } from '../data/types';
 import { type LayoutDef } from './shared';
 import { coreLayouts } from './core';
@@ -19,12 +16,15 @@ export const LAYOUTS: Record<string, LayoutDef> = Object.fromEntries(
 );
 
 const missing = LAYOUT_NAMES.filter((name) => !LAYOUTS[name]);
+
 if (missing.length) {
   throw new Error(`LAYOUTS missing LayoutName: ${missing.join(', ')}`);
 }
+
 const extra = Object.keys(LAYOUTS).filter(
   (name) => !LAYOUT_NAMES.includes(name as LayoutName)
 );
+
 if (extra.length) {
   throw new Error(`LAYOUTS has untyped layouts: ${extra.join(', ')}`);
 }
@@ -36,22 +36,25 @@ function aliasKeys(type: string): string[] {
 }
 
 const LAYOUT_ALIASES: Record<string, string> = {};
+
 for (const type of Object.keys(LAYOUTS)) {
   for (const a of aliasKeys(type)) LAYOUT_ALIASES[a] = type;
 }
 
-/** Map a slide's layout field to a registry key. Agents often write
- *  kebab-case (`big-number`) or put the name on `type` instead of `layout`. */
 export function resolveLayoutType(raw: unknown): string {
   if (typeof raw !== 'string' || !raw.trim()) return '';
+
   const name = raw.trim();
+
   if (LAYOUTS[name]) return name;
+
   return LAYOUT_ALIASES[name] ?? LAYOUT_ALIASES[name.toLowerCase()] ?? name;
 }
 
 export function RenderLayout({ slide }: { slide: SlideData }) {
   const type = resolveLayoutType(slide.layout);
   const def = LAYOUTS[type];
+
   if (!def) {
     return (
       <div className="slide center">
@@ -60,5 +63,6 @@ export function RenderLayout({ slide }: { slide: SlideData }) {
       </div>
     );
   }
+
   return <def.Render slide={slide} />;
 }

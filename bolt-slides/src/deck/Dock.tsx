@@ -1,6 +1,3 @@
-/* Shared floating dock — same chrome in the editor, present tab,
-   and the published audience view. Mode gates which controls appear;
-   pointer-drag on the grip repositions it (persisted). */
 import {
   forwardRef,
   useCallback,
@@ -48,6 +45,7 @@ function readPos(): Pos | null {
   } catch {
     /* ignore quota / parse */
   }
+
   return null;
 }
 
@@ -100,7 +98,6 @@ export type DockProps = {
   onNotes?: () => void;
   notesBtnRef?: Ref<HTMLButtonElement | null>;
   notesId?: string;
-  /** Content anchored above the bar (notes, annotate, …). Follows dock drag. */
   popoverSlot?: ReactNode;
   onAnnotate?: () => void;
   onFullscreen?: () => void;
@@ -164,13 +161,17 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
 
   const place = useCallback(() => {
     if (draggingRef.current) return;
+
     const el = nodeRef.current;
+
     if (!el) return;
+
     const saved = customRef.current ? readPos() : null;
     const next = applyFit(
       saved ?? defaultPos(el.offsetWidth, el.offsetHeight),
       el
     );
+
     posRef.current = next;
     setPos(next);
   }, [applyFit]);
@@ -181,15 +182,21 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
 
   useEffect(() => {
     const onResize = () => place();
+
     window.addEventListener('resize', onResize);
+
     return () => window.removeEventListener('resize', onResize);
   }, [place]);
 
   const onGripPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
+
     const el = nodeRef.current;
+
     if (!el) return;
+
     const rect = el.getBoundingClientRect();
+
     dragOffset.current = {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
@@ -197,13 +204,17 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
     customRef.current = true;
     draggingRef.current = true;
     setDragging(true);
+
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onGripPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (!draggingRef.current) return;
+
     const el = nodeRef.current;
+
     if (!el) return;
+
     const next = applyFit(
       {
         left: event.clientX - dragOffset.current.x,
@@ -211,20 +222,28 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
       },
       el
     );
+
     posRef.current = next;
     setPos(next);
   };
 
   const endDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (!draggingRef.current) return;
+
     draggingRef.current = false;
     setDragging(false);
-    if (event.currentTarget.hasPointerCapture(event.pointerId))
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
     const el = nodeRef.current;
     const current = posRef.current;
+
     if (!el || !current) return;
+
     const next = applyFit(current, el);
+
     posRef.current = next;
     setPos(next);
     writePos(next);

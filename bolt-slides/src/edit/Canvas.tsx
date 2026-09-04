@@ -1,8 +1,5 @@
-/* Studio canvas — the current slide at presentation size, scaled to fit.
-   The slide renders LIVE (count-ups, staggers, the slide's animation mode
-   all play, like in present mode). The shared dock pages the deck and
-   carries speaker notes, Present, Presenter, and Download. */
 import {
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -36,9 +33,11 @@ function downloadJson(title: string) {
   });
   const anchor = document.createElement('a');
   const name = (title || 'deck').replace(/[^\w\- ]+/g, '').trim() || 'deck';
+
   anchor.href = URL.createObjectURL(blob);
   anchor.download = `${name}.json`;
   anchor.click();
+
   URL.revokeObjectURL(anchor.href);
 }
 
@@ -60,7 +59,6 @@ export default function Canvas({
   const setCurrent = useStore((state) => state.setCurrent);
   const title = useStore((state) => state.deck.title);
   const slide = slides[current];
-
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -68,18 +66,20 @@ export default function Canvas({
   const notesBtnRef = useRef<HTMLButtonElement>(null);
   const notesPopRef = useRef<HTMLDivElement>(null);
 
-  const closeNotes = (restore: boolean) => {
+  const closeNotes = useCallback((restore: boolean) => {
     setNotesOpen(false);
-    if (restore) notesBtnRef.current?.focus();
-  };
 
-  const note = (msg: string) => {
+    if (restore) notesBtnRef.current?.focus();
+  }, []);
+
+  const note = useCallback((msg: string) => {
     setFlash(msg);
     setTimeout(() => setFlash(null), 2600);
-  };
+  }, []);
 
-  const onPdf = async () => {
+  const onPdf = useCallback(async () => {
     if (busy || !slides.length) return;
+
     try {
       await exportPdf(slides, title, setBusy);
       note('PDF downloaded');
@@ -88,10 +88,11 @@ export default function Canvas({
     } finally {
       setBusy(null);
     }
-  };
+  }, [busy, slides, title, note, setBusy]);
 
   const onJson = () => {
     if (!slides.length && !title) return;
+
     downloadJson(title);
     note('JSON downloaded');
   };
@@ -119,15 +120,22 @@ export default function Canvas({
       ? Math.max(0, Math.min(gridFocus, slides.length - 1))
       : current;
 
-  const startFromSelection = (presenter: boolean) => {
-    if (!slides.length) return;
-    if (presentFrom !== current) setCurrent(presentFrom);
-    if (presenter) openPresenterWindow(presentFrom);
-    else openPresentWindow(presentFrom);
-  };
+  const startFromSelection = useCallback(
+    (presenter: boolean) => {
+      if (!slides.length) {
+        return;
+      } else if (presentFrom !== current) {
+        setCurrent(presentFrom);
+      } else if (presenter) {
+        openPresenterWindow(presentFrom);
+      } else {
+        openPresentWindow(presentFrom);
+      }
+    },
+    [presentFrom, current, slides.length, setCurrent]
+  );
+
   const padLeft = railCanvasPadding(railOpen);
-  // Border-box only — independent of left padding, so the fit target can
-  // update in the same render as the rail toggle.
   const [canvasBox, setCanvasBox] = useState({ w: 0, h: 0 });
   const liveCtx = useMemo(() => ({ clicks: 9999, isStatic: false }), []);
 
@@ -136,22 +144,30 @@ export default function Canvas({
       canvasBox.w > 0
         ? fitScaleForBox(canvasBox.w, canvasBox.h, padLeft)
         : readStoredFit(railOpen);
+
     rememberFit(next);
+
     return next;
   }, [padLeft, railOpen, canvasBox]);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
+
     const syncBox = () => {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       setCanvasBox((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
     };
+
     syncBox();
+
     const ro = new ResizeObserver(syncBox);
+
     ro.observe(canvas);
     window.addEventListener('resize', syncBox);
+
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', syncBox);
@@ -214,7 +230,9 @@ export default function Canvas({
         setCurrent(current - 1);
       }
     };
+
     window.addEventListener('keydown', onKey);
+
     return () => window.removeEventListener('keydown', onKey);
   }, [
     browse,
@@ -230,28 +248,36 @@ export default function Canvas({
 
   useEffect(() => {
     if (!notesOpen) return;
+
     const onPtr = (event: PointerEvent) => {
       const target = event.target as Node;
+
       if (
         notesPopRef.current?.contains(target) ||
         notesBtnRef.current?.contains(target) ||
         (target instanceof Element && target.closest('.note-wyg-pop'))
-      )
+      ) {
         return;
+      }
+
       closeNotes(false);
     };
+
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
+
       event.preventDefault();
       closeNotes(true);
     };
+
     document.addEventListener('pointerdown', onPtr);
     document.addEventListener('keydown', onKey);
+
     return () => {
       document.removeEventListener('pointerdown', onPtr);
       document.removeEventListener('keydown', onKey);
     };
-  }, [notesOpen]);
+  }, [notesOpen, closeNotes]);
 
   const dock = (
     <Dock
@@ -317,11 +343,7 @@ export default function Canvas({
   if (!slide) {
     return (
       <div className={canvasClass} ref={canvasRef}>
-        <div
-          className="ed-stage"
-          ref={stageRef}
-          inert={gridOpen || undefined}
-        >
+        <div className="ed-stage" ref={stageRef} inert={gridOpen || undefined}>
           <div className="ed-empty">This deck has no slides.</div>
         </div>
         {dock}
@@ -335,11 +357,6 @@ export default function Canvas({
   return (
     <div className={canvasClass} ref={canvasRef}>
       <div className="ed-stage" ref={stageRef} inert={gridOpen || undefined}>
-        {/*
-          Size via style + layout/layoutId (not animate width/height).
-          Motion docs: layout changes belong on style/className; layout
-          springs the morph for sidebar and Present alike.
-        */}
         <motion.div
           layout
           layoutId={STAGE_LAYOUT_ID}

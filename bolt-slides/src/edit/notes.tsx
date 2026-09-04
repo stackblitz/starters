@@ -10,10 +10,6 @@ import type { ReactNode } from 'react';
 import { htmlToNotes, notesToHtml } from './notesFormat';
 import { esc } from './rich';
 
-/* Speaker notes — authored in the studio popover as a WYSIWYG. Markup
-   parse / HTML convert / read-only view live in notesFormat.tsx. */
-
-/* ── the WYSIWYG ───────────────────────────────────────────────────── */
 type Cmd = {
   id: string;
   label: string;
@@ -21,8 +17,7 @@ type Cmd = {
   run: () => void;
   icon: ReactNode;
 };
-/* text colours, and highlighter washes (translucent, so the text stays legible
-   on either surface) */
+
 const TEXT_COLORS = [
   '#ffffff',
   '#ef4444',
@@ -31,6 +26,7 @@ const TEXT_COLORS = [
   '#4aa8ff',
   '#c084fc',
 ];
+
 const HL_COLORS = [
   '#f5b73a55',
   '#4fe5b04d',
@@ -77,55 +73,70 @@ export function NotesEditor({
   const bar = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; left: number } | null>(null);
   const panned = useRef(false);
-  /* Swatch clicks steal focus; keep the notes selection so colour can apply. */
   const savedRange = useRef<Range | null>(null);
 
   const captureSelection = () => {
     const el = ref.current;
     const sel = window.getSelection();
+
     if (!el || !sel || sel.rangeCount === 0) return;
+
     const range = sel.getRangeAt(0);
+
     if (!el.contains(range.commonAncestorContainer)) return;
+
     savedRange.current = range.cloneRange();
   };
 
   const restoreSelection = () => {
     const el = ref.current;
     const range = savedRange.current;
+
     if (!el || !range) return false;
+
     el.focus({ preventScroll: true });
+
     const sel = window.getSelection();
+
     sel?.removeAllRanges();
+
     try {
       sel?.addRange(range);
     } catch {
       return false;
     }
+
     return !!(sel && !sel.isCollapsed);
   };
 
   const startPan = (e: React.PointerEvent) => {
     if (e.button > 0 || !bar.current) return;
+
     drag.current = { x: e.clientX, left: bar.current.scrollLeft };
     panned.current = false;
   };
+
   const pan = (e: React.PointerEvent) => {
     const d = drag.current;
+
     if (!d || !bar.current) return;
+
     const dx = e.clientX - d.x;
+
     if (Math.abs(dx) > 3) {
-      panned.current = true; // a drag, not a click on the button underneath
+      panned.current = true;
       bar.current.setPointerCapture?.(e.pointerId);
     }
+
     if (panned.current) bar.current.scrollLeft = d.left - dx;
   };
+
   const endPan = (e: React.PointerEvent) => {
     drag.current = null;
     bar.current?.releasePointerCapture?.(e.pointerId);
   };
+
   const [empty, setEmpty] = useState(!value.trim());
-  // the palette is positioned in viewport space so the tool bar can scroll
-  // sideways in a narrow panel without clipping it
   const [palette, setPalette] = useState<{ x: number; y: number } | null>(null);
   const paletteOpen = !!palette;
   const togglePalette = () => {
@@ -133,22 +144,27 @@ export function NotesEditor({
       setPalette(null);
       return;
     }
+
     captureSelection();
+
     const r = colorBtn.current?.getBoundingClientRect();
+
     if (r) setPalette({ x: r.left, y: r.bottom + 8 });
   };
 
   useEffect(() => {
     const onSel = () => captureSelection();
+
     document.addEventListener('selectionchange', onSel);
+
     return () => document.removeEventListener('selectionchange', onSel);
   }, []);
 
-  // Seed HTML once on mount so autoFocus can land on real content. Later
-  // value changes go through the sync effect, which skips while focused.
   useLayoutEffect(() => {
     const el = ref.current;
+
     if (!el) return;
+
     el.innerHTML = notesToHtml(value);
     setEmpty(!value.trim());
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount seed; do not overwrite focused edits
@@ -156,50 +172,69 @@ export function NotesEditor({
 
   useEffect(() => {
     if (!autoFocus) return;
+
     const el = ref.current;
+
     if (!el) return;
+
     const place = () => {
       el.focus({ preventScroll: true });
+
       const range = document.createRange();
+
       range.selectNodeContents(el);
       range.collapse(false);
+
       const sel = window.getSelection();
+
       sel?.removeAllRanges();
       sel?.addRange(range);
     };
+
     place();
-    // click activation refocuses the trigger after this tick; land again after
+
     let cancelled = false;
+
     const id = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (!cancelled) place();
       });
     });
+
     return () => {
       cancelled = true;
       cancelAnimationFrame(id);
     };
   }, [autoFocus]);
 
-  // uncontrolled while focused: set the HTML once per value change from outside
   useEffect(() => {
     const el = ref.current;
+
     if (!el || el.contains(document.activeElement)) return;
+
     el.innerHTML = notesToHtml(value);
     setEmpty(!value.trim());
   }, [value]);
 
-  // clicking anywhere else closes the palette
   useEffect(() => {
     if (!paletteOpen) return;
+
     const onDown = (e: PointerEvent) => {
       const t = e.target as HTMLElement | null;
-      if (!t?.closest?.('.note-wyg-pop') && !t?.closest?.('.note-wyg-colorbtn'))
+
+      if (
+        !t?.closest?.('.note-wyg-pop') &&
+        !t?.closest?.('.note-wyg-colorbtn')
+      ) {
         setPalette(null);
+      }
     };
+
     const close = () => setPalette(null);
+
     document.addEventListener('pointerdown', onDown);
     window.addEventListener('resize', close);
+
     return () => {
       document.removeEventListener('pointerdown', onDown);
       window.removeEventListener('resize', close);
@@ -208,11 +243,16 @@ export function NotesEditor({
 
   const commit = useCallback(() => {
     const el = ref.current;
+
     if (!el) return;
+
     const text = htmlToNotes(el);
+
     setEmpty(!text.trim());
+
     if (text !== value) onChange(text);
   }, [onChange, value]);
+
   const commitRef = useRef(commit);
   commitRef.current = commit;
 
@@ -220,7 +260,6 @@ export function NotesEditor({
 
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
-    // tags, not inline styles — <b>/<i> are what the serializer reads
     document.execCommand('styleWithCSS', false, 'false');
     document.execCommand(cmd, false, arg);
     commit();
@@ -228,40 +267,48 @@ export function NotesEditor({
 
   const blockAncestor = (node: Node | null): HTMLElement | null => {
     const root = ref.current;
-    let el =
-      node instanceof HTMLElement ? node : (node?.parentElement ?? null);
+    let el = node instanceof HTMLElement ? node : node?.parentElement ?? null;
+
     while (el && el !== root) {
       const tag = el.tagName;
+
       if (
         /^H[1-6]$/.test(tag) ||
         tag === 'BLOCKQUOTE' ||
         tag === 'P' ||
         tag === 'DIV'
-      )
+      ) {
         return el;
+      }
+
       el = el.parentElement;
     }
+
     return null;
   };
 
-  /* Swap the current paragraph's tag. execCommand('formatBlock') is a
-     coin-flip across browsers ('h3' vs '<h3>'), so Heading looked like it
-     did nothing after we started passing brackets. */
   const retag = (el: HTMLElement, tag: string) => {
     const next = document.createElement(tag);
+
     next.append(...Array.from(el.childNodes));
     el.replaceWith(next);
+
     const range = document.createRange();
+
     range.selectNodeContents(next);
     range.collapse(false);
+
     const sel = window.getSelection();
+
     sel?.removeAllRanges();
     sel?.addRange(range);
+
     return next;
   };
 
   const execFormatBlock = (tag: string) => {
     document.execCommand('styleWithCSS', false, 'false');
+
     return (
       document.execCommand('formatBlock', false, tag) ||
       document.execCommand('formatBlock', false, `<${tag}>`)
@@ -270,52 +317,68 @@ export function NotesEditor({
 
   const toggleBlock = (tag: 'h3' | 'blockquote') => {
     const root = ref.current;
+
     if (!root) return;
+
     root.focus({ preventScroll: true });
+
     let block = blockAncestor(window.getSelection()?.anchorNode ?? null);
+
     if (!block) {
       execFormatBlock('div');
       block = blockAncestor(window.getSelection()?.anchorNode ?? null);
     }
+
     const on =
       tag === 'h3'
         ? !!block && /^H[1-6]$/.test(block.tagName)
         : !!block && block.tagName === 'BLOCKQUOTE';
-    if (block) retag(block, on ? 'div' : tag);
-    else execFormatBlock(on ? 'div' : tag);
+
+    if (block) {
+      retag(block, on ? 'div' : tag);
+    } else {
+      execFormatBlock(on ? 'div' : tag);
+    }
+
     commit();
   };
 
-  /* wrap the selection in a styled span — the deck accent, or a specific
-     colour, both of which the marker format already understands */
   const wrap = (open: string) => {
     if (!restoreSelection()) {
       ref.current?.focus();
       return;
     }
+
     const sel = window.getSelection();
+
     if (!sel || sel.isCollapsed) return;
+
     const box = document.createElement('div');
+
     box.appendChild(sel.getRangeAt(0).cloneContents());
     document.execCommand('insertHTML', false, `${open}${box.innerHTML}</span>`);
     commit();
     captureSelection();
   };
+
   const accent = () => wrap('<span class="accent-text">');
   const paint = (hex: string) =>
     wrap(`<span data-color="${hex}" style="color:${hex}">`);
   const mark = (hex: string) =>
     wrap(`<span data-hl="${hex}" class="note-hl" style="background:${hex}">`);
-  /* strip colour / accent / highlight from the selection, leaving bold, italic
-     and the rest of the structure alone */
+
   const strip = () => {
     if (!restoreSelection()) {
       ref.current?.focus();
       return;
     }
+
     const sel = window.getSelection();
+
     if (!sel || sel.isCollapsed) return;
+
     const box = document.createElement('div');
+
     box.appendChild(sel.getRangeAt(0).cloneContents());
     box
       .querySelectorAll('[data-hl], [data-color], .accent-text')
@@ -326,10 +389,14 @@ export function NotesEditor({
     commit();
     captureSelection();
   };
+
   const code = () => {
     const sel = window.getSelection();
+
     if (!sel || sel.isCollapsed) return;
+
     const t = esc(sel.toString());
+
     document.execCommand('insertHTML', false, `<code>${t}</code>`);
     commit();
   };
@@ -339,9 +406,12 @@ export function NotesEditor({
     ref.current?.focus();
     document.execCommand('styleWithCSS', false, 'false');
     document.execCommand('removeFormat');
+
     const sel = window.getSelection();
+
     if (sel && !sel.isCollapsed) {
       const box = document.createElement('div');
+
       box.appendChild(sel.getRangeAt(0).cloneContents());
       box
         .querySelectorAll('[data-hl], [data-color], .accent-text, code')
@@ -350,13 +420,16 @@ export function NotesEditor({
         });
       document.execCommand('insertHTML', false, box.innerHTML);
     }
+
     const block = blockAncestor(window.getSelection()?.anchorNode ?? null);
+
     if (
       block &&
       (/^H[1-6]$/.test(block.tagName) || block.tagName === 'BLOCKQUOTE')
     ) {
       retag(block, 'div');
     }
+
     commit();
     captureSelection();
   };
@@ -423,6 +496,7 @@ export function NotesEditor({
       icon: svg('M5 4.6h10M10 4.6l-2.2 10.8M12.4 12.4l4 4M16.4 12.4l-4 4'),
     },
   ];
+
   const history: Cmd[] = [
     {
       id: 'undo',
@@ -445,18 +519,19 @@ export function NotesEditor({
       className={'note-wyg-wrap ' + className}
       onKeyDownCapture={(e) => {
         if (e.key !== 'Escape') return;
+
         e.preventDefault();
         e.stopPropagation();
+
         if (paletteOpen) {
           setPalette(null);
           return;
         }
+
         commit();
         onDone?.();
       }}
     >
-      {/* in a narrow panel the bar scrolls: drag it, or use a plain wheel —
-          sideways scrolling shouldn't need a trackpad */}
       <div
         ref={bar}
         className="note-wyg-bar"
@@ -489,7 +564,6 @@ export function NotesEditor({
           </button>
         ))}
 
-        {/* colour lives behind one button, the way every editor does it */}
         <div className="note-wyg-pop-wrap">
           <button
             ref={colorBtn}
@@ -502,8 +576,6 @@ export function NotesEditor({
             aria-haspopup="true"
             onClick={togglePalette}
           >
-            {/* the colour bar lives INSIDE the glyph, so the button is the
-                same 28px square as every other one on the bar */}
             {svg(
               'M4.3 13.8L10 3.2l5.7 10.6M6.5 10.4h7',
               <rect
@@ -517,8 +589,6 @@ export function NotesEditor({
               />
             )}
           </button>
-          {/* Portal past the dock's transform — fixed + viewport coords would
-              otherwise anchor to `.noir-dock-popover` and open off-screen. */}
           {palette &&
             createPortal(
               <div
@@ -600,7 +670,9 @@ export function NotesEditor({
             {c.icon}
           </button>
         ))}
+
         <span className="note-wyg-sep" />
+
         {history.map((c) => (
           <button
             key={c.id}
@@ -630,7 +702,7 @@ export function NotesEditor({
           commit();
         }}
         onPaste={(e) => {
-          e.preventDefault(); // plain text only — same rule as EditableText
+          e.preventDefault();
           document.execCommand(
             'insertText',
             false,
@@ -641,7 +713,7 @@ export function NotesEditor({
         }}
         onBlur={commit}
         onKeyDown={(e) => {
-          e.stopPropagation(); // never let slide navigation see typing
+          e.stopPropagation();
         }}
       />
     </div>

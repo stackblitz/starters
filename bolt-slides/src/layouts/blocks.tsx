@@ -1,6 +1,3 @@
-/* Block layouts: timeline, comparison, table, tabs, accordion, chat, code.
-   Every visible string renders through T (inline-editable); repeatable items
-   carry LiCtl (on-canvas drag-reorder / add / remove). */
 import { useEffect } from 'react';
 import Slide from '../deck/Slide';
 import Timeline from '../components/Timeline';
@@ -69,10 +66,6 @@ const TimelineDef: LayoutDef = {
   ),
 };
 
-/* ── comparison: cols are string[] (first entry = label-column header) and
-   row values are real booleans/strings. Editing runs through CompareEditor
-   (toggle chips, grips, add strips); legacy pipe-string decks migrate on
-   first editable render. ── */
 const normCmp = (p: { cols?: unknown; rows?: unknown[] }) => ({
   cols: Array.isArray(p.cols)
     ? (p.cols as string[])
@@ -109,14 +102,19 @@ const ComparisonDef: LayoutDef = {
       (slide.props.rows ?? []).some(
         (r: { values?: unknown }) => !Array.isArray(r?.values)
       );
+
     useEffect(() => {
       if (!editable || !slideId || !legacy) return;
+
       const t = normCmp(slide.props);
+
       setProp(slideId, 'cols', t.cols);
       setProp(slideId, 'rows', t.rows);
     }, [editable, slideId, legacy, slide.props, setProp]);
+
     const data = normCmp(slide.props);
     const canEdit = editable && !legacy;
+
     return (
       <Slide>
         <Heading slide={slide} />
@@ -137,10 +135,6 @@ const ComparisonDef: LayoutDef = {
   },
 };
 
-/* ── table: columns are string[], rows are string[][]. Editing runs through
-   the purpose-built TableEditor (grips, drags, add strips); present/static
-   contexts render the plain Table component. Legacy pipe-string decks
-   migrate to arrays on first editable render. ── */
 const TableDef: LayoutDef = {
   type: 'table',
   label: 'Table',
@@ -163,16 +157,18 @@ const TableDef: LayoutDef = {
     const legacy =
       !Array.isArray(slide.props.columns) ||
       (slide.props.rows ?? []).some((r: unknown) => !Array.isArray(r));
-    // migrate pipe-string decks the moment they open in the editor
+
     useEffect(() => {
       if (!editable || !slideId || !legacy) return;
+
       const t = normTable(slide.props);
+
       setProp(slideId, 'columns', t.columns);
       setProp(slideId, 'rows', t.rows);
-      // props identity: re-migrate if a racing load() clobbered the write
     }, [editable, slideId, legacy, slide.props, setProp]);
+
     const { columns, rows } = normTable(slide.props);
-    const canEdit = editable && !legacy; // cell paths are valid post-migration
+    const canEdit = editable && !legacy;
     const labels = show(slide.props.labelLeft) && (
       <div className="tbl-labels">
         <span className="kicker">
@@ -186,6 +182,7 @@ const TableDef: LayoutDef = {
     ]
       .filter(Boolean)
       .join(' ');
+
     return (
       <Slide className={cls || undefined}>
         <Heading slide={slide} />
@@ -241,6 +238,7 @@ const TabsDef: LayoutDef = {
   Render: ({ slide }) => {
     const { editable, slideId } = useEdit();
     const setProp = useStore((s) => s.setProp);
+
     return (
       <Slide>
         <Heading slide={slide} />
@@ -277,9 +275,6 @@ const QA_BLANK = {
   a: 'The short, honest answer.',
 };
 
-/* Q&A rows from the user's reference: big headline top-left, then striped
-   rows — question left, answer right, mono Q/A markers. The flat, scannable
-   counterpart to the interactive accordion. */
 const QaDef: LayoutDef = {
   type: 'qa',
   label: 'Q & A',
@@ -391,6 +386,7 @@ const ChatDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <Chat
         kicker={
@@ -431,6 +427,7 @@ const CodeDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const { editable } = useEdit();
+
     return (
       <Slide>
         <Heading slide={slide} tight />

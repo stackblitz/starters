@@ -1,4 +1,3 @@
-/* Media layouts: chart (bars are drag-to-resize in the editor). */
 import {
   useEffect,
   useLayoutEffect,
@@ -29,7 +28,6 @@ import {
 
 const BAR_BLANK = { label: 'Q1', value: 10 };
 
-/* invisible strips over each bar track: drag vertically to change the value */
 function BarsEditor({
   slide,
   bars,
@@ -50,7 +48,9 @@ function BarsEditor({
   useLayoutEffect(() => {
     const update = () => {
       const wrap = wrapRef.current;
+
       if (!wrap) return;
+
       setTracks(
         Array.from(wrap.querySelectorAll('.ch-bar-track')).map((el) => {
           const t = el as HTMLElement;
@@ -59,38 +59,50 @@ function BarsEditor({
         })
       );
     };
+
     update();
     const ro = new ResizeObserver(update);
+
     if (wrapRef.current) ro.observe(wrapRef.current);
+
     return () => ro.disconnect();
   }, [bars.length]);
 
   const startDrag = (i: number) => (ev: React.MouseEvent) => {
     if (ev.button !== 0 || !slideId) return;
+
     ev.preventDefault();
     ev.stopPropagation();
+
     const track = wrapRef.current?.querySelectorAll('.ch-bar-track')[i] as
       | HTMLElement
       | undefined;
+
     if (!track) return;
-    const vh = track.getBoundingClientRect().height || 1; // visual px — matches mouse deltas
+
+    const vh = track.getBoundingClientRect().height || 1;
     const max = Math.max(...bars.map((b) => b.value), 1);
     const startV = bars[i].value;
     const y0 = ev.clientY;
+
     document.body.classList.add('li-dragging');
+
     const onMove = (m: MouseEvent) => {
       const v = Math.max(0, Math.round(startV + (y0 - m.clientY) * (max / vh)));
+
       setProp(
         slideId,
         'bars',
         bars.map((b, j) => (j === i ? { ...b, value: v } : b))
       );
     };
+
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       document.body.classList.remove('li-dragging');
     };
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   };
@@ -111,9 +123,6 @@ function BarsEditor({
   );
 }
 
-/* editorial split from the reference: headline top-left, supporting copy
-   bottom-left, full-bleed visual panel right with a small centered label.
-   No image → a themed gradient wash stands in (the placeholder rule). */
 const PosterDef: LayoutDef = {
   type: 'poster',
   label: 'Poster',
@@ -125,6 +134,7 @@ const PosterDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <div className="slide full">
         <div
@@ -162,9 +172,6 @@ const PosterDef: LayoutDef = {
   },
 };
 
-/* story slide from the user's reference: kicker + big headline top-left,
-   body paragraph mid-left, image anchored lower-right (inset, ~60% height).
-   No image → gradient wash. */
 const StoryDef: LayoutDef = {
   type: 'story',
   label: 'Story',
@@ -177,7 +184,7 @@ const StoryDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
-    const pair = slide.props.pair !== false; // default: two portraits
+    const pair = slide.props.pair !== false;
     const img = (url: string | undefined) => (
       <div className="story-img">
         {url ? (
@@ -187,6 +194,7 @@ const StoryDef: LayoutDef = {
         )}
       </div>
     );
+
     return (
       <div className="slide full">
         <div className={'story' + (slide.props.flip ? ' flip' : '')}>
@@ -215,9 +223,6 @@ const StoryDef: LayoutDef = {
   },
 };
 
-/* persona/case-study intro from the user's reference: tall portrait panel
-   left (near full height, inset), big headline top-right, body mid, and a
-   small-caps tag anchored at the bottom. No image → gradient wash. */
 const PersonaDef: LayoutDef = {
   type: 'persona',
   label: 'Persona',
@@ -229,6 +234,7 @@ const PersonaDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <div className="slide full">
         <div className={'persona' + (slide.props.flip ? ' flip' : '')}>
@@ -260,9 +266,6 @@ const PersonaDef: LayoutDef = {
   },
 };
 
-/* speaker slide from the user's reference: label top-left, big name
-   + small-caps role mid-left, bio anchored low; portrait fills the right
-   side's lower portion, bottom-aligned. No image → gradient wash. */
 const SpeakerDef: LayoutDef = {
   type: 'speaker',
   label: 'Speaker',
@@ -275,6 +278,7 @@ const SpeakerDef: LayoutDef = {
   },
   Render: ({ slide }) => {
     const show = useShow();
+
     return (
       <div className="slide full">
         <div className={'speaker' + (slide.props.flip ? ' flip' : '')}>
@@ -352,14 +356,15 @@ const ChartDef: LayoutDef = {
     const show = useShow();
     const kind = slide.props.kind ?? 'bars';
     const prevKind = useRef(kind);
-    /* switching kinds CONVERTS the data you were just looking at — the
-       previous kind is the source of truth and OVERWRITES the target's
-       stale values. Defaults only seed a kind with nothing to show. */
+
     useEffect(() => {
       if (!editable || !slideId) return;
+
       const p = slide.props;
       const from = prevKind.current;
+
       prevKind.current = kind;
+
       const barsData = (p.bars ?? []) as {
         label: string;
         value: number | string;
@@ -377,7 +382,6 @@ const ChartDef: LayoutDef = {
           .filter((v) => v !== '');
 
       if (from !== kind) {
-        // source values from the kind we're LEAVING
         const src: {
           labels: string[];
           rows: { label: string; values: string[] }[];
@@ -414,14 +418,16 @@ const ChartDef: LayoutDef = {
                 })),
               }
             : null;
+
         if (src && src.rows[0]?.values.length) {
           const first = src.rows[0].values;
+
           if (kind === 'bars') {
-            // keep existing bar labels when the lengths line up
             const labels =
               barsData.length === first.length
                 ? barsData.map((b) => b.label)
                 : src.labels;
+
             setProp(
               slideId,
               'bars',
@@ -431,7 +437,9 @@ const ChartDef: LayoutDef = {
               }))
             );
           }
+
           if (kind === 'line') setProp(slideId, 'points', first.join(' | '));
+
           if (kind === 'grouped') {
             setProp(
               slideId,
@@ -450,6 +458,7 @@ const ChartDef: LayoutDef = {
               ).join(' | ')
             );
           }
+
           if (kind === 'lines')
             setProp(
               slideId,
@@ -459,11 +468,11 @@ const ChartDef: LayoutDef = {
                 points: r.values.join(' | '),
               }))
             );
+
           if (kind !== 'donut' && kind !== 'donuts') return;
         }
       }
 
-      // no conversion happened — seed demo data only where nothing exists
       if (kind === 'bars' && !barsData.length)
         setProp(slideId, 'bars', structuredClone(ChartDef.defaults.bars));
       if (kind === 'line' && !ptsData)
@@ -482,10 +491,10 @@ const ChartDef: LayoutDef = {
       }
       if (kind === 'lines' && !linesData.length)
         setProp(slideId, 'lines', structuredClone(ChartDef.defaults.lines));
-      // props identity: re-seed if a racing load() clobbered the write
     }, [editable, slideId, kind, slide.props, setProp]);
+
     const large = !!slide.props.large;
-    const showValues = slide.props.values !== false; // on by default
+    const showValues = slide.props.values !== false;
     const bars = (
       (slide.props.bars ?? []) as { label: string; value: number | string }[]
     ).map((b) => ({ label: b.label, value: Number(b.value) || 0 }));
@@ -504,6 +513,7 @@ const ChartDef: LayoutDef = {
         }))}
       />
     );
+
     return (
       <Slide>
         <Heading slide={slide} />
@@ -647,8 +657,6 @@ const POINT_BLANK = {
   body: 'What else the data says.',
 };
 
-/* chart + interpretation from the user's reference: chart on the left with
-   a subtitle, and a right column of small-caps annotated takeaways. */
 const InsightDef: LayoutDef = {
   type: 'insight',
   label: 'Insight',
@@ -687,14 +695,18 @@ const InsightDef: LayoutDef = {
     const show = useShow();
     const kind = slide.props.kind ?? 'donut';
     const prevKind = useRef(kind);
+
     useEffect(() => {
       if (!editable || !slideId) return;
+
       const p = slide.props;
       const from = prevKind.current;
+
       prevKind.current = kind;
+
       const bd = (p.bars ?? []) as { label: string; value: number | string }[];
       const pl = String(p.points_line ?? '').trim();
-      // switching converts the data you were just looking at (overwrites)
+
       if (from !== kind && from === 'bars' && kind === 'line' && bd.length) {
         setProp(
           slideId,
@@ -707,6 +719,7 @@ const InsightDef: LayoutDef = {
           bd.length === vals.length
             ? bd.map((b) => b.label)
             : vals.map((_, i: number) => `P${i + 1}`);
+
         setProp(
           slideId,
           'bars',
@@ -721,15 +734,17 @@ const InsightDef: LayoutDef = {
         if (kind === 'line' && !pl)
           setProp(slideId, 'points_line', InsightDef.defaults.points_line);
       }
+
       if (kind === 'donut' && p.donutValue == null) {
         setProp(slideId, 'donutValue', 64);
         setProp(slideId, 'donutLabel', p.donutLabel ?? 'The headline figure');
       }
     }, [editable, slideId, kind, slide.props, setProp]);
+
     const bars = (
       (slide.props.bars ?? []) as { label: string; value: number | string }[]
     ).map((b) => ({ label: b.label, value: Number(b.value) || 0 }));
-    const showValues = slide.props.values !== false; // on by default
+    const showValues = slide.props.values !== false;
     const chart =
       kind === 'bars' ? (
         <BarChart
@@ -756,6 +771,7 @@ const InsightDef: LayoutDef = {
           label={e(<T path="donutLabel" />)}
         />
       );
+
     return (
       <div className="slide full">
         <div

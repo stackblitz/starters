@@ -1,27 +1,29 @@
-/* Side-effect hooks extracted from Deck — keyboard, hash, broadcast sync,
-   fullscreen, and idle cursor / dock proximity. Behavior matches the prior
-   inline effects; Deck owns the state these hooks write. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { isPresentRoute } from '../data/shell';
 
-/** True once a scroll container has moved off the top. */
 export function useScrolled(
   ref: RefObject<HTMLElement | null>,
   active: boolean
 ) {
   const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const el = ref.current;
+
     if (!active || !el) {
       setScrolled(false);
       return;
     }
+
     const onScroll = () => setScrolled(el.scrollTop > 0);
+
     onScroll();
     el.addEventListener('scroll', onScroll, { passive: true });
+
     return () => el.removeEventListener('scroll', onScroll);
   }, [ref, active]);
+
   return scrolled;
 }
 
@@ -69,7 +71,9 @@ export function useDeckKeyboard(options: {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+
       const target = event.target as HTMLElement | null;
+
       if (
         target &&
         (target.tagName === 'TEXTAREA' ||
@@ -77,6 +81,7 @@ export function useDeckKeyboard(options: {
           target.isContentEditable)
       )
         return;
+
       switch (event.key) {
         case 'ArrowRight':
         case 'ArrowDown':
@@ -103,8 +108,6 @@ export function useDeckKeyboard(options: {
           event.preventDefault();
           go(slideCount - 1);
           break;
-        // while drawing, the annotator owns letter keys it uses (O, P, H) —
-        // D and Escape still exit
         case 'o':
         case 'O':
           if (isPresenter || drawing) break;
@@ -159,7 +162,9 @@ export function useDeckKeyboard(options: {
           break;
       }
     };
+
     window.addEventListener('keydown', onKey);
+
     return () => window.removeEventListener('keydown', onKey);
   }, [
     next,
@@ -183,7 +188,6 @@ export function useDeckKeyboard(options: {
   ]);
 }
 
-/** Sync slide index ↔ URL hash. Skipped when Present is driven without a URL. */
 export function useDeckHashSync(options: {
   slideIndex: number;
   slideCount: number;
@@ -194,15 +198,19 @@ export function useDeckHashSync(options: {
 
   useEffect(() => {
     if (skipHash) return;
+
     const want = String(slideIndex + 1);
+
     if (window.location.hash.slice(1) !== want)
       history.replaceState(null, '', '#' + want);
   }, [slideIndex, skipHash]);
 
   useEffect(() => {
     if (skipHash) return;
+
     const onHash = () => {
       const hashSlide = parseInt(window.location.hash.slice(1), 10);
+
       if (
         hashSlide >= 1 &&
         hashSlide <= slideCount &&
@@ -210,12 +218,13 @@ export function useDeckHashSync(options: {
       )
         go(hashSlide - 1);
     };
+
     window.addEventListener('hashchange', onHash);
+
     return () => window.removeEventListener('hashchange', onHash);
   }, [slideIndex, slideCount, go, skipHash]);
 }
 
-/** Cross-tab audience ⇄ presenter sync. Leaders publish; others subscribe. */
 export function useDeckBroadcastSync(options: {
   slideIndex: number;
   clicks: number;
@@ -229,12 +238,14 @@ export function useDeckBroadcastSync(options: {
 
   useEffect(() => {
     const channel = new BroadcastChannel('deck-sync');
+
     syncChannel.current = channel;
     channel.onmessage = (event) => {
       if (event.data?.type !== 'state') return;
-      /* wire format keeps `slide` so an older presenter tab still syncs */
+
       const remoteSlide = event.data.slide;
       const remoteClicks = event.data.clicks;
+
       if (
         !Number.isInteger(remoteSlide) ||
         !Number.isInteger(remoteClicks) ||
@@ -242,19 +253,23 @@ export function useDeckBroadcastSync(options: {
         remoteClicks < 0
       )
         return;
+
       applyingRemote.current = true;
       setSlideIndex(remoteSlide);
       setClicks(remoteClicks);
     };
+
     return () => channel.close();
   }, [setSlideIndex, setClicks]);
 
   useEffect(() => {
     if (!isLeader) return;
+
     if (applyingRemote.current) {
       applyingRemote.current = false;
       return;
     }
+
     syncChannel.current?.postMessage({
       type: 'state',
       slide: slideIndex,
@@ -265,6 +280,7 @@ export function useDeckBroadcastSync(options: {
 
 export function enterFullscreen() {
   if (document.fullscreenElement) return;
+
   void document.documentElement.requestFullscreen?.()?.catch(() => {
     /* iframe without allow, or Permissions-Policy — present still works */
   });
@@ -272,6 +288,7 @@ export function enterFullscreen() {
 
 export function exitFullscreen() {
   if (!document.fullscreenElement) return;
+
   void document.exitFullscreen?.()?.catch(() => {});
 }
 
@@ -281,7 +298,9 @@ export function useFullscreenState() {
   useEffect(() => {
     const onFullscreenChange = () =>
       setIsFullscreen(!!document.fullscreenElement);
+
     document.addEventListener('fullscreenchange', onFullscreenChange);
+
     return () =>
       document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
@@ -294,7 +313,6 @@ export function useFullscreenState() {
   return { isFullscreen, toggleFullscreen };
 }
 
-/** Cursor idle + pointer near the dock (uses dock bounds when mounted). */
 export function useIdleCursorNearDock(dockRef?: RefObject<HTMLElement | null>) {
   const [nearDock, setNearDock] = useState(false);
   const [cursorIdle, setCursorIdle] = useState(false);
@@ -303,10 +321,13 @@ export function useIdleCursorNearDock(dockRef?: RefObject<HTMLElement | null>) {
     let idleTimer = 0;
     const onMove = (event: MouseEvent) => {
       setCursorIdle(false);
+
       const el = dockRef?.current;
+
       if (el) {
         const rect = el.getBoundingClientRect();
         const pad = 80;
+
         setNearDock(
           event.clientX >= rect.left - pad &&
             event.clientX <= rect.right + pad &&
@@ -316,10 +337,13 @@ export function useIdleCursorNearDock(dockRef?: RefObject<HTMLElement | null>) {
       } else {
         setNearDock(event.clientY > window.innerHeight - 150);
       }
+
       clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => setCursorIdle(true), 2600);
     };
+
     window.addEventListener('mousemove', onMove);
+
     return () => {
       clearTimeout(idleTimer);
       window.removeEventListener('mousemove', onMove);
@@ -329,13 +353,14 @@ export function useIdleCursorNearDock(dockRef?: RefObject<HTMLElement | null>) {
   return { nearDock, cursorIdle };
 }
 
-/** Hold annotations until the incoming slide finishes its entrance. */
 export function useStageEntrance(slideIndex: number) {
   const [stageIn, setStageIn] = useState(false);
 
   useEffect(() => {
     setStageIn(false);
+
     const safetyTimer = window.setTimeout(() => setStageIn(true), 1000);
+
     return () => clearTimeout(safetyTimer);
   }, [slideIndex]);
 

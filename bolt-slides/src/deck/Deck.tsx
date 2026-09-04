@@ -30,17 +30,6 @@ import {
   useStageEntrance,
 } from './deckHooks';
 
-/* ── The paged presentation engine + the Slidev-style chrome (dock, side
-   panel, grid overview). Pass `slides` as data; Deck renders each SlideView.
-     → / ↓ / Space   next (reveals the next <Build>, then the next slide)
-     ← / ↑           previous            S side panel   G grid overview
-     Home / End      first / last        D draw         F fullscreen
-     H  hide/show the UI                 P presenter (new tab)
-   While drawing (D), the annotator owns the letter keys: P pen · H highlighter
-   · L laser · I line · A arrow · R rect · O ellipse · E eraser · 1–6 colour ·
-   [ ] size · ⌘Z / ⇧⌘Z undo+redo · ⌫ clear · D or Esc to finish.
-   Copy verbatim; theme only via the :root tokens. ───────────────────────── */
-
 const TRANSITIONS: Record<string, Variants> = {
   fade: {
     initial: { opacity: 0 },
@@ -85,13 +74,9 @@ export default function Deck({
 }: {
   slides: SlideData[];
   transition?: string;
-  /** false hides the dock P control (the console itself) */
   allowPresenter?: boolean;
-  /** optional short name for a slide, shown as "up next" in the console */
   navLabel?: (index: number) => string | undefined;
-  /** start here instead of the URL hash */
   initialSlide?: number;
-  /** leave present mode without changing the URL */
   onExit?: (slideIndex: number) => void;
 }) {
   const slideCount = slides.length;
@@ -105,26 +90,29 @@ export default function Deck({
   const [slideIndex, setSlideIndex] = useState(() => {
     if (initialSlide != null)
       return Math.max(0, Math.min(slideCount - 1, initialSlide));
+
     const hashSlide = parseInt(window.location.hash.slice(1), 10);
+
     return hashSlide >= 1 && hashSlide <= slideCount ? hashSlide - 1 : 0;
   });
   const [clicks, setClicks] = useState(0);
   const [buildMax, setBuildMax] = useState(0);
-  // two ways to browse the deck, mutually exclusive: a persistent side panel
-  // (stays open while you jump around) and a full-screen grid overview (a
-  // picker — it closes on pick). Opening one closes the other.
   const [browse, setBrowse] = useState<'none' | 'rail' | 'grid'>('none');
   const railOpen = browse === 'rail';
   const gridOpen = browse === 'grid';
+
   const toggleRail = useCallback(
     () => setBrowse((mode) => (mode === 'rail' ? 'none' : 'rail')),
     []
   );
+
   const toggleGrid = useCallback(
     () => setBrowse((mode) => (mode === 'grid' ? 'none' : 'grid')),
     []
   );
+
   const closeBrowse = useCallback(() => setBrowse('none'), []);
+
   const [drawing, setDrawing] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
 
@@ -133,8 +121,6 @@ export default function Deck({
   const dockRef = useRef<HTMLDivElement>(null);
   const { nearDock, cursorIdle } = useIdleCursorNearDock(dockRef);
 
-  // per-slide build maxima (so going back restores the right click state) and
-  // per-slide annotations (so drawings persist on the slide they were made).
   const buildMaxBySlide = useRef<Record<number, number>>({});
   const annotationsBySlide = useRef<Record<number, Stroke[]>>(
     loadAnnotations()
@@ -144,6 +130,7 @@ export default function Deck({
 
   const registerMax = useCallback((at: number) => {
     const maxima = buildMaxBySlide.current;
+
     maxima[slideIndexRef.current] = Math.max(
       maxima[slideIndexRef.current] || 0,
       at
@@ -161,6 +148,7 @@ export default function Deck({
   const go = useCallback(
     (index: number) => {
       const nextIndex = Math.max(0, Math.min(slideCount - 1, index));
+
       setSlideIndex(nextIndex);
       setClicks(0);
       setBuildMax(buildMaxBySlide.current[nextIndex] || 0);
@@ -168,27 +156,33 @@ export default function Deck({
     },
     [slideCount, syncStoreCurrent]
   );
+
   const next = useCallback(() => {
     if (clicks < buildMax) {
       setClicks(clicks + 1);
       return;
     }
+
     if (slideIndex < slideCount - 1) {
       const nextIndex = slideIndex + 1;
+
       setSlideIndex(nextIndex);
       setClicks(0);
       setBuildMax(buildMaxBySlide.current[nextIndex] || 0);
       syncStoreCurrent(nextIndex);
     }
   }, [clicks, buildMax, slideIndex, slideCount, syncStoreCurrent]);
+
   const prev = useCallback(() => {
     if (clicks > 0) {
       setClicks(clicks - 1);
       return;
     }
+
     if (slideIndex > 0) {
       const prevIndex = slideIndex - 1;
       const restoredBuilds = buildMaxBySlide.current[prevIndex] || 0;
+
       setSlideIndex(prevIndex);
       setClicks(restoredBuilds);
       setBuildMax(restoredBuilds);
@@ -198,7 +192,9 @@ export default function Deck({
 
   useEffect(() => {
     if (!mutable) return;
+
     const storeCurrent = useStore.getState().current;
+
     if (storeCurrent !== slideIndex && slides[storeCurrent]) go(storeCurrent);
     else if (!slides[slideIndex] && slides.length)
       go(Math.min(slideIndex, slides.length - 1));
@@ -230,10 +226,12 @@ export default function Deck({
   });
 
   const skipHash = !!onExit && !isPresenter;
+
   useDeckHashSync({ slideIndex, slideCount, go, skipHash });
 
   const isLeader =
     isPresenter || !!onExit || (isPresentRoute() && allowPresenter);
+
   const applyBroadcastIndex = useCallback(
     (index: number) => {
       setSlideIndex(index);
@@ -241,6 +239,7 @@ export default function Deck({
     },
     [syncStoreCurrent]
   );
+
   useDeckBroadcastSync({
     slideIndex,
     clicks,
@@ -253,6 +252,7 @@ export default function Deck({
     () => ({ clicks, isStatic: false, registerMax }),
     [clicks, registerMax]
   );
+
   const hasPrev = slideIndex > 0 || clicks > 0;
   const hasNext = slideIndex < slideCount - 1 || clicks < buildMax;
   const currentSlide = slides[slideIndex];
@@ -263,9 +263,6 @@ export default function Deck({
   const showAnnotator =
     drawing || (annotationsBySlide.current[slideIndex]?.length ?? 0) > 0;
 
-  /* Presenter mode is its own screen: a console with the live slide, what is
-     next, the notes and the clock — not a second copy of the presentation.
-     The audience window stays in step over the BroadcastChannel. */
   if (isPresenter) {
     return (
       <MotionConfig reducedMotion="user">

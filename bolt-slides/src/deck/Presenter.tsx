@@ -24,20 +24,11 @@ function renderSlide(slide: SlideData) {
   );
 }
 
-/* The presenter console (/present?presenter=1) — a second-screen cockpit, not
-   a copy of the slide: what the audience sees right now (live, mid-build),
-   what is coming next, the speaker notes at reading size, a stopwatch, the
-   wall clock and the deck's progress.
-
-   Notes are authored in the studio (and in deck.json) and shown here
-   at reading size — not editable in this console. */
-
 const pad = (value: number) => String(value).padStart(2, '0');
 const fmtClock = (totalSeconds: number) =>
   (totalSeconds >= 3600 ? `${pad(Math.floor(totalSeconds / 3600))}:` : '') +
   `${pad(Math.floor(totalSeconds / 60) % 60)}:${pad(totalSeconds % 60)}`;
 
-/* ── the console ───────────────────────────────────────────────────── */
 const NOTE_SIZES = [15, 17, 19, 22, 25];
 const SIZE_KEY = 'deck:presenter-note-size';
 
@@ -64,7 +55,6 @@ export default function Presenter({
   onGo: (index: number) => void;
   onNext: () => void;
   onPrev: () => void;
-  /** leave the console for the editor when this is not a script-opened window */
   onExit?: (slideIndex: number) => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
@@ -72,6 +62,7 @@ export default function Presenter({
   const [now, setNow] = useState(() => new Date());
   const [sizeIdx, setSizeIdx] = useState(() => {
     const stored = parseInt(localStorage.getItem(SIZE_KEY) || '', 10);
+
     return Number.isFinite(stored) && stored >= 0 && stored < NOTE_SIZES.length
       ? stored
       : 2;
@@ -80,19 +71,20 @@ export default function Presenter({
   useEffect(() => {
     localStorage.setItem(SIZE_KEY, String(sizeIdx));
   }, [sizeIdx]);
+
   useEffect(() => {
     const tick = setInterval(() => {
       setNow(new Date());
       if (running) setElapsed((seconds) => seconds + 1);
     }, 1000);
+
     return () => clearInterval(tick);
   }, [running]);
 
-  // T runs/pauses the clock, ⇧T resets it, +/− size the notes. Slide keys stay
-  // with the deck, so → still advances the audience window.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
+
       if (
         target &&
         (target.tagName === 'TEXTAREA' ||
@@ -100,7 +92,9 @@ export default function Presenter({
           target.isContentEditable)
       )
         return;
+
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+
       if (event.key === 't') {
         event.preventDefault();
         setRunning((runningNow) => !runningNow);
@@ -116,7 +110,9 @@ export default function Presenter({
         setSizeIdx((idx) => Math.max(0, idx - 1));
       }
     };
+
     window.addEventListener('keydown', onKey);
+
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 

@@ -15,11 +15,14 @@
         "subtitle": "One sharp sentence on what this deck argues.",
         "foot": "August 2026 · Your name"
       },
-      "background": { "type": "color", "color": "var(--bg)" },
+      "background": {
+        "type": "color",
+        "color": "var(--bg)"
+      },
       "animation": "cascade",
       "transition": null,
       "nav": null,
-      "notes": "Open with the one-line promise of the deck.",
+      "notes": "# This is test text.\n\n# Test text line two.\n\n# Another line, oh no.",
       "status": "none"
     },
     {
@@ -31,11 +34,14 @@
         "title": "Say the ==one thing== this slide exists to say.",
         "body": ""
       },
-      "background": { "type": "color", "color": "var(--bg)" },
+      "background": {
+        "type": "color",
+        "color": "var(--bg)"
+      },
       "animation": "cascade",
       "transition": null,
       "nav": null,
-      "notes": "Land the thesis. Pause before you click on.",
+      "notes": "Land the thesis. Pause before you click on. hello!",
       "status": "none"
     },
     {
@@ -48,7 +54,10 @@
         "caption": "moves through this problem every year",
         "foot": "Source: —"
       },
-      "background": { "type": "color", "color": "var(--bg)" },
+      "background": {
+        "type": "color",
+        "color": "var(--bg)"
+      },
       "animation": "cascade",
       "transition": null,
       "nav": null,
@@ -63,17 +72,58 @@
         "kicker": "Agenda",
         "title": "What we'll cover.",
         "items": [
-          { "title": "The problem", "hint": "5 min" },
-          { "title": "The product" },
-          { "title": "The ask" }
+          {
+            "title": "The problem",
+            "hint": "5 min"
+          },
+          {
+            "title": "The product"
+          },
+          {
+            "title": "The ask"
+          }
         ]
       },
-      "background": { "type": "color", "color": "var(--bg)" },
+      "background": {
+        "type": "color",
+        "color": "var(--bg)"
+      },
+      "animation": "cascade",
+      "transition": null,
+      "nav": null,
+      "notes": "Preview the arc so they know where this is going.",
+      "status": "none"
+    },
+    {
+      "id": "a0706894",
+      "position": 4,
+      "layout": "agenda",
+      "props": {
+        "kicker": "Agenda",
+        "title": "What we'll cover.",
+        "items": [
+          {
+            "title": "The problem",
+            "hint": "5 min"
+          },
+          {
+            "title": "The product"
+          },
+          {
+            "title": "The ask"
+          }
+        ]
+      },
+      "background": {
+        "type": "color",
+        "color": "var(--bg)"
+      },
       "animation": "cascade",
       "transition": null,
       "nav": null,
       "notes": "Preview the arc so they know where this is going.",
       "status": "none"
     }
-  ]
+  ],
+  "boltSlidesId": "11011050-f9d6-4d43-8a9e-3e43af51bbaf"
 }

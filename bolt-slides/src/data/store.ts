@@ -1,29 +1,30 @@
-/* App state — one zustand store shared by the studio, audience deck, and
-   presenter console. Canonical store is repo-root deck.json. Studio
-   mutations (reorder / duplicate / delete) are optimistic, then POST
-   /__deck in Vite DEV. Agent writes land via a custom HMR event. */
 import { create } from 'zustand';
 import type { AppState, DeckFile, DeckMeta, SlideData } from './types';
 import seedJson from '../../deck.json';
 
 const seed = seedJson as DeckFile;
 
-/* set a deep value in a plain-JSON object via "items.0.title" paths */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setPath(obj: any, path: string, value: unknown): any {
   const clone = structuredClone(obj);
   const keys = path.split('.');
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let cursor: any = clone;
+
   for (let i = 0; i < keys.length - 1; i++) {
     const key: string | number = Array.isArray(cursor)
       ? Number(keys[i])
       : keys[i];
     if (cursor[key] == null) cursor[key] = /^\d+$/.test(keys[i + 1]) ? [] : {};
+
     cursor = cursor[key];
   }
+
   const last = keys[keys.length - 1];
+
   cursor[Array.isArray(cursor) ? Number(last) : last] = value;
+
   return clone;
 }
 
@@ -61,7 +62,9 @@ function coerceSlide(raw: SlideData): SlideData {
 
 function parseDeckFile(raw: unknown): DeckFile {
   if (!raw || typeof raw !== 'object') throw new Error('invalid-deck');
+
   const file = raw as DeckFile;
+
   if (
     !file.deck ||
     typeof file.deck !== 'object' ||
@@ -69,6 +72,7 @@ function parseDeckFile(raw: unknown): DeckFile {
   ) {
     throw new Error('invalid-deck');
   }
+
   return { ...file, slides: file.slides.map(coerceSlide) };
 }
 
@@ -83,7 +87,9 @@ function toFile(state: {
     deck: state.deck,
     slides: state.slides.map((slide, i) => ({ ...slide, position: i })),
   };
+
   if (state.boltSlidesId) file.boltSlidesId = state.boltSlidesId;
+
   return file;
 }
 
@@ -93,11 +99,13 @@ let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
 function schedulePersist(ms: number) {
   if (persistTimer) clearTimeout(persistTimer);
+
   if (ms <= 0) {
     persistTimer = null;
     void persist();
     return;
   }
+
   persistTimer = setTimeout(() => {
     persistTimer = null;
     void persist();
@@ -110,15 +118,11 @@ interface Store extends AppState {
   boltSlidesVersion: number;
   boltSlidesId: string | null;
   current: number;
-  /** "slideId|listPath" while a repeatable list is being edited (keeps its + visible) */
   activeList: string | null;
   setActiveList(value: string | null): void;
-
   load(): void;
-  /** Replace deck/slides from disk or another window; keep current by id. */
   applyFile(raw: unknown): void;
   setCurrent(index: number): void;
-
   patchSlide(id: string, patch: Partial<SlideData>): void;
   setProp(id: string, path: string, value: unknown): void;
   duplicateSlide(id: string): void;
@@ -144,6 +148,7 @@ function applyEnvelope(
           0,
           Math.min(getState().current, Math.max(0, slides.length - 1))
         );
+
   set({
     boltSlidesVersion: file.boltSlidesVersion ?? 1,
     boltSlidesId: file.boltSlidesId ?? null,
@@ -167,12 +172,12 @@ export const useStore = create<Store>((set, getState) => ({
   setActiveList(value) {
     set({ activeList: value });
   },
-
   load() {
     try {
       applyEnvelope(set, getState, seed);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+
       set({
         bootError:
           message === 'invalid-deck'
@@ -181,7 +186,6 @@ export const useStore = create<Store>((set, getState) => ({
       });
     }
   },
-
   applyFile(raw) {
     try {
       applyEnvelope(set, getState, raw);
@@ -189,40 +193,46 @@ export const useStore = create<Store>((set, getState) => ({
       /* keep the last good state */
     }
   },
-
   setCurrent(index) {
     const next = Math.max(0, Math.min(getState().slides.length - 1, index));
+
     set({ current: next });
   },
-
   patchSlide(id, patch) {
     set((state) => ({
       slides: state.slides.map((slide) =>
         slide.id === id ? { ...slide, ...patch } : slide
       ),
     }));
+
     bus?.postMessage({ type: 'patch', id, patch });
+
     const keys = Object.keys(patch);
     const notesOnly = keys.length > 0 && keys.every((key) => key === 'notes');
+
     schedulePersist(notesOnly ? 400 : 0);
   },
-
   setProp(id, path, value) {
     const slide = getState().slides.find((row) => row.id === id);
+
     if (!slide) return;
+
     const props = setPath(slide.props, path, value);
+
     set((state) => ({
       slides: state.slides.map((row) =>
         row.id === id ? { ...row, props } : row
       ),
     }));
+
     void persist();
   },
-
   duplicateSlide(id) {
     const slides = getState().slides;
     const idx = slides.findIndex((slide) => slide.id === id);
+
     if (idx < 0) return;
+
     const copy: SlideData = {
       ...structuredClone(slides[idx]),
       id: newSlideId(),
@@ -232,24 +242,27 @@ export const useStore = create<Store>((set, getState) => ({
       copy,
       ...slides.slice(idx + 1),
     ].map((slide, i) => ({ ...slide, position: i }));
+
     set({ slides: next, current: idx + 1 });
+
     void persist();
   },
-
   deleteSlide(id) {
     const current = getState().current;
     const next = getState()
       .slides.filter((slide) => slide.id !== id)
       .map((slide, i) => ({ ...slide, position: i }));
+
     set({
       slides: next,
       current: Math.min(current, Math.max(0, next.length - 1)),
     });
+
     void persist();
   },
-
   reorder(ids) {
     const currentId = getState().slides[getState().current]?.id;
+
     set((state) => ({
       slides: ids
         .map((id, i) => {
@@ -259,17 +272,23 @@ export const useStore = create<Store>((set, getState) => ({
         .filter((slide): slide is SlideData => !!slide),
       current: Math.max(0, ids.indexOf(currentId ?? '')),
     }));
+
     void persist();
   },
 }));
 
 async function persist() {
   if (!import.meta.env.DEV) return;
+
   persistDirty = true;
+
   if (persisting) return;
+
   persisting = true;
+
   while (persistDirty) {
     persistDirty = false;
+
     try {
       const file = toFile(useStore.getState());
       const res = await fetch('/__deck', {
@@ -277,12 +296,16 @@ async function persist() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(file),
       });
+
       if (!res.ok) throw new Error(`POST /__deck → ${res.status}`);
+
       const saved = parseDeckFile(await res.json());
       const id = saved.boltSlidesId ?? null;
+
       if (id && id !== useStore.getState().boltSlidesId) {
         useStore.setState({ boltSlidesId: id });
       }
+
       bus?.postMessage({
         type: 'deck-file',
         file: toFile(useStore.getState()),
@@ -291,6 +314,7 @@ async function persist() {
       console.error(err);
     }
   }
+
   persisting = false;
 }
 
@@ -301,11 +325,14 @@ bus?.addEventListener('message', (event) => {
     id?: string;
     patch?: Partial<SlideData>;
   } | null;
+
   if (message?.type === 'deck-file' && message.file) {
     useStore.getState().applyFile(message.file);
     return;
   }
+
   if (message?.type !== 'patch' || !message.id || !message.patch) return;
+
   useStore.setState((state) => ({
     slides: state.slides.map((slide) =>
       slide.id === message.id ? { ...slide, ...message.patch } : slide
