@@ -4,11 +4,9 @@
 
 /* chrome containers stay Inter regardless of the deck font pairing;
    slide content (.slide) re-asserts the deck fonts inside the canvas/thumbs */
-.ed-side,
 .noir-dock,
 .dl-pop,
 .ctx-menu,
-.modal,
 .fmt-menu,
 .fmt-pop,
 .color-pop {
@@ -40,13 +38,6 @@
   min-height: 0;
 }
 
-/* ── bottom-bar actions (Download as · Present live with the pager) ── */
-.nav-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--ed-divider);
-  flex-shrink: 0;
-}
 /* live region: parked above the bar so progress never resizes the controls */
 .nav-toast {
   position: absolute;
@@ -69,29 +60,6 @@
 .nav-toast.busy::before {
   content: '● ';
   color: var(--ed-brand);
-}
-.ed-canvas-nav .ghost-btn,
-.ed-canvas-nav .solid-btn {
-  height: 32px;
-}
-.ed-canvas-nav .icon-btn {
-  width: 32px;
-  height: 32px;
-}
-/* Share — DS inverse (white on dark chrome) */
-.ed-canvas-nav .solid-btn {
-  background: var(--ed-inverse-bg);
-  color: var(--ed-on-inverse);
-  box-shadow: var(--ed-shadow-sm);
-}
-.ed-canvas-nav .solid-btn:hover:not(:disabled) {
-  background: var(--ed-inverse-bg-hover);
-  filter: none;
-}
-.ed-canvas-nav .icon-btn.on {
-  background: var(--ed-util-hover);
-  color: var(--ed-text);
-  border-color: transparent;
 }
 
 /* speaker-notes popover — lives in `.noir-dock-popover` above the bar.
@@ -142,9 +110,8 @@
   color: var(--ed-text);
 }
 
-/* buttons + inputs — DS secondary / primary / ghost-icon, size sm */
-.ghost-btn,
-.solid-btn {
+/* buttons + inputs — DS secondary / ghost, size sm */
+.ghost-btn {
   font: 500 12px/1.25 var(--font-ui);
   letter-spacing: 0;
   border-radius: 6px;
@@ -185,29 +152,6 @@
   color: var(--ed-danger);
   background: var(--ed-danger-bg-subtle);
 }
-/* inline icons in text buttons */
-.btn-glyph {
-  flex: none;
-}
-.solid-btn {
-  background: var(--ed-brand);
-  border: 1px solid transparent;
-  color: var(--ed-on-brand);
-  font-weight: 500;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: var(--ed-shadow-sm);
-}
-.solid-btn:hover:not(:disabled) {
-  background: var(--ed-brand-hover);
-  filter: none;
-}
-.solid-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .ed-root select,
 .ed-root input:not([type='checkbox']):not([type='range']):not([type='color']),
@@ -239,91 +183,6 @@
 }
 .ed-root textarea {
   resize: vertical;
-}
-
-/* ── sidebar (slide rail) ── */
-.ed-side {
-  width: 208px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-right: 1px solid var(--ed-border);
-  background: var(--ed-chrome);
-}
-.ed-side-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 12px 8px;
-  color: var(--ed-text-faint);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-.ed-side-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2px 10px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.side-row {
-  display: flex;
-  gap: 7px;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-drag: none;
-  touch-action: none;
-}
-.side-row-gutter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding-top: 3px;
-  width: 16px;
-  flex-shrink: 0;
-}
-.side-no {
-  color: var(--ed-text-faint);
-  font: 500 10.5px/1 var(--font-mono, monospace);
-}
-.side-status {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-}
-.side-thumb {
-  position: relative;
-  flex: 1;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1.5px solid var(--ed-border-subtle);
-  background: var(--bg);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.side-row:hover .side-thumb {
-  border-color: var(--ed-border);
-}
-.side-row.active .side-thumb {
-  border-color: var(--ed-brand);
-  box-shadow: 0 0 0 3px var(--ed-brand-bg-subtle);
-}
-
-.mini-frame {
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  pointer-events: none;
-}
-.mini-scale {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: top left;
 }
 
 /* ── canvas ── */
@@ -371,26 +230,6 @@
 .ed-empty {
   color: var(--ed-text-faint);
   font-size: 14px;
-}
-
-.ed-canvas-nav {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgb(23 23 25 / 0.92);
-  border: 1px solid var(--ed-border);
-  border-radius: 8px;
-  padding: 5px 8px;
-  backdrop-filter: blur(12px);
-  box-shadow: var(--ed-shadow-lg);
-}
-.ed-counter {
-  color: var(--ed-text-muted);
-  font: 500 12px/1 var(--font-mono, monospace);
 }
 
 .dl-wrap {
@@ -483,41 +322,7 @@
   opacity: 0.4;
 }
 
-.fld {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.fld label {
-  color: var(--ed-text-muted);
-  font-size: 11.5px;
-}
-.fld.row {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-.fld input[type='color'] {
-  width: 34px;
-  height: 30px;
-  padding: 2px;
-  border: 1px solid var(--ed-border-subtle);
-  border-radius: 6px;
-  background: var(--ed-bg-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.fld input.angle {
-  width: 64px;
-  flex-shrink: 0;
-}
-.fld-hint {
-  color: var(--ed-text-faint);
-  font-size: 10.5px;
-  line-height: 1.45;
-}
-
-/* ── context menu / modals ── */
+/* ── context menu ── */
 .ctx-overlay {
   position: fixed;
   inset: 0;
@@ -555,76 +360,6 @@
   height: 1px;
   background: var(--ed-divider);
   margin: 4px 6px;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgb(0 0 0 / 0.55);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.modal {
-  background: var(--ed-bg);
-  border: 1px solid var(--ed-border);
-  border-radius: 12px;
-  box-shadow: var(--ed-shadow-lg);
-  width: min(680px, 94vw);
-  max-height: 84vh;
-  overflow-y: auto;
-  padding: 18px;
-  color: var(--ed-text);
-}
-.modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.modal-head h3 {
-  margin: 0;
-  font: 600 16px/1 var(--font-ui);
-  color: var(--ed-text);
-}
-.modal-head .icon-btn svg,
-.share-head .icon-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.add-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 8px;
-}
-.add-card {
-  background: var(--ed-bg-secondary);
-  border: 1px solid var(--ed-border-subtle);
-  border-radius: 8px;
-  padding: 12px;
-  cursor: pointer;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.add-card:hover {
-  border-color: var(--ed-brand-border-subtle);
-  background: var(--ed-bg-secondary-hover);
-}
-.add-card-name {
-  color: var(--ed-text);
-  font: 600 13.5px/1 var(--font-ui);
-}
-.add-card-hint {
-  color: var(--ed-text-faint);
-  font-size: 11.5px;
-  line-height: 1.45;
 }
 
 /* ══ remaining chrome — DS tokens, no glassy sheen ══ */
@@ -716,12 +451,6 @@
 .fmt-btn.fmt-a.on {
   color: #fff;
 }
-.fmt-btn.fmt-up {
-  font-size: 16.5px;
-}
-.fmt-btn.fmt-dn {
-  font-size: 11.5px;
-}
 
 /* text selection + caret inside the editable canvas */
 .ed-frame-inner ::selection {
@@ -731,11 +460,9 @@
   caret-color: var(--ui-accent);
 }
 
-/* on-canvas list-item controls — a compact cluster in the LEFT gutter,
-   vertically centered on its item (so ownership is unambiguous and nothing
-   overlaps the next row): [×][+][⠿] with ⠿ nearest the text. While dragging,
-   an accent insertion line shows exactly where the item will land. All
-   dimensions ×--inv (1/canvas-zoom) to stay at true screen size. */
+/* on-canvas list-item controls — drag handle in the LEFT gutter, + after
+   the last item. While dragging, an accent insertion line shows where the
+   item will land. Dimensions ×--inv (1/canvas-zoom) stay at true screen size. */
 .li {
   position: relative;
 }
@@ -761,8 +488,7 @@
   visibility: visible;
   transition-delay: 0s, 0s;
 }
-.li-h,
-.li-b {
+.li-h {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -776,8 +502,6 @@
   font: 600 calc(15px * var(--inv, 1)) / 1 var(--font-ui);
   box-shadow: inset 0 0 0 calc(1px * var(--inv, 1)) rgba(255, 255, 255, 0.1);
   transition: color 0.12s ease, background 0.12s ease;
-}
-.li-h {
   cursor: grab;
   font-size: calc(12px * var(--inv, 1));
   letter-spacing: -0.08em;
@@ -785,17 +509,9 @@
 .li-h:active {
   cursor: grabbing;
 }
-.li-b {
-  cursor: pointer;
-}
-.li-h:hover,
-.li-b:hover {
+.li-h:hover {
   color: var(--ed-text);
   background: rgba(30, 38, 52, 0.9);
-}
-.li-b.li-x:hover {
-  color: var(--ed-danger);
-  background: var(--ed-danger-bg-subtle);
 }
 
 /* drop indicator: the accent line marks the exact landing slot */
@@ -894,64 +610,6 @@ body.li-dragging .t-edit {
 .li-over-after::after {
   transform-origin: left center;
   animation: li-line-in 0.14s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* ── add-slide modal: darker, with live layout previews ──
-   Height stays at the viewport max so category filters do not jump the
-   chrome; the card grid scrolls inside. */
-.modal.add-slide {
-  width: min(1080px, 96vw);
-  height: min(84vh, calc(100vh - 48px));
-  max-height: min(84vh, calc(100vh - 48px));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--ed-bg);
-  border-color: var(--ed-border);
-}
-.add-slide-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-.add-grid {
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-.add-card {
-  padding: 0 0 11px;
-  overflow: hidden;
-  background: var(--ed-bg-secondary);
-}
-.add-card-preview {
-  display: block;
-  width: 100%;
-  /* reserve the thumbnail box so category switches do not jump as MiniSlide
-     measures or layout images load */
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  position: relative;
-  pointer-events: none;
-  border-bottom: 1px solid var(--ed-border-subtle);
-  background: var(--bg);
-}
-.add-card-preview .mini-frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: auto !important;
-}
-.add-card-name {
-  padding: 10px 12px 0;
-}
-.add-card-hint {
-  padding: 0 12px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: calc(11.5px * 1.45 * 2);
 }
 
 /* ── table editor: grips outside the table edges + add strips ── */
@@ -1227,89 +885,7 @@ tr.tr-after > td {
     color-mix(in srgb, var(--ui-accent) 70%, transparent);
 }
 
-/* ── toggle fields: label left, switch right (no naked checkboxes) ── */
-.toggle-row {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  padding: 2px 0;
-}
-.toggle-row span {
-  color: var(--ed-text-muted);
-  font-size: 11.5px;
-}
-.toggle-row:hover span {
-  color: var(--ed-text);
-}
-.ed-root .toggle-row input[type='checkbox'] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 36px;
-  height: 20px;
-  border-radius: 999px;
-  margin: 0;
-  flex-shrink: 0;
-  background: var(--ed-bg-tertiary);
-  border: none;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.16s ease;
-  box-shadow: none;
-}
-.ed-root .toggle-row input[type='checkbox']::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 4px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--ed-text);
-  box-shadow: var(--ed-shadow-sm);
-  transition: transform 0.1s ease, background 0.16s ease;
-}
-.ed-root .toggle-row input[type='checkbox']:checked {
-  background: var(--ed-brand);
-  border-color: transparent;
-  box-shadow: none;
-}
-.ed-root .toggle-row input[type='checkbox']:checked::after {
-  transform: translateX(16px);
-  background: var(--ed-text);
-}
-
-/* ── rich text fields in the inspector — same editable as the canvas ── */
-.rich-input {
-  background: transparent;
-  border: 1px solid var(--ed-border);
-  border-radius: 6px;
-  padding: 8px 12px;
-  cursor: text;
-  min-height: 33px;
-  font: 400 14px/1.5 var(--font-ui);
-  color: var(--ed-text);
-  box-shadow: none;
-}
-.rich-input:focus-within {
-  border-color: var(--ed-border);
-  box-shadow: 0 0 0 2px var(--ed-brand);
-}
-.rich-input.multi {
-  min-height: 64px;
-}
-.rich-input .t-edit {
-  display: block;
-  min-height: 1.2em;
-  outline: none;
-  box-shadow: none !important;
-  background: none !important; /* ring lives on the box */
-}
-.rich-input .accent-text {
-  -webkit-text-fill-color: initial;
-}
-
-/* ── inline toolbar variant: lives INSIDE the sidebar field while editing ── */
+/* ── inline toolbar variant: lives INSIDE the field while editing ── */
 .fmt-menu.fmt-inline {
   position: relative;
   left: auto;
@@ -1418,63 +994,4 @@ tr.tr-after > td {
   top: 50%;
   margin: 0;
   transform: translate(calc(4px * var(--inv, 1)), -50%);
-}
-
-/* add-slide modal grouping */
-.add-group + .add-group {
-  margin-top: 18px;
-}
-.add-group-title {
-  color: var(--ed-text-faint);
-  font: 600 10.5px/1 var(--font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin: 0 0 9px 2px;
-}
-
-/* add-slide filter pills */
-.add-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-.add-pill {
-  background: none;
-  border: 1px solid var(--ed-border);
-  border-radius: 999px;
-  color: var(--ed-text-muted);
-  font: 500 12px/1 var(--font-ui);
-  padding: 7px 13px;
-  cursor: pointer;
-  transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
-}
-.add-pill:hover {
-  color: var(--ed-text);
-  background: var(--ed-bg-hover);
-  border-color: var(--ed-border);
-}
-.add-pill.on {
-  background: var(--ed-brand);
-  border-color: transparent;
-  color: var(--ed-on-brand);
-  font-weight: 500;
-}
-
-/* icon-only pill action (the Present play button) */
-.icon-btn {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: none;
-  color: var(--ed-text);
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.icon-btn:hover {
-  background: var(--ed-util-hover);
-  color: var(--ed-text);
 }
