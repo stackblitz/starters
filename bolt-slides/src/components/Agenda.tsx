@@ -17,8 +17,6 @@ export default function Agenda({
   kicker?: string;
   title?: string;
   items: AgendaItem[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();

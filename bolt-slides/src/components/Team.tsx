@@ -24,8 +24,6 @@ export default function Team({
   kicker?: string;
   title?: string;
   people: Person[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();

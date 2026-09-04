@@ -23,8 +23,6 @@ export default function Quote({
   dim?: number;
   /** avatar initials — required when `name` isn't a plain string */
   initials?: string;
-  nav?: string;
-  notes?: string;
 }) {
   const initials =
     initialsProp ??

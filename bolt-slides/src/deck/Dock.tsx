@@ -102,8 +102,6 @@ export type DockProps = {
   notesId?: string;
   /** Content anchored above the bar (notes, annotate, …). Follows dock drag. */
   popoverSlot?: ReactNode;
-  /** @deprecated use popoverSlot */
-  notesSlot?: ReactNode;
   onAnnotate?: () => void;
   onFullscreen?: () => void;
   onPresenter?: () => void;
@@ -135,7 +133,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
     notesBtnRef,
     notesId,
     popoverSlot,
-    notesSlot,
     onAnnotate,
     onFullscreen,
     onPresenter,
@@ -160,7 +157,6 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
   const notesFallbackId = useId();
   const notesControlId = notesId ?? notesFallbackId;
   const dockPopover = useDockPopoverHost();
-  const popover = popoverSlot ?? notesSlot;
 
   const applyFit = useCallback((next: Pos, el: HTMLElement) => {
     return clamp(next.left, next.top, el.offsetWidth, el.offsetHeight);
@@ -264,7 +260,7 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
         className="noir-dock-popover"
         ref={(node) => dockPopover?.setHost(node)}
       >
-        {popover}
+        {popoverSlot}
       </div>
       <div className="noir-bar">
         <button

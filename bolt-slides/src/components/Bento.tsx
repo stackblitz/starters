@@ -5,8 +5,7 @@ import { useDeck } from '../deck/DeckContext';
 
 /* A full-viewport slide laid out as an asymmetric bento grid. Spans via c
    (columns of 12) and r (rows). Tiles rise in one after another; metric tiles
-   get an accent tick. Collapses to one column on narrow screens.
-   nav/notes are read by the engine (rail label / presenter notes). */
+   get an accent tick. Collapses to one column on narrow screens. */
 export type BentoTile = {
   k?: string;
   fig?: ReactNode;
@@ -28,8 +27,6 @@ export default function Bento({
   kicker?: string;
   title?: string;
   tiles: BentoTile[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();

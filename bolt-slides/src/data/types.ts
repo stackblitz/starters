@@ -31,30 +31,6 @@ export type SlideStatus =
   | 'review'
   | 'approved';
 
-export const STATUSES: { value: SlideStatus; label: string; color: string }[] =
-  [
-    { value: 'none', label: 'None', color: 'transparent' },
-    { value: 'draft', label: 'Draft', color: '#9aa4b2' },
-    { value: 'in-progress', label: 'In progress', color: '#eab308' },
-    { value: 'review', label: 'In review', color: '#38bdf8' },
-    { value: 'approved', label: 'Approved', color: '#4fe5b0' },
-  ];
-
-export const ANIMATIONS: AnimationMode[] = [
-  'cascade',
-  'rise',
-  'fade',
-  'zoom',
-  'none',
-];
-export const TRANSITIONS: TransitionMode[] = [
-  'fade',
-  'slide',
-  'rise',
-  'zoom',
-  'none',
-];
-
 export interface SlideData {
   id: string;
   position: number;

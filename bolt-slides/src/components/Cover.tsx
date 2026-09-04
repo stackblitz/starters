@@ -20,8 +20,6 @@ export default function Cover({
   image?: string;
   dim?: number;
   foot?: string;
-  nav?: string;
-  notes?: string;
 }) {
   return (
     <div className="slide center">

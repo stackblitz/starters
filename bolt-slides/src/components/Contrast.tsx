@@ -50,8 +50,6 @@ export default function Contrast({
   title?: string;
   left: ContrastPanel;
   right: ContrastPanel;
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();

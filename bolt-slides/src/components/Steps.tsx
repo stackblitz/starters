@@ -18,8 +18,6 @@ export default function Steps({
   kicker?: string;
   title?: string;
   items: Step[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();

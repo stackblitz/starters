@@ -3,13 +3,7 @@
    mutations (reorder / duplicate / delete) are optimistic, then POST
    /__deck in Vite DEV. Agent writes land via a custom HMR event. */
 import { create } from 'zustand';
-import type {
-  AppState,
-  Background,
-  DeckFile,
-  DeckMeta,
-  SlideData,
-} from './types';
+import type { AppState, DeckFile, DeckMeta, SlideData } from './types';
 import seedJson from '../../deck.json';
 
 const seed = seedJson as DeckFile;
@@ -125,10 +119,8 @@ interface Store extends AppState {
   applyFile(raw: unknown): void;
   setCurrent(index: number): void;
 
-  updateDeck(patch: Partial<DeckMeta>): void;
   patchSlide(id: string, patch: Partial<SlideData>): void;
   setProp(id: string, path: string, value: unknown): void;
-  setBackground(id: string, bg: Background): void;
   duplicateSlide(id: string): void;
   deleteSlide(id: string): void;
   reorder(ids: string[]): void;
@@ -203,11 +195,6 @@ export const useStore = create<Store>((set, getState) => ({
     set({ current: next });
   },
 
-  updateDeck(patch) {
-    set((state) => ({ deck: { ...state.deck, ...patch } }));
-    void persist();
-  },
-
   patchSlide(id, patch) {
     set((state) => ({
       slides: state.slides.map((slide) =>
@@ -230,10 +217,6 @@ export const useStore = create<Store>((set, getState) => ({
       ),
     }));
     void persist();
-  },
-
-  setBackground(id, background) {
-    getState().patchSlide(id, { background });
   },
 
   duplicateSlide(id) {

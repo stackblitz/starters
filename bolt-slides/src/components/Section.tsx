@@ -19,8 +19,6 @@ export default function Section({
   title: ReactNode;
   image?: string;
   dim?: number;
-  nav?: string;
-  notes?: string;
 }) {
   return (
     <div className="slide center">

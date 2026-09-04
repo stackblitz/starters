@@ -40,8 +40,6 @@ export default function Pricing({
   kicker?: string;
   title?: string;
   tiers: Tier[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();

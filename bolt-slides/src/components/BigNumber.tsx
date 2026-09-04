@@ -15,8 +15,6 @@ export default function BigNumber({
   value: ReactNode;
   caption?: ReactNode;
   foot?: string;
-  nav?: string;
-  notes?: string;
 }) {
   return (
     <div className="slide center">

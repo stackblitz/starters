@@ -16,8 +16,6 @@ export default function StatGrid({
   kicker?: string;
   title?: string;
   stats: Stat[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();

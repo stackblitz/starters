@@ -22,8 +22,6 @@ export default function Chat({
   title?: string;
   name?: string;
   messages: ChatMessage[];
-  nav?: string;
-  notes?: string;
 }) {
   return (
     <div className="slide">
