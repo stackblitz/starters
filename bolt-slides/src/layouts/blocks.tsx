@@ -19,9 +19,6 @@ import { useEdit } from '../edit/EditContext';
 import { useStore } from '../data/store';
 import {
   type LayoutDef,
-  type FieldSpec,
-  headerFields,
-  textField,
   useShow,
   Heading,
   pipe,
@@ -30,19 +27,12 @@ import {
 } from './shared';
 
 const e = (node: ReactNode) => node as unknown as string;
-const listField = (
-  path: string,
-  label: string,
-  item: FieldSpec[],
-  blank: unknown
-): FieldSpec => ({ path, label, kind: 'list', item, blank });
 
 const TL_BLANK = { time: 'Q1', title: 'Milestone', body: '' };
 
 const TimelineDef: LayoutDef = {
   type: 'timeline',
   label: 'Timeline',
-  hint: 'Vertical roadmap with milestone rings',
   defaults: {
     kicker: 'Roadmap',
     title: 'Where this goes.',
@@ -60,19 +50,6 @@ const TimelineDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'items',
-      'Milestones',
-      [
-        textField('time', 'Time'),
-        textField('title', 'Title'),
-        { path: 'body', label: 'Body', kind: 'textarea' },
-      ],
-      TL_BLANK
-    ),
-  ],
   Render: ({ slide }) => (
     <Slide>
       <Heading slide={slide} />
@@ -114,7 +91,6 @@ const normCmp = (p: { cols?: unknown; rows?: unknown[] }) => ({
 const ComparisonDef: LayoutDef = {
   type: 'comparison',
   label: 'Comparison',
-  hint: 'Us-vs-them matrix — click chips to toggle, drag rows & columns',
   defaults: {
     kicker: 'Why us',
     title: 'The honest comparison.',
@@ -126,14 +102,6 @@ const ComparisonDef: LayoutDef = {
       { label: 'Single-file portability', values: [true, false] },
     ],
   },
-  fields: [
-    ...headerFields(),
-    {
-      path: 'highlight',
-      label: 'Highlighted column (0-based)',
-      kind: 'number',
-    },
-  ],
   Render: ({ slide }) => {
     const { editable, slideId } = useEdit();
     const setProp = useStore((s) => s.setProp);
@@ -177,7 +145,6 @@ const ComparisonDef: LayoutDef = {
 const TableDef: LayoutDef = {
   type: 'table',
   label: 'Table',
-  hint: 'Real data table — edit cells in place, add/move rows & columns',
   defaults: {
     kicker: 'The data',
     title: 'By region.',
@@ -190,19 +157,6 @@ const TableDef: LayoutDef = {
     highlightCol: 2,
     caption: 'Company data, FY26',
   },
-  fields: [
-    ...headerFields(),
-    { path: 'filled', label: 'Filled header row', kind: 'toggle' },
-    { path: 'large', label: 'Large table', kind: 'toggle' },
-    textField('labelLeft', 'Top-left label'),
-    listField('columns', 'Columns', [], ''),
-    {
-      path: 'highlightCol',
-      label: 'Highlight column (0-based, blank = none)',
-      kind: 'number',
-    },
-    textField('caption', 'Caption'),
-  ],
   Render: ({ slide }) => {
     const { editable, slideId } = useEdit();
     const setProp = useStore((s) => s.setProp);
@@ -267,7 +221,6 @@ const TAB_BLANK = { label: 'Tab', content: '' };
 const TabsDef: LayoutDef = {
   type: 'tabs',
   label: 'Tabs',
-  hint: 'Tabbed panels with a sliding accent pill',
   defaults: {
     kicker: 'One tool',
     title: 'Three audiences.',
@@ -286,18 +239,6 @@ const TabsDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'tabs',
-      'Tabs',
-      [
-        textField('label', 'Label'),
-        { path: 'content', label: 'Content', kind: 'textarea' },
-      ],
-      TAB_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const { editable, slideId } = useEdit();
     const setProp = useStore((s) => s.setProp);
@@ -343,7 +284,6 @@ const QA_BLANK = {
 const QaDef: LayoutDef = {
   type: 'qa',
   label: 'Q & A',
-  hint: 'Question left, answer right — striped scannable rows',
   defaults: {
     title: 'The questions we hear\nmost, ==answered==.',
     items: [
@@ -365,19 +305,6 @@ const QaDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    textField('title', 'Title'),
-    { path: 'large', label: 'Large rows', kind: 'toggle' },
-    listField(
-      'items',
-      'Rows',
-      [
-        { path: 'q', label: 'Question', kind: 'textarea' },
-        { path: 'a', label: 'Answer', kind: 'textarea' },
-      ],
-      QA_BLANK
-    ),
-  ],
   Render: ({ slide }) => (
     <Slide className={slide.props.large ? 'qa-wide' : undefined}>
       <h2 className="headline qa-title">
@@ -412,7 +339,6 @@ const ACC_BLANK = { title: 'Question', body: 'Answer' };
 const AccordionDef: LayoutDef = {
   type: 'accordion',
   label: 'Accordion',
-  hint: 'Expand/collapse rows — FAQs, objections, risks',
   defaults: {
     kicker: 'Questions',
     title: 'Asked and answered.',
@@ -427,18 +353,6 @@ const AccordionDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'items',
-      'Items',
-      [
-        textField('title', 'Question'),
-        { path: 'body', label: 'Answer', kind: 'textarea' },
-      ],
-      ACC_BLANK
-    ),
-  ],
   Render: ({ slide }) => (
     <Slide>
       <Heading slide={slide} />
@@ -461,7 +375,6 @@ const MSG_BLANK = { from: 'user', text: 'Message' };
 const ChatDef: LayoutDef = {
   type: 'chat',
   label: 'Chat',
-  hint: 'Conversation window — messages reveal per click',
   defaults: {
     kicker: 'Prompt it',
     title: 'Slides, spoken into existence.',
@@ -477,27 +390,6 @@ const ChatDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    ...headerFields(),
-    textField('name', 'Window name'),
-    listField(
-      'messages',
-      'Messages',
-      [
-        {
-          path: 'from',
-          label: 'From',
-          kind: 'select',
-          options: [
-            { value: 'user', label: 'User' },
-            { value: 'ai', label: 'AI' },
-          ],
-        },
-        { path: 'text', label: 'Text', kind: 'textarea' },
-      ],
-      MSG_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -531,7 +423,6 @@ const ChatDef: LayoutDef = {
 const CodeDef: LayoutDef = {
   type: 'code',
   label: 'Code',
-  hint: 'macOS-style code window with line numbers',
   defaults: {
     kicker: 'For developers',
     title: 'Author a deck as data.',
@@ -539,24 +430,6 @@ const CodeDef: LayoutDef = {
     code: '{\n  "layout": "bigNumber",\n  "props": { "value": "$3T", "caption": "the market" },\n  "animation": "cascade"\n}',
     highlight: '',
   },
-  fields: [
-    ...headerFields(),
-    {
-      path: 'filename',
-      label: 'Window title',
-      kind: 'text',
-      keep: true,
-      plain: true,
-    },
-    { path: 'code', label: 'Code', kind: 'textarea', keep: true, plain: true },
-    {
-      path: 'highlight',
-      label: 'Highlight lines (e.g. 2,3)',
-      kind: 'text',
-      keep: true,
-      plain: true,
-    },
-  ],
   Render: ({ slide }) => {
     const { editable } = useEdit();
     return (

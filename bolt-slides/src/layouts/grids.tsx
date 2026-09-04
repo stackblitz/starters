@@ -15,9 +15,6 @@ import T from '../edit/EditableText';
 import LiCtl from '../edit/LiCtl';
 import {
   type LayoutDef,
-  type FieldSpec,
-  headerFields,
-  textField,
   useShow,
   Num,
   Heading,
@@ -41,19 +38,11 @@ const kickerTitle = (
     : undefined,
 });
 
-const listField = (
-  path: string,
-  label: string,
-  item: FieldSpec[],
-  blank: unknown
-): FieldSpec => ({ path, label, kind: 'list', item, blank });
-
 const TILE_BLANK = { k: 'Label', title: 'Tile', body: '', c: 4, r: 1 };
 
 const BentoDef: LayoutDef = {
   type: 'bento',
   label: 'Bento',
-  hint: 'Asymmetric tile grid — metrics, features, one hero tile',
   defaults: {
     kicker: 'What you get',
     title: 'The system, at a glance.',
@@ -85,33 +74,6 @@ const BentoDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'tiles',
-      'Tiles',
-      [
-        textField('k', 'Label'),
-        textField('fig', 'Figure'),
-        textField('title', 'Title'),
-        { path: 'body', label: 'Body', kind: 'textarea' },
-        { path: 'c', label: 'Cols (of 12)', kind: 'number' },
-        { path: 'r', label: 'Rows', kind: 'number' },
-        {
-          path: 'variant',
-          label: 'Variant',
-          kind: 'select',
-          options: [
-            { value: '', label: 'Default' },
-            { value: 'accent', label: 'Accent' },
-            { value: 'glow', label: 'Glow' },
-          ],
-        },
-        { path: 'img', label: 'Image URL', kind: 'image' },
-      ],
-      TILE_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -163,7 +125,6 @@ const STAT_BLANK = { value: '42%', label: 'Label' };
 const StatGridDef: LayoutDef = {
   type: 'statGrid',
   label: 'Stat grid',
-  hint: 'Proof cards — figures animate in',
   defaults: {
     kicker: 'Proof',
     title: 'The numbers hold up.',
@@ -177,19 +138,6 @@ const StatGridDef: LayoutDef = {
       { value: '9', label: 'Markets live' },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'stats',
-      'Stats',
-      [
-        { path: 'value', label: 'Figure', kind: 'text', keep: true },
-        { path: 'label', label: 'Label', kind: 'text', keep: true },
-        { path: 'caption', label: 'Caption', kind: 'text', keep: true },
-      ],
-      STAT_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -218,7 +166,6 @@ const StatGridDef: LayoutDef = {
 const ContrastDef: LayoutDef = {
   type: 'contrast',
   label: 'Contrast',
-  hint: 'Before / after — muted panel vs. accent-lit panel',
   defaults: {
     kicker: 'The shift',
     title: 'Stop rebuilding. Start ==shipping==.',
@@ -241,15 +188,6 @@ const ContrastDef: LayoutDef = {
       ],
     },
   },
-  fields: [
-    ...headerFields(),
-    textField('left.label', 'Left chip'),
-    textField('left.title', 'Left title'),
-    listField('left.points', 'Left points', [], ''),
-    textField('right.label', 'Right chip'),
-    textField('right.title', 'Right title'),
-    listField('right.points', 'Right points', [], ''),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     const panel = (side: 'left' | 'right') => ({
@@ -280,7 +218,6 @@ const AGENDA_BLANK = { title: 'Topic' };
 const AgendaDef: LayoutDef = {
   type: 'agenda',
   label: 'Agenda',
-  hint: 'Numbered table of contents with hints',
   defaults: {
     kicker: 'Agenda',
     title: "What we'll cover.",
@@ -290,15 +227,6 @@ const AgendaDef: LayoutDef = {
       { title: 'The ask' },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'items',
-      'Rows',
-      [textField('title', 'Title'), textField('hint', 'Hint')],
-      AGENDA_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -324,7 +252,6 @@ const STEP_BLANK = { title: 'Step', body: '' };
 const StepsDef: LayoutDef = {
   type: 'steps',
   label: 'Steps',
-  hint: 'Horizontal numbered process — how it works',
   defaults: {
     kicker: 'How it works',
     title: 'Three steps to a finished deck.',
@@ -340,18 +267,6 @@ const StepsDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'items',
-      'Steps',
-      [
-        textField('title', 'Title'),
-        { path: 'body', label: 'Body', kind: 'textarea' },
-      ],
-      STEP_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -377,7 +292,6 @@ const TIER_BLANK = { name: 'Tier', price: '$0', period: '/mo', features: [] };
 const PricingDef: LayoutDef = {
   type: 'pricing',
   label: 'Pricing',
-  hint: '2–4 tier cards, one highlighted',
   defaults: {
     kicker: 'Pricing',
     title: 'Simple, honest plans.',
@@ -404,23 +318,6 @@ const PricingDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'tiers',
-      'Tiers',
-      [
-        textField('name', 'Name'),
-        textField('price', 'Price'),
-        textField('period', 'Period'),
-        textField('blurb', 'Blurb'),
-        listField('features', 'Features', [], ''),
-        { path: 'highlight', label: 'Highlight', kind: 'toggle' },
-        textField('badge', 'Badge'),
-      ],
-      TIER_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -466,7 +363,6 @@ const PERSON_BLANK = { name: 'Name', role: 'Role' };
 const TeamDef: LayoutDef = {
   type: 'team',
   label: 'Team',
-  hint: 'People grid — avatars, names, roles',
   defaults: {
     kicker: 'The team',
     title: 'Built by operators.',
@@ -476,19 +372,6 @@ const TeamDef: LayoutDef = {
       { name: 'Mia Chen', role: 'Design' },
     ],
   },
-  fields: [
-    ...headerFields(),
-    listField(
-      'people',
-      'People',
-      [
-        textField('name', 'Name'),
-        textField('role', 'Role'),
-        { path: 'img', label: 'Photo URL', kind: 'image' },
-      ],
-      PERSON_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -523,7 +406,6 @@ const FIG_BLANK = { label: 'A SMALL LABEL', value: '42%', caption: '' };
 const FiguresDef: LayoutDef = {
   type: 'figures',
   label: 'Figures',
-  hint: 'Editorial stats — intro top-left, giant figures on the floor',
   defaults: {
     title: 'A few numbers worth ==sitting with==.',
     body: 'One short paragraph that tells the reader how to weigh what follows — where the numbers come from and why they matter.',
@@ -537,27 +419,6 @@ const FiguresDef: LayoutDef = {
       { label: 'THIRD MEASURE', value: '17', caption: '' },
     ],
   },
-  fields: [
-    textField('title', 'Title'),
-    { path: 'body', label: 'Intro', kind: 'textarea' },
-    { path: 'cards', label: 'Card backgrounds', kind: 'toggle' },
-    {
-      path: 'cardBg',
-      label: 'Card color',
-      kind: 'cardbg',
-      when: (p) => !!p.cards,
-    },
-    listField(
-      'items',
-      'Figures',
-      [
-        textField('label', 'Label'),
-        textField('value', 'Figure'),
-        textField('caption', 'Caption (under the figure)'),
-      ],
-      FIG_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     const items = (slide.props.items ?? []) as {
@@ -627,7 +488,6 @@ const PILLAR_BLANK = {
 const PillarsDef: LayoutDef = {
   type: 'pillars',
   label: 'Pillars',
-  hint: 'Numbered focus areas — headline up top, columns anchored low',
   defaults: {
     title: 'Where we are ==focusing==.',
     items: [
@@ -645,19 +505,6 @@ const PillarsDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    textField('title', 'Title'),
-    { path: 'large', label: 'Large text', kind: 'toggle' },
-    listField(
-      'items',
-      'Pillars',
-      [
-        textField('title', 'Title'),
-        { path: 'body', label: 'Body', kind: 'textarea' },
-      ],
-      PILLAR_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const items = (slide.props.items ?? []) as {
       title: string;
@@ -698,22 +545,11 @@ const PillarsDef: LayoutDef = {
 const LogosDef: LayoutDef = {
   type: 'logos',
   label: 'Logo wall',
-  hint: 'Scrolling marquee strip — customers, stack, integrations',
   defaults: {
     kicker: 'Trusted by',
     title: '',
     items: 'Acme | Northwind | Globex | Initech | Umbrella | Stark',
   },
-  fields: [
-    ...headerFields(),
-    {
-      path: 'items',
-      label: 'Items (separate with |)',
-      kind: 'textarea',
-      keep: true,
-      plain: true,
-    },
-  ],
   Render: ({ slide }) => (
     <Slide center>
       <Heading slide={slide} tight />

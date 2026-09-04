@@ -1,5 +1,5 @@
 /* The layout registry — every slide row's `layout` field resolves here.
-   Each entry: defaults (add-slide), inspector fields, and Render.
+   Each entry: defaults (kind-switch / example copy) and Render.
    Authoring `props` shapes live in src/data/layoutProps.ts. */
 import type { SlideData } from '../data/types';
 import { type LayoutDef } from './shared';
@@ -10,7 +10,7 @@ import { mediaLayouts } from './media';
 import { LAYOUT_NAMES, type LayoutName } from '../data/layoutProps';
 
 export type { LayoutName, LayoutProps } from '../data/layoutProps';
-export type { LayoutDef, FieldSpec } from './shared';
+export type { LayoutDef } from './shared';
 
 export const LAYOUTS: Record<string, LayoutDef> = Object.fromEntries(
   [...coreLayouts, ...gridLayouts, ...mediaLayouts, ...blockLayouts].map(
@@ -48,44 +48,6 @@ export function resolveLayoutType(raw: unknown): string {
   if (LAYOUTS[name]) return name;
   return LAYOUT_ALIASES[name] ?? LAYOUT_ALIASES[name.toLowerCase()] ?? name;
 }
-
-/* add-slide modal grouping — order here is display order */
-export const LAYOUT_GROUPS: { title: string; types: string[] }[] = [
-  {
-    title: 'Open & close',
-    types: ['cover', 'section', 'statement', 'manifesto', 'quote'],
-  },
-  {
-    title: 'Story',
-    types: ['poster', 'story', 'speaker', 'persona', 'contrast', 'chat'],
-  },
-  {
-    title: 'Data',
-    types: [
-      'bigNumber',
-      'figures',
-      'statGrid',
-      'chart',
-      'insight',
-      'table',
-      'comparison',
-    ],
-  },
-  {
-    title: 'Structure',
-    types: [
-      'agenda',
-      'pillars',
-      'steps',
-      'timeline',
-      'bento',
-      'qa',
-      'accordion',
-      'tabs',
-    ],
-  },
-  { title: 'Extras', types: ['team', 'pricing', 'logos', 'code'] },
-];
 
 export function RenderLayout({ slide }: { slide: SlideData }) {
   const type = resolveLayoutType(slide.layout);

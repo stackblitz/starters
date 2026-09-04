@@ -21,21 +21,12 @@ import { offsetTo } from '../edit/measure';
 import type { SlideData } from '../data/types';
 import {
   type LayoutDef,
-  type FieldSpec,
-  headerFields,
-  textField,
   useShow,
   Heading,
   pipe,
 } from './shared';
 
 const e = (node: ReactNode) => node as unknown as string;
-const listField = (
-  path: string,
-  label: string,
-  item: FieldSpec[],
-  blank: unknown
-): FieldSpec => ({ path, label, kind: 'list', item, blank });
 
 const BAR_BLANK = { label: 'Q1', value: 10 };
 
@@ -127,21 +118,12 @@ function BarsEditor({
 const PosterDef: LayoutDef = {
   type: 'poster',
   label: 'Poster',
-  hint: 'Editorial split — headline + footer copy left, visual panel right',
   defaults: {
     title: 'A headline that ==lands==.',
     body: 'Two or three calm sentences that carry the supporting thought, anchored to the floor of the slide.',
     label: 'A quiet label over the visual',
     image: '',
   },
-  fields: [
-    textField('title', 'Title'),
-    { path: 'body', label: 'Body', kind: 'textarea' },
-    textField('label', 'Panel label'),
-    { path: 'image', label: 'Panel image URL', kind: 'image' },
-    { path: 'inset', label: 'Inset panel', kind: 'toggle' },
-    { path: 'flip', label: 'Flip sides', kind: 'toggle' },
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -187,7 +169,6 @@ const PosterDef: LayoutDef = {
 const StoryDef: LayoutDef = {
   type: 'story',
   label: 'Story',
-  hint: 'Kicker + headline and copy left, image anchored lower-right',
   defaults: {
     kicker: 'A SMALL LABEL UP HERE',
     title: 'A headline that makes\nthe ==argument==.',
@@ -195,20 +176,6 @@ const StoryDef: LayoutDef = {
     body: 'A fuller paragraph than most slides get — four or five sentences that earn their space by telling one story properly, with the visual holding the other half of the slide.',
     image: '',
   },
-  fields: [
-    textField('kicker', 'Kicker'),
-    textField('title', 'Title'),
-    { path: 'body', label: 'Body', kind: 'textarea' },
-    { path: 'pair', label: 'Two images', kind: 'toggle' },
-    { path: 'image', label: 'Image URL (left / single)', kind: 'image' },
-    {
-      path: 'image2',
-      label: 'Second image URL',
-      kind: 'image',
-      when: (p) => p.pair !== false,
-    },
-    { path: 'flip', label: 'Flip sides', kind: 'toggle' },
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     const pair = slide.props.pair !== false; // default: two portraits
@@ -255,20 +222,12 @@ const StoryDef: LayoutDef = {
 const PersonaDef: LayoutDef = {
   type: 'persona',
   label: 'Persona',
-  hint: 'Client intro — tall portrait left, headline + story right',
   defaults: {
     title: 'Meet a person,\ntheir role,\nat their company.',
     body: 'Tell the story that makes them real: what they were trying to do, what stood in the way, and what it was costing them before things changed.',
     label: 'THE OPPORTUNITY',
     image: '',
   },
-  fields: [
-    textField('title', 'Headline'),
-    { path: 'body', label: 'Story', kind: 'textarea' },
-    textField('label', 'Bottom label'),
-    { path: 'image', label: 'Portrait URL', kind: 'image' },
-    { path: 'flip', label: 'Flip sides', kind: 'toggle' },
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -308,7 +267,6 @@ const PersonaDef: LayoutDef = {
 const SpeakerDef: LayoutDef = {
   type: 'speaker',
   label: 'Speaker',
-  hint: 'Speaker — name, role and bio left, portrait anchored right',
   defaults: {
     label: "TODAY'S SPEAKER",
     name: 'Firstname Lastname',
@@ -316,14 +274,6 @@ const SpeakerDef: LayoutDef = {
     bio: 'Three or four sentences of biography: what they lead, how long they have done it, and the one thing the audience should know before they start speaking.',
     image: '',
   },
-  fields: [
-    textField('label', 'Label'),
-    textField('name', 'Name'),
-    { path: 'role', label: 'Role', kind: 'textarea' },
-    { path: 'bio', label: 'Bio', kind: 'textarea' },
-    { path: 'image', label: 'Portrait URL', kind: 'image' },
-    { path: 'flip', label: 'Flip sides', kind: 'toggle' },
-  ],
   Render: ({ slide }) => {
     const show = useShow();
     return (
@@ -367,7 +317,6 @@ const SpeakerDef: LayoutDef = {
 const ChartDef: LayoutDef = {
   type: 'chart',
   label: 'Chart',
-  hint: 'Bar, line or donut — edit values by dragging the bars',
   defaults: {
     kicker: 'Traction',
     title: 'Up and to the right.',
@@ -398,113 +347,6 @@ const ChartDef: LayoutDef = {
     ],
     caption: '',
   },
-  fields: [
-    ...headerFields(),
-    {
-      path: 'kind',
-      label: 'Chart type',
-      kind: 'select',
-      options: [
-        { value: 'bars', label: 'Bars' },
-        { value: 'line', label: 'Line' },
-        { value: 'donut', label: 'Donut' },
-        { value: 'donuts', label: 'Donut row' },
-        { value: 'grouped', label: 'Grouped bars' },
-        { value: 'lines', label: 'Line row' },
-      ],
-    },
-    { path: 'large', label: 'Large chart', kind: 'toggle' },
-    { path: 'values', label: 'Show values', kind: 'toggle' },
-    {
-      ...listField(
-        'bars',
-        'Bars',
-        [
-          textField('label', 'Label'),
-          { path: 'value', label: 'Value', kind: 'number' },
-        ],
-        BAR_BLANK
-      ),
-      when: (p) => (p.kind ?? 'bars') === 'bars',
-    },
-    {
-      path: 'points',
-      label: 'Line points (| separated)',
-      kind: 'text',
-      keep: true,
-      plain: true,
-      when: (p) => p.kind === 'line',
-    },
-    {
-      path: 'donutValue',
-      label: 'Donut value (%)',
-      kind: 'number',
-      when: (p) => p.kind === 'donut',
-    },
-    {
-      path: 'donutLabel',
-      label: 'Donut label',
-      kind: 'text',
-      when: (p) => p.kind === 'donut',
-    },
-    {
-      ...listField(
-        'donuts',
-        'Donut row',
-        [
-          { path: 'value', label: 'Value (%)', kind: 'number' },
-          textField('label', 'Label'),
-        ],
-        { value: 50, label: 'Segment' }
-      ),
-      when: (p) => p.kind === 'donuts',
-    },
-    {
-      path: 'categories',
-      label: 'Categories (| separated)',
-      kind: 'text',
-      keep: true,
-      plain: true,
-      when: (p) => p.kind === 'grouped',
-    },
-    {
-      ...listField(
-        'series',
-        'Series',
-        [
-          textField('label', 'Label'),
-          {
-            path: 'values',
-            label: 'Values (| separated)',
-            kind: 'text',
-            keep: true,
-            plain: true,
-          },
-        ],
-        { label: 'Series', values: '10 | 20 | 30' }
-      ),
-      when: (p) => p.kind === 'grouped',
-    },
-    {
-      ...listField(
-        'lines',
-        'Lines',
-        [
-          textField('label', 'Label'),
-          {
-            path: 'points',
-            label: 'Points (| separated)',
-            kind: 'text',
-            keep: true,
-            plain: true,
-          },
-        ],
-        { label: 'Measure', points: '5 | 8 | 6 | 10' }
-      ),
-      when: (p) => p.kind === 'lines',
-    },
-    textField('caption', 'Caption'),
-  ],
   Render: ({ slide }) => {
     const { editable, slideId } = useEdit();
     const setProp = useStore((s) => s.setProp);
@@ -811,7 +653,6 @@ const POINT_BLANK = {
 const InsightDef: LayoutDef = {
   type: 'insight',
   label: 'Insight',
-  hint: 'Chart left, annotated takeaways right',
   defaults: {
     title: 'What the data ==says==.',
     subtitle: 'A chart is easier to trust with a title over it.',
@@ -841,68 +682,6 @@ const InsightDef: LayoutDef = {
       },
     ],
   },
-  fields: [
-    textField('title', 'Title'),
-    textField('subtitle', 'Chart subtitle'),
-    {
-      path: 'kind',
-      label: 'Chart type',
-      kind: 'select',
-      options: [
-        { value: 'bars', label: 'Bars' },
-        { value: 'line', label: 'Line' },
-        { value: 'donut', label: 'Donut' },
-      ],
-    },
-    {
-      path: 'values',
-      label: 'Show values',
-      kind: 'toggle',
-      when: (p) => p.kind !== 'donut',
-    },
-    {
-      path: 'points_line',
-      label: 'Line points (| separated)',
-      kind: 'text',
-      keep: true,
-      plain: true,
-      when: (p) => p.kind === 'line',
-    },
-    {
-      ...listField(
-        'bars',
-        'Bars',
-        [
-          textField('label', 'Label'),
-          { path: 'value', label: 'Value', kind: 'number' },
-        ],
-        BAR_BLANK
-      ),
-      when: (p) => p.kind === 'bars',
-    },
-    {
-      path: 'donutValue',
-      label: 'Donut value (%)',
-      kind: 'number',
-      when: (p) => (p.kind ?? 'donut') === 'donut',
-    },
-    {
-      path: 'donutLabel',
-      label: 'Donut label',
-      kind: 'text',
-      when: (p) => (p.kind ?? 'donut') === 'donut',
-    },
-    textField('heading', 'Right heading'),
-    listField(
-      'points',
-      'Takeaways',
-      [
-        textField('label', 'Label'),
-        { path: 'body', label: 'Text', kind: 'textarea' },
-      ],
-      POINT_BLANK
-    ),
-  ],
   Render: ({ slide }) => {
     const { editable, slideId } = useEdit();
     const setProp = useStore((s) => s.setProp);

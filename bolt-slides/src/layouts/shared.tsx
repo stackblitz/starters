@@ -1,4 +1,4 @@
-/* Shared bits for layout renderers + the inspector's field schema. */
+/* Shared bits for layout renderers. */
 import type { ReactNode } from 'react';
 import type { LayoutName } from '../data/layoutProps';
 import type { SlideData } from '../data/types';
@@ -8,54 +8,12 @@ import T from '../edit/EditableText';
 import CountUp from '../components/CountUp';
 import Reveal from '../deck/Reveal';
 
-/* ── inspector schema ──────────────────────────────────────────────── */
-export interface FieldSpec {
-  path: string;
-  label: string;
-  kind:
-    | 'text'
-    | 'textarea'
-    | 'select'
-    | 'number'
-    | 'toggle'
-    | 'image'
-    | 'list'
-    | 'cardbg'
-    | 'dim';
-  options?: { value: string; label: string }[];
-  /** list kind: fields per item (paths relative to the item) */
-  item?: FieldSpec[];
-  /** list kind: template for a newly added item */
-  blank?: unknown;
-  hint?: string;
-  /** keep this text field in the inspector even though text is normally
-      canvas-edited (pipe-string tables, code, values not wrapped in T) */
-  keep?: boolean;
-  /** machine-parsed string (pipe lists, code, line numbers): the inspector
-      edits it as a plain input — no rich toolbar, no marker handling */
-  plain?: boolean;
-  /** show this field only when relevant (e.g. per chart kind) */
-  when?: (props: Record<string, unknown>) => boolean;
-}
-
 export interface LayoutDef {
   type: LayoutName;
   label: string;
-  hint: string;
   defaults: Record<string, unknown>;
-  fields: FieldSpec[];
   Render: (p: { slide: SlideData }) => ReactNode;
 }
-
-export const textField = (path: string, label: string): FieldSpec => ({
-  path,
-  label,
-  kind: 'text',
-});
-export const headerFields = (): FieldSpec[] => [
-  textField('kicker', 'Kicker'),
-  textField('title', 'Title'),
-];
 
 /* ── render helpers ────────────────────────────────────────────────── */
 
