@@ -189,6 +189,17 @@ strong {
   font-size: clamp(13px, 1.2vw, 16px);
   color: var(--fg-faint);
 }
+/* Image surfaces are black-dimmed, so muted gray never clears. Overlay
+   chrome uses near-white; color slides keep --fg-muted / --fg-faint. */
+.slide-view.has-image .kicker,
+.slide-view.has-image .foot,
+.slide-view.has-image .quote-role {
+  color: rgba(255, 255, 255, 0.78);
+}
+.slide-view.has-image .subhead,
+.slide-view.has-image .lead {
+  color: rgba(255, 255, 255, 0.88);
+}
 .center .lead,
 .center .subhead {
   margin-inline: auto;
@@ -267,6 +278,10 @@ strong {
 }
 
 /* ── Bento — responsive asymmetric tile grid ────────────────────── */
+/* 12-col tile rows need the slide width; lift the 1180px container cap. */
+.bento-wide .container {
+  max-width: none;
+}
 .bento {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -1372,7 +1387,7 @@ strong {
   height: 100%;
   object-fit: cover;
 }
-/* the designed scrim, plus a flat dim the slide can dial up (--dim, 0 = off) */
+/* designed theme scrim, plus a flat dim (--dim is floored in render) */
 .cover-scrim {
   position: absolute;
   inset: 0;

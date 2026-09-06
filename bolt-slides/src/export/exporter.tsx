@@ -1,7 +1,10 @@
 import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
+import { MotionConfig, MotionGlobalConfig } from 'motion/react';
 import { getFontEmbedCSS, toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import type { SlideData } from '../data/types';
+import { DeckCtx } from '../deck/DeckContext';
 import SlideView from '../slide/SlideView';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -9,6 +12,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const W = 1280;
 const H = 720;
 const PIXEL_RATIO = 1;
+const IMAGE_PLACEHOLDER =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 function yieldToUi() {
   return new Promise<void>((resolve) => {
@@ -187,7 +192,8 @@ function loadSvgImage(url: string): Promise<HTMLImageElement> {
         .catch(() => undefined)
         .then(() => resolve(img));
     };
-    img.onerror = reject;
+    img.onerror = () =>
+      reject(new Error(`svg raster failed (${url.slice(0, 48)}…)`));
     img.src = url;
   });
 }
@@ -211,6 +217,9 @@ async function rasterSlide(
 
   iframe.style.cssText = `position:fixed;left:-100000px;top:0;width:${W}px;height:${H}px;border:0;`;
   document.body.appendChild(iframe);
+
+  const prevSkip = MotionGlobalConfig.skipAnimations;
+  MotionGlobalConfig.skipAnimations = true;
 
   try {
     const doc = iframe.contentDocument!;
@@ -237,9 +246,28 @@ async function rasterSlide(
     mount.style.cssText = `width:${W}px;height:${H}px;`;
     doc.body.appendChild(mount);
 
+    const freeze = doc.createElement('style');
+
+    freeze.textContent =
+      '*, *::before, *::after { animation: none !important; transition: none !important; }';
+    doc.head.appendChild(freeze);
+
     const root = createRoot(mount);
 
-    root.render(<SlideView slide={slide} />);
+    flushSync(() => {
+      root.render(
+        <MotionConfig skipAnimations>
+          <DeckCtx.Provider value={{ clicks: 9999, isStatic: true }}>
+            <SlideView slide={slide} />
+          </DeckCtx.Provider>
+        </MotionConfig>
+      );
+    });
+
+    /* skipAnimations applies final keyframes on the next motion frame. */
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
     await sleep(60);
 
     try {
@@ -272,6 +300,7 @@ async function rasterSlide(
       backgroundColor: bg,
       fontEmbedCSS,
       skipFonts: true,
+      imagePlaceholder: IMAGE_PLACEHOLDER,
     });
 
     logSlow(`clone slide ${index + 1}`, performance.now() - cloneAt);
@@ -305,6 +334,7 @@ async function rasterSlide(
 
     return canvas;
   } finally {
+    MotionGlobalConfig.skipAnimations = prevSkip;
     iframe.remove();
   }
 }

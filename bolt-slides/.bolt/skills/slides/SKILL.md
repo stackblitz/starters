@@ -122,7 +122,7 @@ the same opaque surface; never leave the field off):
 `tokens.css`),
 `{"type":"color","color":"#0b1020"}`,
 `{"type":"gradient","from":"#…","to":"#…","angle":160}`,
-`{"type":"image","url":"https://…","dim":0.45}` (dim 0–0.85 keeps text legible),
+`{"type":"image","url":"https://…","dim":0.45}` (omit dim for 0.45; engine floors below 0.4),
 `{"type":"none"}` (legacy alias for the theme surface — prefer `color` +
 `var(--bg)` in new decks). Most slides use `var(--bg)`; save gradient / image
 for moments (a section break, a photo cover). Photos:

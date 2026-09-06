@@ -28,7 +28,7 @@ export default function Bento({
   const animate = !isStatic && !reduce;
 
   return (
-    <div className="slide">
+    <div className="slide bento-wide">
       <div className="container">
         <Reveal>
           {kicker && (

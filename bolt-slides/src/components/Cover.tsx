@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Reveal from '../deck/Reveal';
+import { effectiveImageDim } from '../data/imageDim';
 
 export default function Cover({
   kicker,
@@ -24,7 +25,7 @@ export default function Cover({
           <div
             className="cover-scrim"
             aria-hidden
-            style={dim ? { ['--dim' as string]: dim } : undefined}
+            style={{ ['--dim' as string]: effectiveImageDim(dim) }}
           />
         </>
       )}

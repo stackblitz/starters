@@ -2,6 +2,7 @@ import { Component, type ReactNode as RN } from 'react';
 import { motion, type Variants } from 'motion/react';
 import type { ReactNode } from 'react';
 import type { Background, SlideData } from '../data/types';
+import { effectiveImageDim, slideHasImage } from '../data/imageDim';
 import { DeckCtx, useDeck } from '../deck/DeckContext';
 import { EditCtx } from '../edit/EditContext';
 import { RenderLayout } from '../layouts/registry';
@@ -60,15 +61,13 @@ function BackgroundLayer({ bg }: { bg: Background | undefined }) {
           }}
         />
       )}
-      {(bg.dim ?? 0) > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: `rgba(0,0,0,${bg.dim})`,
-          }}
-        />
-      )}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `rgba(0,0,0,${effectiveImageDim(bg.dim)})`,
+        }}
+      />
     </div>
   );
 }
@@ -160,7 +159,9 @@ export default function SlideView({
   return (
     <EditCtx.Provider value={{ editable, slideId: slide.id, slide }}>
       <div
-        className="slide-view"
+        className={
+          'slide-view' + (slideHasImage(slide) ? ' has-image' : '')
+        }
         style={{ position: 'relative', width: '100%', height: '100%' }}
       >
         <BackgroundLayer bg={slide.background} />
