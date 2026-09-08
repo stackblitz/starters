@@ -9,15 +9,9 @@ import {
 import { createPortal } from 'react-dom';
 import { useStore, getPath } from '../data/store';
 import { useEdit } from './EditContext';
-import {
-  renderRich,
-  richToHtml,
-  balanceLines,
-  clampEm,
-  colorValue,
-  COLOR_RE,
-  ALIGNS,
-} from './rich';
+import { renderRich, richToHtml, clampEm, colorValue, ALIGNS } from './rich';
+import { deckPathProps } from './deckPath';
+import { serializeRichRoot } from './richDom';
 
 interface Bar {
   x: number;
@@ -88,33 +82,6 @@ const WRAPPERS: Record<
     match: (el) => el.dataset.size === 'down',
   },
 };
-
-function serialize(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) return node.nodeValue ?? '';
-
-  if (!(node instanceof HTMLElement)) return '';
-
-  if (node.tagName === 'BR') return '\n';
-
-  const inner = Array.from(node.childNodes).map(serialize).join('');
-
-  if (!inner) return node.tagName === 'DIV' || node.tagName === 'P' ? '\n' : '';
-
-  if (node.dataset.align) return `{a:${node.dataset.align}}${inner}`;
-
-  if (node.dataset.color && COLOR_RE.test(node.dataset.color))
-    return `{c:${node.dataset.color}}${inner}{/c}`;
-
-  if (node.dataset.fs) return `{s:${node.dataset.fs}}${inner}{/s}`;
-
-  for (const [marker, w] of Object.entries(WRAPPERS)) {
-    if (w.match(node)) return marker + inner + marker;
-  }
-
-  if (node.tagName === 'DIV' || node.tagName === 'P') return '\n' + inner;
-
-  return inner;
-}
 
 const IconBold = (
   <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden>
@@ -681,7 +648,11 @@ export default function T({
   }, [focused]);
 
   if (!editable || !slideId)
-    return <span style={blockStyle}>{renderRich(value)}</span>;
+    return (
+      <span style={blockStyle} {...deckPathProps(slideId, path)}>
+        {renderRich(value)}
+      </span>
+    );
 
   const rememberSelection = () => {
     const r = liveRange();
@@ -699,16 +670,7 @@ export default function T({
 
     unwrapNestedSize(el);
 
-    let raw = balanceLines(
-      Array.from(el.childNodes)
-        .map(serialize)
-        .join('')
-        .replace(/^\n/, '')
-        .replace(/\n$/, '')
-    );
-    const am = raw.match(/\{a:([lcr])\}/);
-
-    if (am) raw = `{a:${am[1]}}` + raw.replace(/\{a:[lcr]\}/g, '');
+    const raw = serializeRichRoot(el);
 
     if (raw !== value) setProp(slideId, path, raw);
   };
@@ -1093,6 +1055,7 @@ export default function T({
         className={
           't-edit' + (focused ? ' focused' : '') + (empty ? ' empty' : '')
         }
+        {...deckPathProps(slideId, path)}
         contentEditable
         suppressContentEditableWarning
         spellCheck={false}

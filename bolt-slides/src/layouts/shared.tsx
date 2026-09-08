@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { LayoutName } from '../data/layoutProps';
 import type { SlideData } from '../data/types';
 import { useEdit } from '../edit/EditContext';
+import { deckPathProps } from '../edit/deckPath';
 import { renderRich } from '../edit/rich';
 import T from '../edit/EditableText';
 import CountUp from '../components/CountUp';
@@ -39,17 +40,19 @@ function parseCountable(v: string | undefined) {
 }
 
 export function Num({ path, value }: { path: string; value?: string }) {
-  const { editable } = useEdit();
+  const { editable, slideId } = useEdit();
   const c = editable ? null : parseCountable(value);
 
   if (c)
     return (
-      <CountUp
-        to={c.to}
-        prefix={c.prefix}
-        suffix={c.suffix}
-        decimals={c.decimals}
-      />
+      <span style={{ display: 'contents' }} {...deckPathProps(slideId, path)}>
+        <CountUp
+          to={c.to}
+          prefix={c.prefix}
+          suffix={c.suffix}
+          decimals={c.decimals}
+        />
+      </span>
     );
 
   return <T path={path} placeholder="42%" />;

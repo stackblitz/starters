@@ -160,6 +160,7 @@ export default function SlideView({
     <EditCtx.Provider value={{ editable, slideId: slide.id, slide }}>
       <div
         className={'slide-view' + (slideHasImage(slide) ? ' has-image' : '')}
+        data-deck-slide={slide.id}
         style={{ position: 'relative', width: '100%', height: '100%' }}
       >
         <BackgroundLayer bg={slide.background} />

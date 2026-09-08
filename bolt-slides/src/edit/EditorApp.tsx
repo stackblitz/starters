@@ -8,6 +8,7 @@ import {
   isStudioShell,
 } from '../data/shell';
 import { applyFont, applyAccent } from '../data/fonts';
+import { startVisualEditDeckSync } from './visualEditSync';
 import Canvas from './Canvas';
 import PresentApp from '../present/PresentApp';
 import SlideBrowser, { type BrowseMode } from '../deck/SlideBrowser';
@@ -39,6 +40,8 @@ export default function EditorApp() {
   useEffect(() => {
     useStore.getState().load();
   }, []);
+
+  useEffect(() => startVisualEditDeckSync(), []);
 
   useEffect(() => {
     document.title = (title ? title + ' — ' : '') + 'Slides';
