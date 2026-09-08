@@ -5,12 +5,7 @@ import Section from '../components/Section';
 import Quote from '../components/Quote';
 import BigNumber from '../components/BigNumber';
 import T from '../edit/EditableText';
-import {
-  type LayoutDef,
-  e,
-  useShow,
-  Num,
-} from './shared';
+import { type LayoutDef, e, useShow, Num } from './shared';
 
 const CoverDef: LayoutDef = {
   type: 'cover',

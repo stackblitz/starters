@@ -255,18 +255,16 @@ const TabsDef: LayoutDef = {
           }
           tabs={asList<{ label: string; content: string }>(
             slide.props.tabs
-          ).map(
-            (t: { label: string; content: string }, i: number) => ({
-              label: e(<T path={`tabs.${i}.label`} />),
-              content: (
-                <div className="lead" style={{ maxWidth: '52ch' }}>
-                  <LiCtl path="tabs" index={i} blank={TAB_BLANK}>
-                    <T path={`tabs.${i}.content`} block />
-                  </LiCtl>
-                </div>
-              ),
-            })
-          )}
+          ).map((t: { label: string; content: string }, i: number) => ({
+            label: e(<T path={`tabs.${i}.label`} />),
+            content: (
+              <div className="lead" style={{ maxWidth: '52ch' }}>
+                <LiCtl path="tabs" index={i} blank={TAB_BLANK}>
+                  <T path={`tabs.${i}.content`} block />
+                </LiCtl>
+              </div>
+            ),
+          }))}
         />
       </Slide>
     );

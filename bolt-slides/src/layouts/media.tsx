@@ -18,14 +18,7 @@ import { useEdit } from '../edit/EditContext';
 import { useStore } from '../data/store';
 import { offsetTo } from '../edit/measure';
 import type { SlideData } from '../data/types';
-import {
-  type LayoutDef,
-  e,
-  useShow,
-  Heading,
-  pipe,
-  asList,
-} from './shared';
+import { type LayoutDef, e, useShow, Heading, pipe, asList } from './shared';
 
 const BAR_BLANK = { label: 'Q1', value: 10 };
 
@@ -593,50 +586,52 @@ const ChartDef: LayoutDef = {
           )}
           {kind === 'lines' && (
             <div className="lines-row">
-              {asList<{ label: string; points: string }>(
-                slide.props.lines
-              ).map((l, i) => (
-                <div key={i} className="lines-cell">
-                  <LineChart
-                    showValues={showValues}
-                    large={large}
-                    points={pipe(l.points).map(Number).filter(Number.isFinite)}
-                    height={large ? 230 : 150}
-                  />
-                  <div className="lines-label">
-                    <LiCtl
-                      path="lines"
-                      index={i}
-                      blank={{ label: 'Measure', points: '5 | 8 | 6 | 10' }}
-                    >
-                      <T path={`lines.${i}.label`} />
-                    </LiCtl>
+              {asList<{ label: string; points: string }>(slide.props.lines).map(
+                (l, i) => (
+                  <div key={i} className="lines-cell">
+                    <LineChart
+                      showValues={showValues}
+                      large={large}
+                      points={pipe(l.points)
+                        .map(Number)
+                        .filter(Number.isFinite)}
+                      height={large ? 230 : 150}
+                    />
+                    <div className="lines-label">
+                      <LiCtl
+                        path="lines"
+                        index={i}
+                        blank={{ label: 'Measure', points: '5 | 8 | 6 | 10' }}
+                      >
+                        <T path={`lines.${i}.label`} />
+                      </LiCtl>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           )}
           {kind === 'donuts' && (
             <div className="donut-row">
-              {asList<{ value: number; label: string }>(
-                slide.props.donuts
-              ).map((d, i) => (
-                <div key={i} className="donut-cell">
-                  <DonutChart
-                    value={Number(d.value) || 0}
-                    size={large ? 210 : 140}
-                    label={e(
-                      <LiCtl
-                        path="donuts"
-                        index={i}
-                        blank={{ value: 50, label: 'Segment' }}
-                      >
-                        <T path={`donuts.${i}.label`} />
-                      </LiCtl>
-                    )}
-                  />
-                </div>
-              ))}
+              {asList<{ value: number; label: string }>(slide.props.donuts).map(
+                (d, i) => (
+                  <div key={i} className="donut-cell">
+                    <DonutChart
+                      value={Number(d.value) || 0}
+                      size={large ? 210 : 140}
+                      label={e(
+                        <LiCtl
+                          path="donuts"
+                          index={i}
+                          blank={{ value: 50, label: 'Segment' }}
+                        >
+                          <T path={`donuts.${i}.label`} />
+                        </LiCtl>
+                      )}
+                    />
+                  </div>
+                )
+              )}
             </div>
           )}
           {show(slide.props.caption) && (

@@ -14,4 +14,3 @@ export function slideHasImage(slide: {
 }): boolean {
   return slide.background?.type === 'image' || Boolean(slide.props?.image);
 }
-

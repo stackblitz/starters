@@ -159,9 +159,7 @@ export default function SlideView({
   return (
     <EditCtx.Provider value={{ editable, slideId: slide.id, slide }}>
       <div
-        className={
-          'slide-view' + (slideHasImage(slide) ? ' has-image' : '')
-        }
+        className={'slide-view' + (slideHasImage(slide) ? ' has-image' : '')}
         style={{ position: 'relative', width: '100%', height: '100%' }}
       >
         <BackgroundLayer bg={slide.background} />

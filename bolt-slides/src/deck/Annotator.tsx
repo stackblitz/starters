@@ -787,10 +787,7 @@ export default function Annotator({
   const dockPopover = useDockPopoverHost();
 
   const toolbar = active ? (
-    <div
-      className="ann-bar"
-      onPointerDown={(event) => event.stopPropagation()}
-    >
+    <div className="ann-bar" onPointerDown={(event) => event.stopPropagation()}>
       <div className="ann-group" role="radiogroup" aria-label="Annotation tool">
         {TOOLS.map((item) => (
           <button

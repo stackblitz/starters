@@ -5,8 +5,9 @@ export type DockPopoverContextValue = {
   setHost: (node: HTMLElement | null) => void;
 };
 
-export const DockPopoverContext =
-  createContext<DockPopoverContextValue | null>(null);
+export const DockPopoverContext = createContext<DockPopoverContextValue | null>(
+  null
+);
 
 export function useDockPopoverHost() {
   return useContext(DockPopoverContext);
