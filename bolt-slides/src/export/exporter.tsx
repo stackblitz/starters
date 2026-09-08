@@ -9,9 +9,13 @@ import SlideView from '../slide/SlideView';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/* Layout viewport. Type clamp() and .container max-width are designed for
+   this size; the PDF page is PIXEL_RATIO times larger. */
 const W = 1280;
 const H = 720;
-const PIXEL_RATIO = 1;
+const PIXEL_RATIO = 2;
+const PAGE_W = W * PIXEL_RATIO;
+const PAGE_H = H * PIXEL_RATIO;
 const IMAGE_PLACEHOLDER =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
@@ -296,7 +300,7 @@ async function rasterSlide(
     const svg = await toSvg(mount, {
       width: W,
       height: H,
-      pixelRatio: PIXEL_RATIO,
+      pixelRatio: 1,
       backgroundColor: bg,
       fontEmbedCSS,
       skipFonts: true,
@@ -312,8 +316,8 @@ async function rasterSlide(
 
     const canvas = document.createElement('canvas');
 
-    canvas.width = W * PIXEL_RATIO;
-    canvas.height = H * PIXEL_RATIO;
+    canvas.width = PAGE_W;
+    canvas.height = PAGE_H;
 
     const ctx = canvas.getContext('2d');
 
@@ -351,7 +355,7 @@ export async function exportPdf(
   const pdf = new jsPDF({
     orientation: 'landscape',
     unit: 'px',
-    format: [W, H],
+    format: [PAGE_W, PAGE_H],
     compress: true,
   });
 
@@ -368,9 +372,9 @@ export async function exportPdf(
 
     const bytes = new Uint8Array(await blob.arrayBuffer());
 
-    if (i > 0) pdf.addPage([W, H], 'landscape');
+    if (i > 0) pdf.addPage([PAGE_W, PAGE_H], 'landscape');
 
-    pdf.addImage(bytes, 'JPEG', 0, 0, W, H);
+    pdf.addImage(bytes, 'JPEG', 0, 0, PAGE_W, PAGE_H);
   }
 
   onProgress('Writing PDF…');
