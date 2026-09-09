@@ -1,10 +1,3 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
 import Slide from '../deck/Slide';
 import {
   BarChart,
@@ -12,110 +5,8 @@ import {
   DonutChart,
   GroupedBarChart,
 } from '../components/Charts';
-import T from '../edit/EditableText';
-import LiCtl from '../edit/LiCtl';
-import { useEdit } from '../edit/EditContext';
-import { useStore } from '../data/store';
-import { offsetTo } from '../edit/measure';
-import type { SlideData } from '../data/types';
+import T from '../copy/DeckText';
 import { type LayoutDef, e, useShow, Heading, pipe, asList } from './shared';
-
-const BAR_BLANK = { label: 'Q1', value: 10 };
-
-function BarsEditor({
-  slide,
-  bars,
-  children,
-}: {
-  slide: SlideData;
-  bars: { label: string; value: number }[];
-  children: ReactNode;
-}) {
-  const { slideId } = useEdit();
-  const setProp = useStore((s) => s.setProp);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [tracks, setTracks] = useState<
-    { x: number; y: number; w: number; h: number }[]
-  >([]);
-  void slide;
-
-  useLayoutEffect(() => {
-    const update = () => {
-      const wrap = wrapRef.current;
-
-      if (!wrap) return;
-
-      setTracks(
-        Array.from(wrap.querySelectorAll('.ch-bar-track')).map((el) => {
-          const t = el as HTMLElement;
-          const o = offsetTo(t, wrap);
-          return { x: o.x, y: o.y, w: t.offsetWidth, h: t.offsetHeight };
-        })
-      );
-    };
-
-    update();
-    const ro = new ResizeObserver(update);
-
-    if (wrapRef.current) ro.observe(wrapRef.current);
-
-    return () => ro.disconnect();
-  }, [bars.length]);
-
-  const startDrag = (i: number) => (ev: React.MouseEvent) => {
-    if (ev.button !== 0 || !slideId) return;
-
-    ev.preventDefault();
-    ev.stopPropagation();
-
-    const track = wrapRef.current?.querySelectorAll('.ch-bar-track')[i] as
-      | HTMLElement
-      | undefined;
-
-    if (!track) return;
-
-    const vh = track.getBoundingClientRect().height || 1;
-    const max = Math.max(...bars.map((b) => b.value), 1);
-    const startV = bars[i].value;
-    const y0 = ev.clientY;
-
-    document.body.classList.add('li-dragging');
-
-    const onMove = (m: MouseEvent) => {
-      const v = Math.max(0, Math.round(startV + (y0 - m.clientY) * (max / vh)));
-
-      setProp(
-        slideId,
-        'bars',
-        bars.map((b, j) => (j === i ? { ...b, value: v } : b))
-      );
-    };
-
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      document.body.classList.remove('li-dragging');
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
-
-  return (
-    <div className="chart-edit" ref={wrapRef}>
-      {children}
-      {tracks.map((t, i) => (
-        <div
-          key={i}
-          className="chart-drag"
-          title="Drag to change value"
-          style={{ left: t.x, top: t.y, width: t.w, height: t.h }}
-          onMouseDown={startDrag(i)}
-        />
-      ))}
-    </div>
-  );
-}
 
 const PosterDef: LayoutDef = {
   type: 'poster',
@@ -345,170 +236,13 @@ const ChartDef: LayoutDef = {
     caption: '',
   },
   Render: ({ slide }) => {
-    const { editable, slideId } = useEdit();
-    const setProp = useStore((s) => s.setProp);
     const show = useShow();
     const kind = slide.props.kind ?? 'bars';
-    const prevKind = useRef(kind);
-
-    useEffect(() => {
-      if (!editable || !slideId) return;
-
-      const p = slide.props;
-      const from = prevKind.current;
-
-      prevKind.current = kind;
-
-      const barsData = asList<{
-        label: string;
-        value: number | string;
-      }>(p.bars);
-      const ptsData = pipe(p.points)
-        .filter((x) => x !== '')
-        .join(' | ');
-      const seriesData = asList<{
-        label: string;
-        values: string;
-      }>(p.series);
-      const linesData = asList<{ label: string; points: string }>(p.lines);
-      const nums = (s2: unknown) =>
-        String(s2 ?? '')
-          .split('|')
-          .map((v) => v.trim())
-          .filter((v) => v !== '');
-
-      if (from !== kind) {
-        const src: {
-          labels: string[];
-          rows: { label: string; values: string[] }[];
-        } | null =
-          from === 'bars' && barsData.length
-            ? {
-                labels: barsData.map((b) => b.label),
-                rows: [
-                  {
-                    label: 'Series 1',
-                    values: barsData.map((b) => String(Number(b.value) || 0)),
-                  },
-                ],
-              }
-            : from === 'line' && ptsData
-            ? {
-                labels: nums(ptsData).map((_, i) => `P${i + 1}`),
-                rows: [{ label: 'Series 1', values: nums(ptsData) }],
-              }
-            : from === 'grouped' && seriesData.length
-            ? {
-                labels: nums(p.categories),
-                rows: seriesData.map((sr) => ({
-                  label: sr.label,
-                  values: nums(sr.values),
-                })),
-              }
-            : from === 'lines' && linesData.length
-            ? {
-                labels: nums(linesData[0].points).map((_, i) => `P${i + 1}`),
-                rows: linesData.map((l) => ({
-                  label: l.label,
-                  values: nums(l.points),
-                })),
-              }
-            : null;
-
-        if (src && src.rows[0]?.values.length) {
-          const first = src.rows[0].values;
-
-          if (kind === 'bars') {
-            const labels =
-              barsData.length === first.length
-                ? barsData.map((b) => b.label)
-                : src.labels;
-
-            setProp(
-              slideId,
-              'bars',
-              first.map((v, i) => ({
-                label: labels[i] ?? `P${i + 1}`,
-                value: Number(v) || 0,
-              }))
-            );
-          }
-
-          if (kind === 'line') setProp(slideId, 'points', first.join(' | '));
-
-          if (kind === 'grouped') {
-            setProp(
-              slideId,
-              'series',
-              src.rows.map((r) => ({
-                label: r.label,
-                values: r.values.join(' | '),
-              }))
-            );
-            setProp(
-              slideId,
-              'categories',
-              (src.labels.length === first.length
-                ? src.labels
-                : first.map((_, i) => `P${i + 1}`)
-              ).join(' | ')
-            );
-          }
-
-          if (kind === 'lines')
-            setProp(
-              slideId,
-              'lines',
-              src.rows.map((r) => ({
-                label: r.label,
-                points: r.values.join(' | '),
-              }))
-            );
-
-          if (kind !== 'donut' && kind !== 'donuts') return;
-        }
-      }
-
-      if (kind === 'bars' && !barsData.length)
-        setProp(slideId, 'bars', structuredClone(ChartDef.defaults.bars));
-      if (kind === 'line' && !ptsData)
-        setProp(slideId, 'points', ChartDef.defaults.points);
-      if (kind === 'donut' && p.donutValue == null) {
-        setProp(slideId, 'donutValue', 72);
-        setProp(slideId, 'donutLabel', p.donutLabel ?? 'Adoption');
-      }
-      if (kind === 'donuts' && !asList(p.donuts).length)
-        setProp(slideId, 'donuts', structuredClone(ChartDef.defaults.donuts));
-      if (kind === 'grouped') {
-        if (!seriesData.length)
-          setProp(slideId, 'series', structuredClone(ChartDef.defaults.series));
-        if (!String(p.categories ?? '').trim())
-          setProp(slideId, 'categories', ChartDef.defaults.categories);
-      }
-      if (kind === 'lines' && !linesData.length)
-        setProp(slideId, 'lines', structuredClone(ChartDef.defaults.lines));
-    }, [editable, slideId, kind, slide.props, setProp]);
-
     const large = !!slide.props.large;
     const showValues = slide.props.values !== false;
     const bars = asList<{ label: string; value: number | string }>(
       slide.props.bars
     ).map((b) => ({ label: b.label, value: Number(b.value) || 0 }));
-    const barChart = (
-      <BarChart
-        height={large ? 340 : 240}
-        showValues={showValues}
-        data={bars.map((b, i) => ({
-          value: b.value,
-          valueNode: <T path={`bars.${i}.value`} />,
-          label: e(
-            <LiCtl path="bars" index={i} blank={BAR_BLANK}>
-              <T path={`bars.${i}.label`} />
-            </LiCtl>
-          ),
-        }))}
-      />
-    );
 
     return (
       <Slide>
@@ -533,14 +267,17 @@ const ChartDef: LayoutDef = {
               : {}),
           }}
         >
-          {kind === 'bars' &&
-            (editable ? (
-              <BarsEditor slide={slide} bars={bars}>
-                {barChart}
-              </BarsEditor>
-            ) : (
-              barChart
-            ))}
+          {kind === 'bars' && (
+            <BarChart
+              height={large ? 340 : 240}
+              showValues={showValues}
+              data={bars.map((b, i) => ({
+                value: b.value,
+                valueNode: <T path={`bars.${i}.value`} />,
+                label: e(<T path={`bars.${i}.label`} />),
+              }))}
+            />
+          )}
           {kind === 'line' && (
             <LineChart
               showValues={showValues}
@@ -579,15 +316,7 @@ const ChartDef: LayoutDef = {
                 label: string;
                 values: string;
               }>(slide.props.series).map((s2, i) => ({
-                label: e(
-                  <LiCtl
-                    path="series"
-                    index={i}
-                    blank={{ label: 'Series', values: '10 | 20 | 30' }}
-                  >
-                    <T path={`series.${i}.label`} />
-                  </LiCtl>
-                ),
+                label: e(<T path={`series.${i}.label`} />),
                 values: pipe(s2.values)
                   .map(Number)
                   .map((n) => (Number.isFinite(n) ? n : 0)),
@@ -624,13 +353,7 @@ const ChartDef: LayoutDef = {
                       height={large ? 230 : 150}
                     />
                     <div className="lines-label">
-                      <LiCtl
-                        path="lines"
-                        index={i}
-                        blank={{ label: 'Measure', points: '5 | 8 | 6 | 10' }}
-                      >
-                        <T path={`lines.${i}.label`} />
-                      </LiCtl>
+                      <T path={`lines.${i}.label`} />
                     </div>
                   </div>
                 )
@@ -646,15 +369,7 @@ const ChartDef: LayoutDef = {
                       value={Number(d.value) || 0}
                       size={large ? 210 : 140}
                       valueNode={<T path={`donuts.${i}.value`} />}
-                      label={e(
-                        <LiCtl
-                          path="donuts"
-                          index={i}
-                          blank={{ value: 50, label: 'Segment' }}
-                        >
-                          <T path={`donuts.${i}.label`} />
-                        </LiCtl>
-                      )}
+                      label={e(<T path={`donuts.${i}.label`} />)}
                     />
                   </div>
                 )
@@ -673,11 +388,6 @@ const ChartDef: LayoutDef = {
       </Slide>
     );
   },
-};
-
-const POINT_BLANK = {
-  label: 'ANOTHER POINT',
-  body: 'What else the data says.',
 };
 
 const InsightDef: LayoutDef = {
@@ -713,59 +423,8 @@ const InsightDef: LayoutDef = {
     ],
   },
   Render: ({ slide }) => {
-    const { editable, slideId } = useEdit();
-    const setProp = useStore((s) => s.setProp);
     const show = useShow();
     const kind = slide.props.kind ?? 'donut';
-    const prevKind = useRef(kind);
-
-    useEffect(() => {
-      if (!editable || !slideId) return;
-
-      const p = slide.props;
-      const from = prevKind.current;
-
-      prevKind.current = kind;
-
-      const bd = asList<{ label: string; value: number | string }>(p.bars);
-      const pl = pipe(p.points_line)
-        .filter((x) => x !== '')
-        .join(' | ');
-
-      if (from !== kind && from === 'bars' && kind === 'line' && bd.length) {
-        setProp(
-          slideId,
-          'points_line',
-          bd.map((b) => Number(b.value) || 0).join(' | ')
-        );
-      } else if (from !== kind && from === 'line' && kind === 'bars' && pl) {
-        const vals = pl.split('|').map((v: string) => v.trim());
-        const labels =
-          bd.length === vals.length
-            ? bd.map((b) => b.label)
-            : vals.map((_, i: number) => `P${i + 1}`);
-
-        setProp(
-          slideId,
-          'bars',
-          vals.map((v: string, i: number) => ({
-            label: labels[i],
-            value: Number(v) || 0,
-          }))
-        );
-      } else {
-        if (kind === 'bars' && !bd.length)
-          setProp(slideId, 'bars', structuredClone(InsightDef.defaults.bars));
-        if (kind === 'line' && !pl)
-          setProp(slideId, 'points_line', InsightDef.defaults.points_line);
-      }
-
-      if (kind === 'donut' && p.donutValue == null) {
-        setProp(slideId, 'donutValue', 64);
-        setProp(slideId, 'donutLabel', p.donutLabel ?? 'The headline figure');
-      }
-    }, [editable, slideId, kind, slide.props, setProp]);
-
     const bars = asList<{ label: string; value: number | string }>(
       slide.props.bars
     ).map((b) => ({ label: b.label, value: Number(b.value) || 0 }));
@@ -830,13 +489,7 @@ const InsightDef: LayoutDef = {
             <div
               className={'insight-viz' + (kind === 'donut' ? ' center' : '')}
             >
-              {editable && kind === 'bars' ? (
-                <BarsEditor slide={slide} bars={bars}>
-                  {chart}
-                </BarsEditor>
-              ) : (
-                chart
-              )}
+              {chart}
             </div>
           </div>
           <div className="insight-points">
@@ -848,9 +501,7 @@ const InsightDef: LayoutDef = {
             {asList<{ label: string }>(slide.props.points).map((_, i) => (
               <div key={i} className="insight-point">
                 <div className="kicker insight-point-label">
-                  <LiCtl path="points" index={i} blank={POINT_BLANK}>
-                    <T path={`points.${i}.label`} />
-                  </LiCtl>
+                  <T path={`points.${i}.label`} />
                 </div>
                 <div className="insight-point-body">
                   <T path={`points.${i}.body`} block />

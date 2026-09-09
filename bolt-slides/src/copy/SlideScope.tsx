@@ -1,16 +1,14 @@
 import { createContext, useContext } from 'react';
 import type { SlideData } from '../data/types';
 
-export interface EditCtxValue {
-  editable: boolean;
+export interface SlideScopeValue {
   slideId: string | null;
   slide?: SlideData | null;
 }
 
-export const EditCtx = createContext<EditCtxValue>({
-  editable: false,
+export const SlideScope = createContext<SlideScopeValue>({
   slideId: null,
   slide: null,
 });
 
-export const useEdit = () => useContext(EditCtx);
+export const useSlide = () => useContext(SlideScope);

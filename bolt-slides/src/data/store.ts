@@ -118,8 +118,6 @@ interface Store extends AppState {
   boltSlidesVersion: number;
   boltSlidesId: string | null;
   current: number;
-  activeList: string | null;
-  setActiveList(value: string | null): void;
   load(): void;
   applyFile(raw: unknown): void;
   setCurrent(index: number): void;
@@ -168,10 +166,6 @@ export const useStore = create<Store>((set, getState) => ({
   deck: { title: '', transition: 'fade' },
   slides: [],
   current: 0,
-  activeList: null,
-  setActiveList(value) {
-    set({ activeList: value });
-  },
   load() {
     try {
       applyEnvelope(set, getState, seed);

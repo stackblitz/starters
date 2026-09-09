@@ -1,0 +1,334 @@
+/* ── Studio chrome — Bolt DS colors via chrome-tokens.css (--ed-*, --ui-*).
+   Deck theming stays in tokens.css. Slide content (.slide) and thumbnail
+   letterbox must keep --bg / --fg / --accent. ── */
+
+/* chrome containers stay Inter regardless of the deck font pairing;
+   slide content (.slide) re-asserts the deck fonts inside the canvas/thumbs */
+.noir-dock,
+.dl-pop,
+.ctx-menu {
+  font-family: var(--font-ui);
+}
+
+.boot-screen {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ed-text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ed-bg);
+}
+
+.ed-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ed-bg);
+}
+.ed-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* live region: parked above the bar so progress never resizes the controls */
+.nav-toast {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(23 23 25 / 0.92);
+  border: 1px solid var(--ed-border);
+  box-shadow: var(--ed-shadow-lg);
+  color: var(--ed-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.nav-toast:empty {
+  display: none;
+}
+.nav-toast.busy::before {
+  content: '● ';
+  color: var(--ed-brand);
+}
+
+/* speaker-notes popover — lives in `.noir-dock-popover` above the bar.
+   Avoid transform on this node: a transformed ancestor would re-anchor the
+   note editor's position:fixed colour palette and strand it off-screen. */
+.notes-pop {
+  position: relative;
+  width: min(620px, 92vw);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  font-family: var(--font-ui);
+}
+.notes-pop-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ed-text-faint);
+}
+.notes-pop .note-wyg {
+  --note-pad-x: 12px;
+  --note-pad-y: 10px;
+  flex: none;
+  min-height: 150px;
+  max-height: 38vh;
+  font-size: 13px;
+  color: var(--ed-text);
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--ed-border);
+}
+.notes-pop .note-wyg:focus {
+  background: transparent;
+  border-color: var(--ed-border);
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.notes-pop .note-wyg h3 {
+  color: var(--ed-text);
+}
+.notes-pop .note-wyg blockquote {
+  color: var(--ed-text);
+}
+
+/* buttons + inputs — DS secondary / ghost, size sm */
+.ghost-btn {
+  font: 500 12px/1.25 var(--font-ui);
+  letter-spacing: 0;
+  border-radius: 6px;
+  padding: 0 10px;
+  height: 32px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.ghost-btn {
+  background: transparent;
+  border: 1px solid var(--ed-border);
+  color: var(--ed-text);
+  box-shadow: var(--ed-shadow-sm);
+}
+.ghost-btn:hover:not(:disabled) {
+  background: var(--ed-bg-hover);
+  border-color: var(--ed-border);
+  color: var(--ed-text);
+}
+.ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ghost-btn.xs {
+  padding: 0 8px;
+  height: 28px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.ghost-btn.danger:hover {
+  border-color: var(--ed-danger);
+  color: var(--ed-danger);
+  background: var(--ed-danger-bg-subtle);
+}
+
+.ed-root select,
+.ed-root input:not([type='checkbox']):not([type='range']):not([type='color']),
+.ed-root textarea {
+  background: transparent;
+  border: 1px solid var(--ed-border);
+  border-radius: 6px;
+  color: var(--ed-text);
+  font: 400 14px/1.45 var(--font-ui);
+  padding: 8px 12px;
+  width: 100%;
+  min-width: 0;
+  box-shadow: none;
+}
+.ed-root select {
+  width: auto;
+  cursor: pointer;
+}
+.ed-root input:focus,
+.ed-root textarea:focus,
+.ed-root select:focus {
+  outline: none;
+  border-color: var(--ed-border);
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.ed-root input::placeholder,
+.ed-root textarea::placeholder {
+  color: var(--ed-text-faint);
+}
+.ed-root textarea {
+  resize: vertical;
+}
+
+/* ── canvas ── */
+.ed-canvas {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  box-sizing: border-box;
+  /* Even inset on every side; bottom clears the floating dock. */
+  padding: 24px 24px 72px;
+  background: var(--ed-bg);
+}
+.ed-canvas.rail-open {
+  /* Snaps so layout/layoutId can spring the frame; stage stays overflow
+     visible so the FLIP projection is not clipped mid-morph. */
+  padding-left: calc(min(248px, 84vw) + 24px);
+}
+.ed-stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Visible so layout projection can overshoot the content box while
+     springing; the rail sits above on z-index. */
+  overflow: visible;
+}
+.ed-frame {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--ed-border-subtle);
+  box-shadow: var(--ed-shadow-lg);
+}
+.ed-frame-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+.ed-empty {
+  color: var(--ed-text-faint);
+  font-size: 14px;
+}
+
+.dl-wrap {
+  position: relative;
+}
+.dl-pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 132px;
+  padding: 4px;
+  background: rgb(23 23 25 / 0.96);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  z-index: 5;
+}
+.dl-pop.down {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+.dl-pop [role='menuitem'] {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--ed-text);
+  font: 500 13px/1.2 var(--font-ui);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dl-pop [role='menuitem']:hover:not([aria-disabled='true']),
+.dl-pop [role='menuitem']:focus-visible {
+  background: var(--ed-bg-tertiary);
+  outline: none;
+}
+.dl-pop [role='menuitem']:focus-visible {
+  box-shadow: 0 0 0 2px var(--ed-brand);
+}
+.dl-pop [role='menuitem'][aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+.dl-pop [role='menuitem'].danger {
+  color: var(--ed-danger);
+}
+
+/* ── context menu ── */
+.ctx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+}
+.ctx-menu {
+  position: fixed;
+  z-index: 111;
+  min-width: 176px;
+  padding: 5px;
+  background: var(--ed-bg-alt);
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  box-shadow: var(--ed-shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+.ctx-item {
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ed-text);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+.ctx-item:hover {
+  background: var(--ed-util-hover);
+}
+.ctx-item.danger {
+  color: var(--ed-danger);
+}
+.ctx-sep {
+  height: 1px;
+  background: var(--ed-divider);
+  margin: 4px 6px;
+}
+
+/* ══ remaining chrome — DS tokens, no glassy sheen ══ */
+
+.ed-root select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a4a3ac' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+/* text selection + caret inside the canvas */
+.ed-frame-inner ::selection {
+  background: color-mix(in srgb, var(--ui-accent) 38%, transparent);
+}

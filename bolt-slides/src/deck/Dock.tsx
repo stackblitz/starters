@@ -24,7 +24,7 @@ import {
   IconShrink,
   IconSidebar,
 } from './icons';
-import MenuButton, { type MenuButtonItem } from '../edit/MenuButton';
+import MenuButton, { type MenuButtonItem } from '../studio/MenuButton';
 import { useDockPopoverHost } from './dockPopoverContext';
 
 export type DockMode = 'editor' | 'editor-present' | 'audience';

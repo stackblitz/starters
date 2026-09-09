@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import Slide from '../deck/Slide';
 import Bento from '../components/Bento';
 import StatGrid from '../components/StatGrid';
@@ -8,8 +7,7 @@ import Steps from '../components/Steps';
 import Pricing from '../components/Pricing';
 import Team from '../components/Team';
 import Marquee from '../components/Marquee';
-import T from '../edit/EditableText';
-import LiCtl from '../edit/LiCtl';
+import T from '../copy/DeckText';
 import {
   type LayoutDef,
   e,
@@ -20,7 +18,7 @@ import {
   asList,
   strings,
 } from './shared';
-import { bgCss } from '../edit/bgCss';
+import { bgCss } from '../data/bgCss';
 
 const kickerTitle = (
   slide: { props: { kicker?: string; title?: string } },
@@ -33,8 +31,6 @@ const kickerTitle = (
     ? e(<T path="title" placeholder="Title" />)
     : undefined,
 });
-
-const TILE_BLANK = { k: 'Label', title: 'Tile', body: '', c: 4, r: 1 };
 
 const BentoDef: LayoutDef = {
   type: 'bento',
@@ -77,47 +73,20 @@ const BentoDef: LayoutDef = {
       <Bento
         {...kickerTitle(slide, show)}
         tiles={asList<Record<string, unknown>>(slide.props.tiles).map(
-          (t: Record<string, unknown>, i: number) => {
-            const anchor = t.k
-              ? 'k'
-              : t.title
-              ? 'title'
-              : t.fig
-              ? 'fig'
-              : 'body';
-            const wrap = (slot: string, node: ReactNode) =>
-              slot === anchor ? (
-                <LiCtl path="tiles" index={i} blank={TILE_BLANK}>
-                  {node}
-                </LiCtl>
-              ) : (
-                node
-              );
-
-            return {
-              ...t,
-              k: t.k ? e(wrap('k', <T path={`tiles.${i}.k`} />)) : undefined,
-              fig: t.fig
-                ? wrap(
-                    'fig',
-                    <Num path={`tiles.${i}.fig`} value={String(t.fig)} />
-                  )
-                : undefined,
-              title: t.title
-                ? e(wrap('title', <T path={`tiles.${i}.title`} />))
-                : undefined,
-              body: t.body
-                ? e(wrap('body', <T path={`tiles.${i}.body`} block />))
-                : undefined,
-            };
-          }
+          (t: Record<string, unknown>, i: number) => ({
+            ...t,
+            k: t.k ? e(<T path={`tiles.${i}.k`} />) : undefined,
+            fig: t.fig ? (
+              <Num path={`tiles.${i}.fig`} value={String(t.fig)} />
+            ) : undefined,
+            title: t.title ? e(<T path={`tiles.${i}.title`} />) : undefined,
+            body: t.body ? e(<T path={`tiles.${i}.body`} block />) : undefined,
+          })
         )}
       />
     );
   },
 };
-
-const STAT_BLANK = { value: '42%', label: 'Label' };
 
 const StatGridDef: LayoutDef = {
   type: 'statGrid',
@@ -146,11 +115,7 @@ const StatGridDef: LayoutDef = {
             value: (
               <Num path={`stats.${i}.value`} value={String(s.value ?? '')} />
             ),
-            label: e(
-              <LiCtl path="stats" index={i} blank={STAT_BLANK}>
-                <T path={`stats.${i}.label`} />
-              </LiCtl>
-            ),
+            label: e(<T path={`stats.${i}.label`} />),
             caption: s.caption
               ? e(<T path={`stats.${i}.caption`} />)
               : undefined,
@@ -196,9 +161,7 @@ const ContrastDef: LayoutDef = {
         ? e(<T path={`${side}.title`} placeholder="Panel title" />)
         : undefined,
       points: strings(slide.props[side]?.points).map((_, i: number) => (
-        <LiCtl key={i} path={`${side}.points`} index={i} blank="">
-          <T path={`${side}.points.${i}`} />
-        </LiCtl>
+        <T key={i} path={`${side}.points.${i}`} />
       )),
     });
 
@@ -211,8 +174,6 @@ const ContrastDef: LayoutDef = {
     );
   },
 };
-
-const AGENDA_BLANK = { title: 'Topic' };
 
 const AgendaDef: LayoutDef = {
   type: 'agenda',
@@ -234,11 +195,7 @@ const AgendaDef: LayoutDef = {
         {...kickerTitle(slide, show)}
         items={asList<Record<string, unknown>>(slide.props.items).map(
           (it: Record<string, unknown>, i: number) => ({
-            title: e(
-              <LiCtl path="items" index={i} blank={AGENDA_BLANK}>
-                <T path={`items.${i}.title`} />
-              </LiCtl>
-            ),
+            title: e(<T path={`items.${i}.title`} />),
             hint: it.hint ? e(<T path={`items.${i}.hint`} />) : undefined,
           })
         )}
@@ -246,8 +203,6 @@ const AgendaDef: LayoutDef = {
     );
   },
 };
-
-const STEP_BLANK = { title: 'Step', body: '' };
 
 const StepsDef: LayoutDef = {
   type: 'steps',
@@ -275,11 +230,7 @@ const StepsDef: LayoutDef = {
         {...kickerTitle(slide, show)}
         items={asList<Record<string, unknown>>(slide.props.items).map(
           (it: Record<string, unknown>, i: number) => ({
-            title: e(
-              <LiCtl path="items" index={i} blank={STEP_BLANK}>
-                <T path={`items.${i}.title`} />
-              </LiCtl>
-            ),
+            title: e(<T path={`items.${i}.title`} />),
             body: it.body ? <T path={`items.${i}.body`} block /> : undefined,
           })
         )}
@@ -287,8 +238,6 @@ const StepsDef: LayoutDef = {
     );
   },
 };
-
-const TIER_BLANK = { name: 'Tier', price: '$0', period: '/mo', features: [] };
 
 const PricingDef: LayoutDef = {
   type: 'pricing',
@@ -328,11 +277,7 @@ const PricingDef: LayoutDef = {
         tiers={asList<Record<string, unknown>>(slide.props.tiers).map(
           (t: Record<string, unknown>, i: number) => ({
             ...t,
-            name: e(
-              <LiCtl path="tiers" index={i} blank={TIER_BLANK}>
-                <T path={`tiers.${i}.name`} />
-              </LiCtl>
-            ),
+            name: e(<T path={`tiers.${i}.name`} />),
             price: e(<T path={`tiers.${i}.price`} />),
             period: t.period ? e(<T path={`tiers.${i}.period`} />) : undefined,
             blurb: t.blurb
@@ -342,16 +287,7 @@ const PricingDef: LayoutDef = {
               ? e(<T path={`tiers.${i}.badge`} placeholder="Most popular" />)
               : undefined,
             features: strings(t.features).map((_, fi) =>
-              e(
-                <LiCtl
-                  key={fi}
-                  path={`tiers.${i}.features`}
-                  index={fi}
-                  blank=""
-                >
-                  <T path={`tiers.${i}.features.${fi}`} />
-                </LiCtl>
-              )
+              e(<T key={fi} path={`tiers.${i}.features.${fi}`} />)
             ),
           })
         )}
@@ -359,8 +295,6 @@ const PricingDef: LayoutDef = {
     );
   },
 };
-
-const PERSON_BLANK = { name: 'Name', role: 'Role' };
 
 const TeamDef: LayoutDef = {
   type: 'team',
@@ -391,11 +325,7 @@ const TeamDef: LayoutDef = {
               .slice(0, 2)
               .join('')
               .toUpperCase(),
-            name: (
-              <LiCtl path="people" index={i} blank={PERSON_BLANK}>
-                <T path={`people.${i}.name`} />
-              </LiCtl>
-            ),
+            name: <T path={`people.${i}.name`} />,
             role: p.role ? <T path={`people.${i}.role`} /> : undefined,
           })
         )}
@@ -403,8 +333,6 @@ const TeamDef: LayoutDef = {
     );
   },
 };
-
-const FIG_BLANK = { label: 'A SMALL LABEL', value: '42%', caption: '' };
 
 const FiguresDef: LayoutDef = {
   type: 'figures',
@@ -457,9 +385,7 @@ const FiguresDef: LayoutDef = {
                 }
               >
                 <div className="kicker figures-label">
-                  <LiCtl path="items" index={i} blank={FIG_BLANK}>
-                    <T path={`items.${i}.label`} />
-                  </LiCtl>
+                  <T path={`items.${i}.label`} />
                 </div>
                 <div className="figures-value">
                   <Num
@@ -479,11 +405,6 @@ const FiguresDef: LayoutDef = {
       </Slide>
     );
   },
-};
-
-const PILLAR_BLANK = {
-  title: 'Focus area',
-  body: 'Two or three sentences on what this covers and why it earns a column.',
 };
 
 const PillarsDef: LayoutDef = {
@@ -528,9 +449,7 @@ const PillarsDef: LayoutDef = {
                   {String(i + 1).padStart(2, '0')}
                 </div>
                 <h3 className="pillars-head">
-                  <LiCtl path="items" index={i} blank={PILLAR_BLANK}>
-                    <T path={`items.${i}.title`} />
-                  </LiCtl>
+                  <T path={`items.${i}.title`} />
                 </h3>
                 <div className="pillars-body">
                   <T path={`items.${i}.body`} placeholder="Body" block />

@@ -1,4 +1,4 @@
-import { richToHtml } from './rich';
+import { richToHtml } from '../copy/rich';
 
 export type Block =
   | { kind: 'p'; lines: string[] }

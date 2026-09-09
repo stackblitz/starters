@@ -13,6 +13,15 @@ import { serializeCodeRoot, serializeRichRoot } from './richDom';
 
 const DEBOUNCE_MS = 120;
 
+/** Bolt inspector wrappers / the contenteditable it turns on. */
+const INSPECTOR_TREE =
+  '[contenteditable]:not([contenteditable="false"]),' +
+  '[data-bolt-visual-edit-text],' +
+  '[data-bolt-visual-edit-link],' +
+  '[data-bolt-visual-edit-list],' +
+  '[data-bolt-visual-edit-marker],' +
+  '[data-bolt-inspector]';
+
 type Dirty = DeckField & { fallback: HTMLElement };
 
 function fieldKey(field: Pick<DeckField, 'slideId' | 'path' | 'pipeIndex'>) {
@@ -79,6 +88,35 @@ function isActivelyEditing(el: HTMLElement): boolean {
   if (!root) return false;
 
   return root === el || root.contains(el) || el.contains(root);
+}
+
+function inInspectorTree(node: Node | null): boolean {
+  const start = node instanceof Element ? node : node?.parentElement;
+
+  if (!start) return false;
+
+  return !!start.closest(INSPECTOR_TREE);
+}
+
+function nodeIsInspector(node: Node): boolean {
+  if (inInspectorTree(node)) return true;
+
+  return node instanceof Element && !!node.querySelector(INSPECTOR_TREE);
+}
+
+/** CountUp / motion / React reconcile the same stamps. Only persist inspector edits. */
+function mutationFromInspector(record: MutationRecord): boolean {
+  if (inInspectorTree(record.target)) return true;
+
+  for (const node of record.addedNodes) {
+    if (nodeIsInspector(node)) return true;
+  }
+
+  for (const node of record.removedNodes) {
+    if (nodeIsInspector(node)) return true;
+  }
+
+  return false;
 }
 
 function overlaps(root: Node, el: HTMLElement) {
@@ -170,6 +208,8 @@ function commit(entry: Dirty) {
  * `deck.json` through the existing persist path. Style-only patches are
  * ignored until those map onto tokens or slide backgrounds.
  *
+ * Entrance animations (CountUp, chart ticks, motion) mutate the same
+ * stamps; those writes are ignored unless the Bolt inspector is in the tree.
  * Do not write while the inspector is typing: `setProp` re-renders `T` and
  * the caret jumps. Flush on focusout instead.
  */
@@ -224,6 +264,8 @@ export function startVisualEditDeckSync(): () => void {
     const touched = new Set<string>();
 
     for (const record of records) {
+      if (!mutationFromInspector(record)) continue;
+
       collectFromNode(dirty, touched, record.target);
 
       for (const added of record.addedNodes) {

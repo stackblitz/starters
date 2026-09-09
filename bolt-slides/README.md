@@ -48,7 +48,8 @@ src/data/               types, layout props contract, zustand store
 src/layouts/            layout registry
 src/components/         section components
 src/deck/               presentation engine
-src/edit/               studio chrome
+src/studio/             studio chrome
+src/copy/               stamped deck text + visual-edit persist
 src/styles/tokens.css   theme: edit :root values only
 ```
 

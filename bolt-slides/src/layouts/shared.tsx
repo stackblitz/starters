@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import type { LayoutName } from '../data/layoutProps';
 import type { SlideData } from '../data/types';
-import { useEdit } from '../edit/EditContext';
-import { deckPathProps } from '../edit/deckPath';
-import { renderRich } from '../edit/rich';
-import T from '../edit/EditableText';
+import { useSlide } from '../copy/SlideScope';
+import { deckPathProps } from '../copy/deckPath';
+import { renderRich } from '../copy/rich';
+import T from '../copy/DeckText';
 import CountUp from '../components/CountUp';
 import Reveal from '../deck/Reveal';
 
@@ -17,11 +17,7 @@ export interface LayoutDef {
 
 export const e = (node: ReactNode) => node as unknown as string;
 
-export const useShow = () => {
-  const { editable } = useEdit();
-
-  return (v: unknown) => !!v || editable;
-};
+export const useShow = () => (v: unknown) => !!v;
 
 function parseCountable(v: string | undefined) {
   if (!v || v.length > 16) return null;
@@ -40,8 +36,8 @@ function parseCountable(v: string | undefined) {
 }
 
 export function Num({ path, value }: { path: string; value?: string }) {
-  const { editable, slideId } = useEdit();
-  const c = editable ? null : parseCountable(value);
+  const { slideId } = useSlide();
+  const c = parseCountable(value);
 
   if (c)
     return (

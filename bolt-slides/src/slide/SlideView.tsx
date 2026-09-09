@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import type { Background, SlideData } from '../data/types';
 import { effectiveImageDim, slideHasImage } from '../data/imageDim';
 import { DeckCtx, useDeck } from '../deck/DeckContext';
-import { EditCtx } from '../edit/EditContext';
+import { SlideScope } from '../copy/SlideScope';
 import { RenderLayout } from '../layouts/registry';
 
 function BackgroundLayer({ bg }: { bg: Background | undefined }) {
@@ -118,10 +118,8 @@ const ENTRANCES: Record<string, Variants> = {
 
 export default function SlideView({
   slide,
-  editable = false,
 }: {
   slide: SlideData;
-  editable?: boolean;
   notes?: string;
   transition?: string;
 }) {
@@ -157,7 +155,7 @@ export default function SlideView({
   }
 
   return (
-    <EditCtx.Provider value={{ editable, slideId: slide.id, slide }}>
+    <SlideScope.Provider value={{ slideId: slide.id, slide }}>
       <div
         className={'slide-view' + (slideHasImage(slide) ? ' has-image' : '')}
         data-deck-slide={slide.id}
@@ -177,6 +175,6 @@ export default function SlideView({
           {content}
         </div>
       </div>
-    </EditCtx.Provider>
+    </SlideScope.Provider>
   );
 }

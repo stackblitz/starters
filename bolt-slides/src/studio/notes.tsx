@@ -8,7 +8,7 @@ import {
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { htmlToNotes, notesToHtml } from './notesFormat';
-import { esc } from './rich';
+import { esc } from '../copy/rich';
 
 type Cmd = {
   id: string;

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import Slide from '../deck/Slide';
 import Timeline from '../components/Timeline';
 import Comparison from '../components/Comparison';
@@ -7,14 +6,9 @@ import Tabs from '../components/Tabs';
 import Accordion from '../components/Accordion';
 import Chat from '../components/Chat';
 import CodeWindow from '../components/CodeWindow';
-import T from '../edit/EditableText';
-import LiCtl from '../edit/LiCtl';
-import TableEditor from '../edit/TableEditor';
-import CodeEditor from '../edit/CodeEditor';
-import CompareEditor from '../edit/CompareEditor';
-import { useEdit } from '../edit/EditContext';
-import { deckPathProps } from '../edit/deckPath';
-import { useStore } from '../data/store';
+import T from '../copy/DeckText';
+import { useSlide } from '../copy/SlideScope';
+import { deckPathProps } from '../copy/deckPath';
 import {
   type LayoutDef,
   e,
@@ -24,8 +18,6 @@ import {
   normTable,
   asList,
 } from './shared';
-
-const TL_BLANK = { time: 'Q1', title: 'Milestone', body: '' };
 
 const TimelineDef: LayoutDef = {
   type: 'timeline',
@@ -54,11 +46,7 @@ const TimelineDef: LayoutDef = {
         items={asList<Record<string, unknown>>(slide.props.items).map(
           (it, i) => ({
             time: e(<T path={`items.${i}.time`} />),
-            title: e(
-              <LiCtl path="items" index={i} blank={TL_BLANK}>
-                <T path={`items.${i}.title`} />
-              </LiCtl>
-            ),
+            title: e(<T path={`items.${i}.title`} />),
             body: it.body ? <T path={`items.${i}.body`} block /> : undefined,
           })
         )}
@@ -96,53 +84,31 @@ const ComparisonDef: LayoutDef = {
     ],
   },
   Render: ({ slide }) => {
-    const { editable, slideId } = useEdit();
-    const setProp = useStore((s) => s.setProp);
-    const legacy =
-      !Array.isArray(slide.props.cols) ||
-      asList<{ values?: unknown }>(slide.props.rows).some(
-        (r) => !Array.isArray(r?.values)
-      );
-
-    useEffect(() => {
-      if (!editable || !slideId || !legacy) return;
-
-      const t = normCmp(slide.props);
-
-      setProp(slideId, 'cols', t.cols);
-      setProp(slideId, 'rows', t.rows);
-    }, [editable, slideId, legacy, slide.props, setProp]);
-
     const data = normCmp(slide.props);
-    const canEdit = editable && !legacy;
 
     return (
       <Slide>
         <Heading slide={slide} />
-        {canEdit ? (
-          <CompareEditor slide={slide} data={data} />
-        ) : (
-          <Comparison
-            cols={data.cols.map((_, i) => (
-              <T
-                key={i}
-                path={`cols.${i}`}
-                placeholder={i === 0 ? '—' : 'Column'}
-              />
-            ))}
-            highlight={slide.props.highlight ?? 0}
-            rows={data.rows.map((r, ri) => ({
-              label: <T path={`rows.${ri}.label`} placeholder="Feature" />,
-              values: r.values.map((v, vi) =>
-                typeof v === 'boolean' ? (
-                  v
-                ) : (
-                  <T path={`rows.${ri}.values.${vi}`} placeholder="—" />
-                )
-              ),
-            }))}
-          />
-        )}
+        <Comparison
+          cols={data.cols.map((_, i) => (
+            <T
+              key={i}
+              path={`cols.${i}`}
+              placeholder={i === 0 ? '—' : 'Column'}
+            />
+          ))}
+          highlight={slide.props.highlight ?? 0}
+          rows={data.rows.map((r, ri) => ({
+            label: <T path={`rows.${ri}.label`} placeholder="Feature" />,
+            values: r.values.map((v, vi) =>
+              typeof v === 'boolean' ? (
+                v
+              ) : (
+                <T path={`rows.${ri}.values.${vi}`} placeholder="—" />
+              )
+            ),
+          }))}
+        />
       </Slide>
     );
   },
@@ -164,24 +130,8 @@ const TableDef: LayoutDef = {
     caption: 'Company data, FY26',
   },
   Render: ({ slide }) => {
-    const { editable, slideId } = useEdit();
-    const setProp = useStore((s) => s.setProp);
     const show = useShow();
-    const legacy =
-      !Array.isArray(slide.props.columns) ||
-      asList(slide.props.rows).some((r: unknown) => !Array.isArray(r));
-
-    useEffect(() => {
-      if (!editable || !slideId || !legacy) return;
-
-      const t = normTable(slide.props);
-
-      setProp(slideId, 'columns', t.columns);
-      setProp(slideId, 'rows', t.rows);
-    }, [editable, slideId, legacy, slide.props, setProp]);
-
     const { columns, rows } = normTable(slide.props);
-    const canEdit = editable && !legacy;
     const labels = show(slide.props.labelLeft) && (
       <div className="tbl-labels">
         <span className="kicker">
@@ -200,42 +150,26 @@ const TableDef: LayoutDef = {
       <Slide className={cls || undefined}>
         <Heading slide={slide} />
         {labels}
-        {canEdit ? (
-          <>
-            <TableEditor slide={slide} />
-            {show(slide.props.caption) && (
-              <div
-                className="foot dtable-caption"
-                style={{ maxWidth: 880, marginInline: 'auto' }}
-              >
-                <T path="caption" placeholder="Caption" />
-              </div>
-            )}
-          </>
-        ) : (
-          <Table
-            columns={columns.map((_, ci) => (
-              <T key={ci} path={`columns.${ci}`} placeholder="Column" />
-            ))}
-            rows={rows.map((r, ri) =>
-              r.map((_, ci) => (
-                <T key={ci} path={`rows.${ri}.${ci}`} placeholder="—" />
-              ))
-            )}
-            highlightCol={slide.props.highlightCol ?? undefined}
-            caption={
-              show(slide.props.caption) ? (
-                <T path="caption" placeholder="Caption" />
-              ) : undefined
-            }
-          />
-        )}
+        <Table
+          columns={columns.map((_, ci) => (
+            <T key={ci} path={`columns.${ci}`} placeholder="Column" />
+          ))}
+          rows={rows.map((r, ri) =>
+            r.map((_, ci) => (
+              <T key={ci} path={`rows.${ri}.${ci}`} placeholder="—" />
+            ))
+          )}
+          highlightCol={slide.props.highlightCol ?? undefined}
+          caption={
+            show(slide.props.caption) ? (
+              <T path="caption" placeholder="Caption" />
+            ) : undefined
+          }
+        />
       </Slide>
     );
   },
 };
-
-const TAB_BLANK = { label: 'Tab', content: '' };
 
 const TabsDef: LayoutDef = {
   type: 'tabs',
@@ -258,44 +192,23 @@ const TabsDef: LayoutDef = {
       },
     ],
   },
-  Render: ({ slide }) => {
-    const { editable, slideId } = useEdit();
-    const setProp = useStore((s) => s.setProp);
-
-    return (
-      <Slide>
-        <Heading slide={slide} />
-        <Tabs
-          onAdd={
-            editable && slideId
-              ? () =>
-                  setProp(slideId, 'tabs', [
-                    ...asList(slide.props.tabs),
-                    structuredClone(TAB_BLANK),
-                  ])
-              : undefined
-          }
-          tabs={asList<{ label: string; content: string }>(
-            slide.props.tabs
-          ).map((t: { label: string; content: string }, i: number) => ({
+  Render: ({ slide }) => (
+    <Slide>
+      <Heading slide={slide} />
+      <Tabs
+        tabs={asList<{ label: string; content: string }>(slide.props.tabs).map(
+          (t: { label: string; content: string }, i: number) => ({
             label: e(<T path={`tabs.${i}.label`} />),
             content: (
               <div className="lead" style={{ maxWidth: '52ch' }}>
-                <LiCtl path="tabs" index={i} blank={TAB_BLANK}>
-                  <T path={`tabs.${i}.content`} block />
-                </LiCtl>
+                <T path={`tabs.${i}.content`} block />
               </div>
             ),
-          }))}
-        />
-      </Slide>
-    );
-  },
-};
-
-const QA_BLANK = {
-  q: 'A question people actually ask?',
-  a: 'The short, honest answer.',
+          })
+        )}
+      />
+    </Slide>
+  ),
 };
 
 const QaDef: LayoutDef = {
@@ -334,9 +247,7 @@ const QaDef: LayoutDef = {
               <span className="qa-mark" aria-hidden>
                 Q
               </span>
-              <LiCtl path="items" index={i} blank={QA_BLANK}>
-                <T path={`items.${i}.q`} />
-              </LiCtl>
+              <T path={`items.${i}.q`} />
             </div>
             <div className="qa-a">
               <span className="qa-mark qa-mark-a" aria-hidden>
@@ -350,8 +261,6 @@ const QaDef: LayoutDef = {
     </Slide>
   ),
 };
-
-const ACC_BLANK = { title: 'Question', body: 'Answer' };
 
 const AccordionDef: LayoutDef = {
   type: 'accordion',
@@ -375,19 +284,13 @@ const AccordionDef: LayoutDef = {
       <Heading slide={slide} />
       <Accordion
         items={asList(slide.props.items).map((_: unknown, i: number) => ({
-          title: e(
-            <LiCtl path="items" index={i} blank={ACC_BLANK}>
-              <T path={`items.${i}.title`} />
-            </LiCtl>
-          ),
+          title: e(<T path={`items.${i}.title`} />),
           body: <T path={`items.${i}.body`} block />,
         }))}
       />
     </Slide>
   ),
 };
-
-const MSG_BLANK = { from: 'user', text: 'Message' };
 
 const ChatDef: LayoutDef = {
   type: 'chat',
@@ -426,11 +329,7 @@ const ChatDef: LayoutDef = {
         messages={asList<{ from: 'user' | 'ai' }>(slide.props.messages).map(
           (m: { from: 'user' | 'ai' }, i: number) => ({
             from: m.from,
-            text: e(
-              <LiCtl path="messages" index={i} blank={MSG_BLANK}>
-                <T path={`messages.${i}.text`} block />
-              </LiCtl>
-            ),
+            text: e(<T path={`messages.${i}.text`} block />),
           })
         )}
       />
@@ -449,7 +348,7 @@ const CodeDef: LayoutDef = {
     highlight: '',
   },
   Render: ({ slide }) => {
-    const { editable, slideId } = useEdit();
+    const { slideId } = useSlide();
 
     return (
       <Slide>
@@ -458,22 +357,16 @@ const CodeDef: LayoutDef = {
           style={{ maxWidth: 760, marginInline: 'auto' }}
           {...deckPathProps(slideId, 'code', { kind: 'code' })}
         >
-          {editable ? (
-            <CodeEditor slide={slide} />
-          ) : (
-            <CodeWindow
-              title={
-                (
-                  <T path="filename" placeholder="file.ts" />
-                ) as unknown as string
-              }
-              code={slide.props.code ?? ''}
-              highlight={String(slide.props.highlight ?? '')
-                .split(',')
-                .map((n) => parseInt(n.trim(), 10))
-                .filter(Number.isFinite)}
-            />
-          )}
+          <CodeWindow
+            title={
+              (<T path="filename" placeholder="file.ts" />) as unknown as string
+            }
+            code={slide.props.code ?? ''}
+            highlight={String(slide.props.highlight ?? '')
+              .split(',')
+              .map((n) => parseInt(n.trim(), 10))
+              .filter(Number.isFinite)}
+          />
         </div>
       </Slide>
     );

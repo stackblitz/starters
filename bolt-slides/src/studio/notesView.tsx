@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
-import { renderRich } from './rich';
+import { renderRich } from '../copy/rich';
 import { parseNotes, HL_ONE, HEX, splitNoteHl } from './notesFormat';
 
 function inlineCode(text: string): ReactNode {

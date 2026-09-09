@@ -8,12 +8,12 @@ import {
   isStudioShell,
 } from '../data/shell';
 import { applyFont, applyAccent } from '../data/fonts';
-import { startVisualEditDeckSync } from './visualEditSync';
+import { startVisualEditDeckSync } from '../copy/visualEditSync';
 import Canvas from './Canvas';
 import PresentApp from '../present/PresentApp';
 import SlideBrowser, { type BrowseMode } from '../deck/SlideBrowser';
 
-export default function EditorApp() {
+export default function StudioApp() {
   const loaded = useStore((state) => state.loaded);
   const bootError = useStore((state) => state.bootError);
   const slides = useStore((state) => state.slides);

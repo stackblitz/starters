@@ -18,8 +18,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { SlideData } from '../data/types';
 import { useStore } from '../data/store';
-import ContextMenu, { type MenuItem } from '../edit/ContextMenu';
-import MenuButton, { type MenuButtonItem } from '../edit/MenuButton';
+import ContextMenu, { type MenuItem } from '../studio/ContextMenu';
+import MenuButton, { type MenuButtonItem } from '../studio/MenuButton';
 import SlideView from '../slide/SlideView';
 import Thumb from './Thumb';
 import { IconClose, IconMore } from './icons';

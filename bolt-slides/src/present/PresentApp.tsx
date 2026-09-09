@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import Deck from '../deck/Deck';
 import { useStore } from '../data/store';
 import { applyFont, applyAccent } from '../data/fonts';
-import { stripRich } from '../edit/rich';
+import { stripRich } from '../copy/rich';
 import { LAYOUTS, resolveLayoutType } from '../layouts/registry';
 
 export default function PresentApp({
