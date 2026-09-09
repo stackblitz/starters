@@ -402,8 +402,8 @@ const Dock = forwardRef<HTMLDivElement, DockProps>(function Dock(
           <button
             type="button"
             className="noir-icon-btn noir-optional"
-            title="Presenter — new tab (P)"
-            aria-label="Presenter — new tab (P)"
+            title="Speaker view — new tab (P)"
+            aria-label="Speaker view — new tab (P)"
             onClick={onPresenter}
           >
             <IconPresent />

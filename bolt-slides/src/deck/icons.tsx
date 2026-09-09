@@ -107,6 +107,16 @@ export const IconPlay = () => (
   </svg>
 );
 
+export const IconStopwatch = () => (
+  <svg {...base}>
+    <path d="M10 3h4" />
+    <path d="M12 3v3" />
+    <circle cx="12" cy="14" r="7" />
+    <path d="M12 14V11" />
+    <path d="M12 14l3.2 2" />
+  </svg>
+);
+
 export const IconPause = () => (
   <svg {...base} fill="currentColor" stroke="none">
     <rect x="7" y="5" width="3.6" height="14" rx="0.8" />

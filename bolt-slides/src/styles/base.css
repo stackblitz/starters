@@ -2297,10 +2297,6 @@ strong {
   height: 16px;
   display: block;
 }
-.pres-timer .pres-icon.is-play svg {
-  /* triangle's optical center sits left of the viewBox midpoint */
-  transform: translateX(1px);
-}
 .pres-icon:hover:not(:disabled) {
   background: var(--ed-util-hover);
   color: var(--ed-text);
@@ -2403,7 +2399,7 @@ strong {
   background: var(--ed-bg-secondary);
 }
 
-/* label above the box, exactly like "On screen now" — so both columns start
+/* label above the box, exactly like "Current slide" — so both columns start
    on the same line and their boxes align */
 .pres-notes-col {
   display: flex;

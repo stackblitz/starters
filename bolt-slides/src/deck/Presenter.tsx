@@ -8,9 +8,9 @@ import {
   IconLeft,
   IconRight,
   IconClose,
-  IconPlay,
   IconPause,
   IconStop,
+  IconStopwatch,
   IconType,
 } from './icons';
 
@@ -133,12 +133,12 @@ export default function Presenter({
           </span>
           <button
             type="button"
-            className={'pres-icon' + (running ? '' : ' is-play')}
+            className="pres-icon"
             onClick={() => setRunning((runningNow) => !runningNow)}
             title={running ? 'Pause (T)' : 'Start (T)'}
             aria-label={running ? 'Pause timer' : 'Start timer'}
           >
-            {running ? <IconPause /> : <IconPlay />}
+            {running ? <IconPause /> : <IconStopwatch />}
           </button>
           <button
             type="button"
@@ -213,7 +213,7 @@ export default function Presenter({
 
       <div className="pres-body">
         <section className="pres-stage">
-          <div className="pres-label">On screen now</div>
+          <div className="pres-label">Current slide</div>
           <div className="pres-now">
             {currentSlide ? (
               <Thumb ctx={liveCtx}>{renderSlide(currentSlide)}</Thumb>

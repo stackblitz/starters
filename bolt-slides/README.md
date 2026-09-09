@@ -25,11 +25,11 @@ or Download as PDF / JSON.
 ## What's inside
 
 - `/` — In Bolt this is the studio: canvas, side panel (S), grid (G),
-  and a floating dock (pager, notes, Download, Present, Presenter).
+  and a floating dock (pager, notes, Download, Speaker view, Present).
   Present opens `/?present=1` in a new tab; the studio stays put.
   Fullscreen is F in that tab. The published origin is the audience
-  deck. **P** opens the presenter console in a second tab.
-- `/?presenter=1` — Presenter console: on-screen now, up next, notes
+  deck. **P** opens speaker view in a second tab.
+- `/?presenter=1` — Speaker view: current slide, up next, notes
   (read-only), timer, note text size. `/present` is the same route.
 
 Collaborate by sharing the Bolt project.
