@@ -14,6 +14,15 @@ export type BentoTile = {
   img?: string;
 };
 
+const BENTO_COLS = 6;
+
+function tileSpan(t: BentoTile, mosaic: boolean, fromTwelve: boolean): number {
+  if (!mosaic) return 1;
+  const raw = t.c ?? (fromTwelve ? 4 : 2);
+  const scaled = fromTwelve ? Math.round(raw / 2) : raw;
+  return Math.min(BENTO_COLS, Math.max(1, scaled));
+}
+
 export default function Bento({
   kicker,
   title,
@@ -26,6 +35,12 @@ export default function Bento({
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+  const mosaic = tiles.some((t) => t.c != null);
+  // Older decks used a 12-col grid (spans like 8+4). Halve those onto 6.
+  const fromTwelve = mosaic && tiles.some((t) => (t.c ?? 0) > BENTO_COLS);
+  const cols = mosaic
+    ? BENTO_COLS
+    : Math.min(BENTO_COLS, Math.max(1, tiles.length));
 
   return (
     <div className="slide bento-wide">
@@ -45,12 +60,20 @@ export default function Bento({
             </h2>
           )}
         </Reveal>
-        <div className="bento">
+        <div
+          className="bento"
+          style={{ '--cols': String(cols) } as CSSProperties}
+        >
           {tiles.map((t, i) => (
             <motion.div
               key={i}
               className="bento-cell"
-              style={{ '--c': t.c ?? 4, '--r': t.r ?? 1 } as CSSProperties}
+              style={
+                {
+                  '--c': String(tileSpan(t, mosaic, fromTwelve)),
+                  '--r': String(t.r ?? 1),
+                } as CSSProperties
+              }
               initial={animate ? { opacity: 0, y: 26, scale: 0.985 } : false}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{

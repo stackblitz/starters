@@ -277,20 +277,20 @@ strong {
   border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
-/* ── Bento — responsive asymmetric tile grid ────────────────────── */
-/* 12-col tile rows need the slide width; lift the 1180px container cap. */
+/* ── Bento — 6-col mosaic when tiles set `c`; otherwise equal N-up ── */
+/* Mosaic rows need the slide width; lift the 1180px container cap. */
 .bento-wide .container {
   max-width: none;
 }
 .bento {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(var(--cols, 6), 1fr);
   grid-auto-rows: minmax(clamp(130px, 20vh, 230px), auto);
   gap: 16px;
   width: 100%;
 }
 .bento-cell {
-  grid-column: span var(--c, 4);
+  grid-column: span var(--c, 2);
   grid-row: span var(--r, 1);
   display: flex;
   min-width: 0;
@@ -298,7 +298,7 @@ strong {
 .btile {
   overflow: hidden;
   flex: 1;
-  grid-column: span var(--c, 4);
+  grid-column: span var(--c, 2);
   grid-row: span var(--r, 1);
   display: flex;
   flex-direction: column;

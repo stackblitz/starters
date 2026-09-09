@@ -157,8 +157,9 @@ export type BentoTile = {
   fig?: string;
   title?: string;
   body?: string;
-  c: number;
-  r: number;
+  /** Column span on the 6-col mosaic. Omit on every tile for equal N-up. */
+  c?: number;
+  r?: number;
   variant?: 'accent' | 'glow';
   img?: string;
 };
