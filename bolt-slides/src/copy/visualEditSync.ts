@@ -211,13 +211,15 @@ function commit(entry: Dirty) {
  * Entrance animations (CountUp, chart ticks, motion) mutate the same
  * stamps; those writes are ignored unless the Bolt inspector is in the tree.
  * Do not write while the inspector is typing: `setProp` re-renders `T` and
- * the caret jumps. Flush on focusout instead.
+ * the caret jumps. Flush on focusout instead. Capture-phase `focusout`
+ * still reports the contenteditable as `activeElement`, so that path
+ * force-commits; nested focus inside the same field does not.
  */
 export function startVisualEditDeckSync(): () => void {
   const dirty = new Map<string, Dirty>();
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  const flush = (key: string) => {
+  const flush = (key: string, force = false) => {
     const timer = timers.get(key);
 
     if (timer) clearTimeout(timer);
@@ -230,10 +232,14 @@ export function startVisualEditDeckSync(): () => void {
 
     const el = resolveEl(entry);
 
-    if (el && isActivelyEditing(el)) return;
+    if (!force && el && isActivelyEditing(el)) return;
 
     dirty.delete(key);
     commit(entry);
+  };
+
+  const flushAll = () => {
+    for (const key of [...dirty.keys()]) flush(key, true);
   };
 
   const schedule = (key: string) => {
@@ -285,6 +291,16 @@ export function startVisualEditDeckSync(): () => void {
 
     if (!(target instanceof Node)) return;
 
+    /* Inner caret moves inside one inspector field. */
+    const next = event.relatedTarget;
+
+    if (next instanceof Node) {
+      const leaving = editingRoot(target);
+      const entering = editingRoot(next);
+
+      if (leaving && leaving === entering) return;
+    }
+
     for (const key of [...dirty.keys()]) {
       const entry = dirty.get(key);
 
@@ -292,7 +308,7 @@ export function startVisualEditDeckSync(): () => void {
 
       const el = resolveEl(entry);
 
-      if (el && overlaps(target, el)) flush(key);
+      if (el && overlaps(target, el)) flush(key, true);
     }
   };
 
@@ -303,10 +319,12 @@ export function startVisualEditDeckSync(): () => void {
     characterDataOldValue: false,
   });
   document.addEventListener('focusout', onFocusOut, true);
+  window.addEventListener('pagehide', flushAll);
 
   return () => {
     observer.disconnect();
     document.removeEventListener('focusout', onFocusOut, true);
+    window.removeEventListener('pagehide', flushAll);
 
     for (const timer of timers.values()) clearTimeout(timer);
 
