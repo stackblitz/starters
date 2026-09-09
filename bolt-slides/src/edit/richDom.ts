@@ -79,3 +79,22 @@ export function serializeRichRoot(el: HTMLElement): string {
 
   return raw;
 }
+
+/** Code windows split source into highlighted lines; round-trip the visible text. */
+export function serializeCodeRoot(el: HTMLElement): string {
+  const lines = el.querySelectorAll('.cw-code');
+
+  if (lines.length) {
+    return Array.from(lines)
+      .map((line) => {
+        const text = (line.textContent ?? '').replace(/\u00a0/g, ' ');
+
+        return text === ' ' ? '' : text;
+      })
+      .join('\n');
+  }
+
+  const body = el.querySelector('.cw-body') ?? el.querySelector('pre') ?? el;
+
+  return (body.textContent ?? '').replace(/\u00a0/g, ' ');
+}

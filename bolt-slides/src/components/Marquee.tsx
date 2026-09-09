@@ -1,10 +1,10 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 export default function Marquee({
   items,
   duration = 26,
 }: {
-  items: string[];
+  items: ReactNode[];
   duration?: number;
 }) {
   const run = (copy: number) => (

@@ -1043,6 +1043,10 @@ strong {
   align-items: center;
   gap: 12px;
 }
+.ch-donut-ring {
+  position: relative;
+  width: 100%;
+}
 .ch-donut svg {
   width: 100%;
   height: auto;
@@ -1060,6 +1064,21 @@ strong {
   font-size: 30px;
   font-weight: 600;
   font-feature-settings: 'tnum' 1;
+}
+.ch-donut-val-html {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: calc(var(--ch-size, 168px) * 30 / 140);
+  font-weight: 600;
+  font-feature-settings: 'tnum' 1;
+  pointer-events: auto;
+}
+.ch-donut-val-html::after {
+  content: '%';
 }
 .ch-donut-label {
   font-size: 14px;

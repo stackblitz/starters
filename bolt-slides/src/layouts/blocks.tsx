@@ -13,6 +13,7 @@ import TableEditor from '../edit/TableEditor';
 import CodeEditor from '../edit/CodeEditor';
 import CompareEditor from '../edit/CompareEditor';
 import { useEdit } from '../edit/EditContext';
+import { deckPathProps } from '../edit/deckPath';
 import { useStore } from '../data/store';
 import {
   type LayoutDef,
@@ -20,7 +21,6 @@ import {
   useShow,
   Heading,
   pipe,
-  rich,
   normTable,
   asList,
 } from './shared';
@@ -123,11 +123,23 @@ const ComparisonDef: LayoutDef = {
           <CompareEditor slide={slide} data={data} />
         ) : (
           <Comparison
-            cols={data.cols}
+            cols={data.cols.map((_, i) => (
+              <T
+                key={i}
+                path={`cols.${i}`}
+                placeholder={i === 0 ? '—' : 'Column'}
+              />
+            ))}
             highlight={slide.props.highlight ?? 0}
-            rows={data.rows.map((r) => ({
-              label: e(rich(r.label)),
-              values: r.values,
+            rows={data.rows.map((r, ri) => ({
+              label: <T path={`rows.${ri}.label`} placeholder="Feature" />,
+              values: r.values.map((v, vi) =>
+                typeof v === 'boolean' ? (
+                  v
+                ) : (
+                  <T path={`rows.${ri}.values.${vi}`} placeholder="—" />
+                )
+              ),
             }))}
           />
         )}
@@ -202,10 +214,20 @@ const TableDef: LayoutDef = {
           </>
         ) : (
           <Table
-            columns={columns}
-            rows={rows.map((r) => r.map((cell) => rich(cell)))}
+            columns={columns.map((_, ci) => (
+              <T key={ci} path={`columns.${ci}`} placeholder="Column" />
+            ))}
+            rows={rows.map((r, ri) =>
+              r.map((_, ci) => (
+                <T key={ci} path={`rows.${ri}.${ci}`} placeholder="—" />
+              ))
+            )}
             highlightCol={slide.props.highlightCol ?? undefined}
-            caption={slide.props.caption || undefined}
+            caption={
+              show(slide.props.caption) ? (
+                <T path="caption" placeholder="Caption" />
+              ) : undefined
+            }
           />
         )}
       </Slide>
@@ -427,17 +449,24 @@ const CodeDef: LayoutDef = {
     highlight: '',
   },
   Render: ({ slide }) => {
-    const { editable } = useEdit();
+    const { editable, slideId } = useEdit();
 
     return (
       <Slide>
         <Heading slide={slide} tight />
-        <div style={{ maxWidth: 760, marginInline: 'auto' }}>
+        <div
+          style={{ maxWidth: 760, marginInline: 'auto' }}
+          {...deckPathProps(slideId, 'code', { kind: 'code' })}
+        >
           {editable ? (
             <CodeEditor slide={slide} />
           ) : (
             <CodeWindow
-              title={slide.props.filename || 'code'}
+              title={
+                (
+                  <T path="filename" placeholder="file.ts" />
+                ) as unknown as string
+              }
               code={slide.props.code ?? ''}
               highlight={String(slide.props.highlight ?? '')
                 .split(',')

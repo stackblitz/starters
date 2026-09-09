@@ -10,7 +10,7 @@ import { createPortal } from 'react-dom';
 import { useStore, getPath } from '../data/store';
 import { useEdit } from './EditContext';
 import { renderRich, richToHtml, clampEm, colorValue, ALIGNS } from './rich';
-import { deckPathProps } from './deckPath';
+import { deckPathProps, pipeSegment, splicePipe } from './deckPath';
 import { serializeRichRoot } from './richDom';
 
 interface Bar {
@@ -558,11 +558,13 @@ export default function T({
   placeholder = 'Edit…',
   block,
   inlineBar,
+  pipeIndex,
 }: {
   path: string;
   placeholder?: string;
   block?: boolean;
   inlineBar?: boolean;
+  pipeIndex?: number;
 }) {
   const { editable, slideId, slide: ctxSlide } = useEdit();
   const setProp = useStore((s) => s.setProp);
@@ -572,8 +574,11 @@ export default function T({
 
     return slide ? String(getPath(slide.props, path) ?? '') : null;
   });
-  const value: string =
+  const rawValue: string =
     storeValue ?? String(getPath(ctxSlide?.props ?? {}, path) ?? '');
+  const value: string =
+    pipeIndex != null ? pipeSegment(rawValue, pipeIndex) : rawValue;
+  const pathOpts = pipeIndex != null ? { pipeIndex } : undefined;
   const [focused, setFocused] = useState(false);
   const [bar, setBar] = useState<Bar | null>(null);
   const [domEmpty, setDomEmpty] = useState(!value);
@@ -649,7 +654,7 @@ export default function T({
 
   if (!editable || !slideId)
     return (
-      <span style={blockStyle} {...deckPathProps(slideId, path)}>
+      <span style={blockStyle} {...deckPathProps(slideId, path, pathOpts)}>
         {renderRich(value)}
       </span>
     );
@@ -671,6 +676,14 @@ export default function T({
     unwrapNestedSize(el);
 
     const raw = serializeRichRoot(el);
+
+    if (pipeIndex != null) {
+      const next = splicePipe(rawValue, pipeIndex, raw);
+
+      if (next !== rawValue) setProp(slideId, path, next);
+
+      return;
+    }
 
     if (raw !== value) setProp(slideId, path, raw);
   };
@@ -1055,7 +1068,7 @@ export default function T({
         className={
           't-edit' + (focused ? ' focused' : '') + (empty ? ' empty' : '')
         }
-        {...deckPathProps(slideId, path)}
+        {...deckPathProps(slideId, path, pathOpts)}
         contentEditable
         suppressContentEditableWarning
         spellCheck={false}

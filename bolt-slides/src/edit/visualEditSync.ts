@@ -1,29 +1,41 @@
 import { getPath, useStore } from '../data/store';
 import {
+  DECK_KIND_ATTR,
   DECK_PATH_ATTR,
+  DECK_PIPE_ATTR,
   DECK_SLIDE_ATTR,
   closestDeckField,
   readDeckField,
+  splicePipe,
+  type DeckField,
 } from './deckPath';
-import { serializeRichRoot } from './richDom';
+import { serializeCodeRoot, serializeRichRoot } from './richDom';
 
 const DEBOUNCE_MS = 120;
 
-type Dirty = { slideId: string; path: string; fallback: HTMLElement };
+type Dirty = DeckField & { fallback: HTMLElement };
 
-function fieldKey(slideId: string, path: string) {
-  return `${slideId}\0${path}`;
+function fieldKey(field: Pick<DeckField, 'slideId' | 'path' | 'pipeIndex'>) {
+  return `${field.slideId}\0${field.path}\0${field.pipeIndex ?? ''}`;
 }
 
 function attrValue(value: string) {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-function liveField(slideId: string, path: string): HTMLElement | null {
+function liveField(field: DeckField): HTMLElement | null {
+  const pipeSel =
+    field.pipeIndex != null
+      ? `[${DECK_PIPE_ATTR}="${attrValue(String(field.pipeIndex))}"]`
+      : `:not([${DECK_PIPE_ATTR}])`;
+  const kindSel =
+    field.kind === 'code'
+      ? `[${DECK_KIND_ATTR}="code"]`
+      : `:not([${DECK_KIND_ATTR}])`;
   const nodes = document.querySelectorAll(
     `[${DECK_SLIDE_ATTR}="${attrValue(
-      slideId
-    )}"][${DECK_PATH_ATTR}="${attrValue(path)}"]`
+      field.slideId
+    )}"][${DECK_PATH_ATTR}="${attrValue(field.path)}"]${pipeSel}${kindSel}`
   );
 
   for (const node of nodes) {
@@ -39,9 +51,11 @@ function liveField(slideId: string, path: string): HTMLElement | null {
 }
 
 function resolveEl(entry: Dirty): HTMLElement | null {
-  const el = liveField(entry.slideId, entry.path) ?? entry.fallback;
+  if (entry.fallback.isConnected) return entry.fallback;
 
-  return el.isConnected ? el : null;
+  const el = liveField(entry);
+
+  return el?.isConnected ? el : null;
 }
 
 function editingRoot(node: Node | null): HTMLElement | null {
@@ -77,13 +91,12 @@ function overlaps(root: Node, el: HTMLElement) {
 function remember(
   dirty: Map<string, Dirty>,
   touched: Set<string>,
-  slideId: string,
-  path: string,
+  field: DeckField,
   fallback: HTMLElement
 ) {
-  const key = fieldKey(slideId, path);
+  const key = fieldKey(field);
 
-  dirty.set(key, { slideId, path, fallback });
+  dirty.set(key, { ...field, fallback });
   touched.add(key);
 }
 
@@ -96,7 +109,7 @@ function collectFromNode(
   const field = readDeckField(host);
 
   if (host && field) {
-    remember(dirty, touched, field.slideId, field.path, host);
+    remember(dirty, touched, field, host);
   }
 }
 
@@ -114,7 +127,23 @@ function collectRemovedStamp(
 
   if (!field || !parent.isConnected) return;
 
-  remember(dirty, touched, field.slideId, field.path, parent);
+  remember(dirty, touched, field, parent);
+}
+
+function decodeValue(el: HTMLElement, field: DeckField, prev: unknown) {
+  if (field.kind === 'code') return serializeCodeRoot(el);
+
+  const next = serializeRichRoot(el);
+
+  if (field.pipeIndex != null) return splicePipe(prev, field.pipeIndex, next);
+
+  if (typeof prev === 'number') {
+    const n = parseFloat(String(next).replace(/[^\d.-]/g, ''));
+
+    return Number.isFinite(n) ? n : prev;
+  }
+
+  return next;
 }
 
 function commit(entry: Dirty) {
@@ -128,10 +157,10 @@ function commit(entry: Dirty) {
 
   if (!slide) return;
 
-  const next = serializeRichRoot(el);
-  const prev = String(getPath(slide.props, entry.path) ?? '');
+  const prev = getPath(slide.props, entry.path);
+  const next = decodeValue(el, entry, prev);
 
-  if (next === prev) return;
+  if (next === prev || String(next) === String(prev ?? '')) return;
 
   useStore.getState().setProp(entry.slideId, entry.path, next);
 }

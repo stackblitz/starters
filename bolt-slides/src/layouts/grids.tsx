@@ -556,7 +556,11 @@ const LogosDef: LayoutDef = {
     <Slide center>
       <Heading slide={slide} tight />
       <div style={{ width: '100%', marginTop: 'clamp(16px,3vh,30px)' }}>
-        <Marquee items={pipe(slide.props.items).filter(Boolean)} />
+        <Marquee
+          items={pipe(slide.props.items).map((_, i) => (
+            <T key={i} path="items" pipeIndex={i} />
+          ))}
+        />
       </div>
     </Slide>
   ),

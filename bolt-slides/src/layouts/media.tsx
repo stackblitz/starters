@@ -500,7 +500,7 @@ const ChartDef: LayoutDef = {
         showValues={showValues}
         data={bars.map((b, i) => ({
           value: b.value,
-          valueNode: editable ? <T path={`bars.${i}.value`} /> : undefined,
+          valueNode: <T path={`bars.${i}.value`} />,
           label: e(
             <LiCtl path="bars" index={i} blank={BAR_BLANK}>
               <T path={`bars.${i}.label`} />
@@ -548,6 +548,13 @@ const ChartDef: LayoutDef = {
               points={pipe(slide.props.points)
                 .map(Number)
                 .filter(Number.isFinite)}
+              valueNodes={
+                showValues
+                  ? pipe(slide.props.points).map((_, i) => (
+                      <T key={i} path="points" pipeIndex={i} />
+                    ))
+                  : undefined
+              }
               height={large ? 340 : 240}
             />
           )}
@@ -557,6 +564,7 @@ const ChartDef: LayoutDef = {
                 size={large ? 300 : 200}
                 value={Number(slide.props.donutValue) || 0}
                 label={e(<T path="donutLabel" />)}
+                valueNode={<T path="donutValue" />}
               />
             </div>
           )}
@@ -564,7 +572,9 @@ const ChartDef: LayoutDef = {
             <GroupedBarChart
               height={large ? 350 : 250}
               showValues={showValues}
-              categories={pipe(slide.props.categories)}
+              categories={pipe(slide.props.categories).map((_, i) => (
+                <T key={i} path="categories" pipeIndex={i} />
+              ))}
               series={asList<{
                 label: string;
                 values: string;
@@ -581,6 +591,11 @@ const ChartDef: LayoutDef = {
                 values: pipe(s2.values)
                   .map(Number)
                   .map((n) => (Number.isFinite(n) ? n : 0)),
+                valueNodes: showValues
+                  ? pipe(s2.values).map((_, ci) => (
+                      <T key={ci} path={`series.${i}.values`} pipeIndex={ci} />
+                    ))
+                  : undefined,
               }))}
             />
           )}
@@ -595,6 +610,17 @@ const ChartDef: LayoutDef = {
                       points={pipe(l.points)
                         .map(Number)
                         .filter(Number.isFinite)}
+                      valueNodes={
+                        showValues
+                          ? pipe(l.points).map((_, pi) => (
+                              <T
+                                key={pi}
+                                path={`lines.${i}.points`}
+                                pipeIndex={pi}
+                              />
+                            ))
+                          : undefined
+                      }
                       height={large ? 230 : 150}
                     />
                     <div className="lines-label">
@@ -619,6 +645,7 @@ const ChartDef: LayoutDef = {
                     <DonutChart
                       value={Number(d.value) || 0}
                       size={large ? 210 : 140}
+                      valueNode={<T path={`donuts.${i}.value`} />}
                       label={e(
                         <LiCtl
                           path="donuts"
@@ -750,7 +777,7 @@ const InsightDef: LayoutDef = {
           showValues={showValues}
           data={bars.map((b, i) => ({
             value: b.value,
-            valueNode: editable ? <T path={`bars.${i}.value`} /> : undefined,
+            valueNode: <T path={`bars.${i}.value`} />,
             label: e(<T path={`bars.${i}.label`} />),
           }))}
         />
@@ -760,6 +787,13 @@ const InsightDef: LayoutDef = {
           points={pipe(slide.props.points_line)
             .map(Number)
             .filter(Number.isFinite)}
+          valueNodes={
+            showValues
+              ? pipe(slide.props.points_line).map((_, i) => (
+                  <T key={i} path="points_line" pipeIndex={i} />
+                ))
+              : undefined
+          }
           height={230}
         />
       ) : (
@@ -767,6 +801,7 @@ const InsightDef: LayoutDef = {
           value={Number(slide.props.donutValue) || 0}
           size={200}
           label={e(<T path="donutLabel" />)}
+          valueNode={<T path="donutValue" />}
         />
       );
 

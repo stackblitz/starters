@@ -1,4 +1,10 @@
-import { useEffect, useId, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useId,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useInView } from '../deck/useInView';
 import { useDeck } from '../deck/DeckContext';
@@ -9,7 +15,7 @@ export function BarChart({
   showValues = true,
 }: {
   /** valueNode overrides how the figure above a bar renders (math still uses value) */
-  data: { label: string; value: number; valueNode?: React.ReactNode }[];
+  data: { label: ReactNode; value: number; valueNode?: ReactNode }[];
   height?: number;
   showValues?: boolean;
 }) {
@@ -57,11 +63,13 @@ export function LineChart({
   height = 200,
   showValues = false,
   large = false,
+  valueNodes,
 }: {
   points: number[];
   height?: number;
   showValues?: boolean;
   large?: boolean;
+  valueNodes?: ReactNode[];
 }) {
   const points =
     rawPoints.length >= 2
@@ -162,7 +170,7 @@ export function LineChart({
               transitionDelay: `${0.3 + i * 0.05}s`,
             }}
           >
-            {points[i].toLocaleString('en-US')}
+            {valueNodes?.[i] ?? points[i].toLocaleString('en-US')}
           </span>
         ))}
       {/* the live end-point — a glowing dot with a radar pulse */}
@@ -179,10 +187,12 @@ export function DonutChart({
   value,
   label,
   size = 168,
+  valueNode,
 }: {
   value: number;
-  label?: string;
+  label?: ReactNode;
   size?: number;
+  valueNode?: ReactNode;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
@@ -219,43 +229,50 @@ export function DonutChart({
       className="ch-donut"
       style={{ '--ch-size': `${size}px` } as CSSProperties}
     >
-      <svg ref={ref} viewBox="0 0 140 140">
-        <circle
-          cx="70"
-          cy="70"
-          r={r}
-          fill="none"
-          stroke="var(--hair)"
-          strokeWidth={12}
-        />
-        <motion.circle
-          className="ch-donut-arc"
-          cx="70"
-          cy="70"
-          r={r}
-          fill="none"
-          stroke="var(--primary)"
-          strokeWidth={12}
-          strokeLinecap="round"
-          strokeDasharray={circ}
-          transform="rotate(-90 70 70)"
-          initial={isStatic || reduce ? false : { strokeDashoffset: circ }}
-          animate={{
-            strokeDashoffset: inView ? circ * (1 - value / 100) : circ,
-          }}
-          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-        />
-        <text
-          x="70"
-          y="70"
-          textAnchor="middle"
-          dominantBaseline="central"
-          className="ch-donut-val"
-        >
-          {Math.round(shown)}%
-        </text>
-      </svg>
-      {label && <div className="ch-donut-label">{label}</div>}
+      <div className="ch-donut-ring">
+        <svg ref={ref} viewBox="0 0 140 140">
+          <circle
+            cx="70"
+            cy="70"
+            r={r}
+            fill="none"
+            stroke="var(--hair)"
+            strokeWidth={12}
+          />
+          <motion.circle
+            className="ch-donut-arc"
+            cx="70"
+            cy="70"
+            r={r}
+            fill="none"
+            stroke="var(--primary)"
+            strokeWidth={12}
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            transform="rotate(-90 70 70)"
+            initial={isStatic || reduce ? false : { strokeDashoffset: circ }}
+            animate={{
+              strokeDashoffset: inView ? circ * (1 - value / 100) : circ,
+            }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+          />
+          {valueNode ? null : (
+            <text
+              x="70"
+              y="70"
+              textAnchor="middle"
+              dominantBaseline="central"
+              className="ch-donut-val"
+            >
+              {Math.round(shown)}%
+            </text>
+          )}
+        </svg>
+        {valueNode ? (
+          <div className="ch-donut-val-html">{valueNode}</div>
+        ) : null}
+      </div>
+      {label ? <div className="ch-donut-label">{label}</div> : null}
     </div>
   );
 }
@@ -272,8 +289,8 @@ export function GroupedBarChart({
   height = 240,
   showValues = false,
 }: {
-  categories: React.ReactNode[];
-  series: { label: React.ReactNode; values: number[] }[];
+  categories: ReactNode[];
+  series: { label: ReactNode; values: number[]; valueNodes?: ReactNode[] }[];
   height?: number;
   showValues?: boolean;
 }) {
@@ -337,7 +354,8 @@ export function GroupedBarChart({
                             delay: 0.5 + ci * 0.06 + si * 0.04,
                           }}
                         >
-                          {(s.values[ci] ?? 0).toLocaleString('en-US')}
+                          {s.valueNodes?.[ci] ??
+                            (s.values[ci] ?? 0).toLocaleString('en-US')}
                         </motion.span>
                       )}
                       <motion.span

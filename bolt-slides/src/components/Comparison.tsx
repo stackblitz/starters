@@ -1,8 +1,8 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useInView } from '../deck/useInView';
 
-export type CompRow = { label: string; values: (boolean | string)[] };
+export type CompRow = { label: ReactNode; values: (boolean | ReactNode)[] };
 
 const Check = () => (
   <svg
@@ -35,7 +35,7 @@ export default function Comparison({
   rows,
   highlight = 0,
 }: {
-  cols: string[];
+  cols: ReactNode[];
   rows: CompRow[];
   highlight?: number;
 }) {

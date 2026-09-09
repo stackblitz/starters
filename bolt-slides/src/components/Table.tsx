@@ -1,11 +1,26 @@
-import type { ReactNode } from 'react';
+import { isValidElement, type ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useInView } from '../deck/useInView';
 
 export type TableColumn =
-  | string
-  | { label: string; align?: 'left' | 'right' | 'center' };
+  | ReactNode
+  | { label: ReactNode; align?: 'left' | 'right' | 'center' };
 export type TableCell = string | number | ReactNode;
+
+function isAlignedColumn(
+  column: TableColumn
+): column is { label: ReactNode; align?: 'left' | 'right' | 'center' } {
+  return (
+    typeof column === 'object' &&
+    column !== null &&
+    !isValidElement(column) &&
+    'label' in column
+  );
+}
+
+function columnLabel(column: TableColumn): ReactNode {
+  return isAlignedColumn(column) ? column.label : column;
+}
 
 export default function Table({
   columns,
@@ -18,13 +33,12 @@ export default function Table({
   rows: TableCell[][];
   highlightCol?: number;
   highlightRow?: number;
-  caption?: string;
+  caption?: ReactNode;
 }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.25);
   const reduce = useReducedMotion();
 
-  const align = (c: TableColumn) =>
-    typeof c === 'string' ? undefined : c.align;
+  const align = (c: TableColumn) => (isAlignedColumn(c) ? c.align : undefined);
   const alignClass = (i: number) => {
     const a = align(columns[i]);
 
@@ -44,7 +58,7 @@ export default function Table({
                     (i === highlightCol ? 'hl-col' : '') + alignClass(i)
                   }
                 >
-                  {typeof c === 'string' ? c : c.label}
+                  {columnLabel(c)}
                 </th>
               ))}
             </tr>
@@ -77,14 +91,14 @@ export default function Table({
           </tbody>
         </table>
       </div>
-      {caption && (
+      {caption ? (
         <div
           className="foot dtable-caption"
           style={{ maxWidth: 880, marginInline: 'auto' }}
         >
           {caption}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
