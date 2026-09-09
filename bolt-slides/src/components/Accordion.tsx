@@ -1,12 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
-/* An expand/collapse accordion. Data-driven like Bento/StatGrid. Mono index,
-   a +/× morph affordance, and an accent-lit open state. Self-centers when it
-   stands alone on a slide.
-   <Accordion items={[{ title: 'Q', body: 'A' }, …]} />
-   - single (default true): only one panel open at a time.
-   - defaultOpen: index open on mount (null = all closed). */
 export type AccordionItem = { title: string; body: ReactNode };
 
 export default function Accordion({
@@ -22,11 +16,14 @@ export default function Accordion({
   const [open, setOpen] = useState<number[]>(
     defaultOpen == null ? [] : [defaultOpen]
   );
+
   const isOpen = (i: number) => open.includes(i);
   const toggle = (i: number) =>
     setOpen((cur) => {
       const has = cur.includes(i);
+
       if (single) return has ? [] : [i];
+
       return has ? cur.filter((x) => x !== i) : [...cur, i];
     });
 

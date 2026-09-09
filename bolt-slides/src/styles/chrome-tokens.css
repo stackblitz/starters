@@ -1,0 +1,71 @@
+/* Chrome tokens — snapshot of @blitz/design-system DARK theme.
+   Text, borders, backgrounds, shadows for the editor / present skeleton
+   only. Do not import the design-system package (reset + UnoCSS would
+   restyle slide content; the starter also cannot depend on a private pkg).
+
+   Isolation: these names (--ed-*, --ui-*) are chrome-only. Deck theming
+   stays on tokens.css (:root --bg / --fg / --accent). Never assign these
+   onto :root in a way that redefines --bg/--fg; .slide inherits from :root
+   through .ed-root.
+
+   Source: bolt/packages/design-system/src/tokens/tokens.css
+   (.dark / :root[data-theme='dark']). Shadows match Uno/Tailwind
+   shadow-sm / shadow-md / shadow-lg used by DS Button / Dialog / Popover. */
+
+:root {
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Brand */
+  --ed-brand: rgb(20 136 252);
+  --ed-brand-hover: rgb(43 166 255);
+  --ed-on-brand: rgb(238 249 255);
+  --ed-brand-bg-subtle: #2ba6ff1a;
+  --ed-brand-border-subtle: #2ba6ff1a;
+
+  /* Surfaces */
+  --ed-bg: rgb(17 17 20);
+  --ed-bg-hover: rgb(23 23 25);
+  --ed-bg-alt: rgb(23 23 25);
+  --ed-bg-alt-hover: rgb(30 30 33);
+  --ed-bg-secondary: rgb(23 23 25);
+  --ed-bg-secondary-hover: rgb(30 30 33);
+  --ed-bg-tertiary: rgb(30 30 33);
+  --ed-bg-tertiary-hover: rgb(44 44 48);
+  --ed-inverse-bg: rgb(255 254 254);
+  --ed-inverse-bg-hover: rgb(249 246 249);
+  --ed-on-inverse: rgb(17 17 20);
+  --ed-util-hover: #fffefe0a;
+
+  /* Text & icons */
+  --ed-text: rgb(249 246 249);
+  --ed-text-muted: rgb(214 213 222);
+  --ed-text-faint: rgb(164 163 172);
+  --ed-icon: rgb(249 246 249);
+  --ed-icon-muted: rgb(164 163 172);
+  --ed-icon-faint: rgb(115 115 123);
+
+  /* Borders */
+  --ed-border: #2c2c30;
+  --ed-border-subtle: #1e1e21;
+  --ed-divider: #2c2c30;
+
+  /* Status */
+  --ed-success: rgb(22 163 74);
+  --ed-danger: rgb(239 68 68);
+  --ed-danger-hover: rgb(220 38 38);
+  --ed-on-danger: rgb(254 242 242);
+  --ed-danger-bg-subtle: #ef44441a;
+
+  /* Elevation (Uno shadow-sm / md / lg) */
+  --ed-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --ed-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --ed-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Aliases used by existing chrome CSS */
+  --ui-accent: var(--ed-brand);
+  --ed-chrome: var(--ed-bg-secondary); /* rails, panels */
+  --ed-chrome-2: var(--ed-bg-tertiary); /* hover, inputs, cards */
+  --ed-pop: var(--ed-bg-alt); /* menus, popovers */
+}

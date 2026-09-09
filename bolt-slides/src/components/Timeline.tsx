@@ -1,16 +1,13 @@
 import { motion, useReducedMotion } from 'motion/react';
 import type { ReactNode } from 'react';
-import { useInView } from '@/deck/useInView';
+import { useInView } from '../deck/useInView';
 
-/* A vertical timeline / roadmap. The connector draws in, milestones are
-   glowing rings with accent cores, and time labels are mono chips. Reveals
-   in sequence when scrolled into view; self-centers when standalone.
-   <Timeline items={[{ time: 'Q1', title: 'Launch', body: '…' }, …]} /> */
 export type TimelineItem = { time: string; title: string; body?: ReactNode };
 
 export default function Timeline({ items }: { items: TimelineItem[] }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.2);
   const reduce = useReducedMotion();
+
   return (
     <div className="tl" ref={ref}>
       <div className="tl-line">

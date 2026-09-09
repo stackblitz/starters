@@ -1,15 +1,6 @@
-import Build from '@/deck/Build';
-import Reveal from '@/deck/Reveal';
+import Build from '../deck/Build';
+import Reveal from '../deck/Reveal';
 
-/* A chat-conversation slide — user bubbles on the accent, assistant bubbles on
-   the surface, inside a titled window. Each message is a click-build beat:
-   advance the deck (→ / space) to reveal the exchange line by line. Ideal for
-   AI-product decks.
-   <Chat kicker="Ask anything" title="Plain English in, answers out."
-     name="Acme" messages={[
-       { from: 'user', text: 'Why did signups dip last week?' },
-       { from: 'ai', text: 'Signups fell 12% after Tuesday's pricing change…' },
-     ]} /> */
 export type ChatMessage = { from: 'user' | 'ai'; text: string };
 
 export default function Chat({
@@ -22,8 +13,6 @@ export default function Chat({
   title?: string;
   name?: string;
   messages: ChatMessage[];
-  nav?: string;
-  notes?: string;
 }) {
   return (
     <div className="slide">

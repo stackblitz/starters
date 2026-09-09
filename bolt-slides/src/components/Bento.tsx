@@ -1,12 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import Reveal from '@/deck/Reveal';
-import { useDeck } from '@/deck/DeckContext';
+import Reveal from '../deck/Reveal';
+import { useDeck } from '../deck/DeckContext';
 
-/* A full-viewport slide laid out as an asymmetric bento grid. Spans via c
-   (columns of 12) and r (rows). Tiles rise in one after another; metric tiles
-   get an accent tick. Collapses to one column on narrow screens.
-   nav/notes are read by the engine (rail label / presenter notes). */
 export type BentoTile = {
   k?: string;
   fig?: ReactNode;
@@ -15,10 +11,17 @@ export type BentoTile = {
   c?: number;
   r?: number;
   variant?: 'accent' | 'glow';
-  /** full-bleed photo tile: the image covers the tile under a bottom scrim,
-      text anchors to the bottom. Great for brand/product decks. */
   img?: string;
 };
+
+const BENTO_COLS = 6;
+
+function tileSpan(t: BentoTile, mosaic: boolean, fromTwelve: boolean): number {
+  if (!mosaic) return 1;
+  const raw = t.c ?? (fromTwelve ? 4 : 2);
+  const scaled = fromTwelve ? Math.round(raw / 2) : raw;
+  return Math.min(BENTO_COLS, Math.max(1, scaled));
+}
 
 export default function Bento({
   kicker,
@@ -28,14 +31,19 @@ export default function Bento({
   kicker?: string;
   title?: string;
   tiles: BentoTile[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+  const mosaic = tiles.some((t) => t.c != null);
+  // Older decks used a 12-col grid (spans like 8+4). Halve those onto 6.
+  const fromTwelve = mosaic && tiles.some((t) => (t.c ?? 0) > BENTO_COLS);
+  const cols = mosaic
+    ? BENTO_COLS
+    : Math.min(BENTO_COLS, Math.max(1, tiles.length));
+
   return (
-    <div className="slide">
+    <div className="slide bento-wide">
       <div className="container">
         <Reveal>
           {kicker && (
@@ -52,12 +60,20 @@ export default function Bento({
             </h2>
           )}
         </Reveal>
-        <div className="bento">
+        <div
+          className="bento"
+          style={{ '--cols': String(cols) } as CSSProperties}
+        >
           {tiles.map((t, i) => (
             <motion.div
               key={i}
               className="bento-cell"
-              style={{ '--c': t.c ?? 4, '--r': t.r ?? 1 } as CSSProperties}
+              style={
+                {
+                  '--c': String(tileSpan(t, mosaic, fromTwelve)),
+                  '--r': String(t.r ?? 1),
+                } as CSSProperties
+              }
               initial={animate ? { opacity: 0, y: 26, scale: 0.985 } : false}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{

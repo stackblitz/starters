@@ -1,15 +1,8 @@
-/* A "us vs. them" feature matrix. One value column is highlighted (your
-   column) and reads as a framed accent strip through the table; booleans
-   render as circled check/cross chips; rows cascade in on view.
-   <Comparison cols={['', 'Acme', 'Legacy']} highlight={0}
-     rows={[{ label: 'Realtime sync', values: [true, false] },
-            { label: 'Price', values: ['$29', '$99'] }]} />
-   values are booleans (→ ✓/✗) or strings; `highlight` indexes the value columns. */
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { useInView } from '@/deck/useInView';
+import { useInView } from '../deck/useInView';
 
-export type CompRow = { label: string; values: (boolean | string)[] };
+export type CompRow = { label: ReactNode; values: (boolean | ReactNode)[] };
 
 const Check = () => (
   <svg
@@ -23,6 +16,7 @@ const Check = () => (
     <path d="M5 12.5l4.5 4.5L19 6.5" />
   </svg>
 );
+
 const Cross = () => (
   <svg
     viewBox="0 0 24 24"
@@ -41,13 +35,14 @@ export default function Comparison({
   rows,
   highlight = 0,
 }: {
-  cols: string[];
+  cols: ReactNode[];
   rows: CompRow[];
   highlight?: number;
 }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.25);
   const reduce = useReducedMotion();
   const vcols = cols.length - 1;
+
   return (
     <div
       ref={ref}

@@ -1,12 +1,10 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
-/* A continuously-scrolling strip — logo wall, value props, tech stack.
-   Items are separated by small accent diamonds; hovering pauses the strip. */
 export default function Marquee({
   items,
   duration = 26,
 }: {
-  items: string[];
+  items: ReactNode[];
   duration?: number;
 }) {
   const run = (copy: number) => (
@@ -21,6 +19,7 @@ export default function Marquee({
       ))}
     </Fragment>
   );
+
   return (
     <div className="marquee">
       <div

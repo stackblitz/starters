@@ -1,13 +1,15 @@
+import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import Reveal from '@/deck/Reveal';
-import { useDeck } from '@/deck/DeckContext';
+import Reveal from '../deck/Reveal';
+import { useDeck } from '../deck/DeckContext';
 
-/* A people-grid slide: photo avatars (or auto-initials on the accent) with
-   name + role. Cards rise in staggered; the grid wraps responsively.
-   <Team kicker="The team" title="Built by operators." people={[
-     { name: 'Dana Kim', role: 'CEO · ex-Stripe' },
-     { name: 'Ade Obi', role: 'CTO', img: '/ade.webp' }, …]} /> */
-export type Person = { name: string; role?: string; img?: string };
+export type Person = {
+  name: ReactNode;
+  role?: ReactNode;
+  img?: string;
+  /** avatar initials — required when `name` isn't a plain string */
+  initials?: string;
+};
 
 export default function Team({
   kicker,
@@ -17,12 +19,11 @@ export default function Team({
   kicker?: string;
   title?: string;
   people: Person[];
-  nav?: string;
-  notes?: string;
 }) {
   const { isStatic } = useDeck();
   const reduce = useReducedMotion();
   const animate = !isStatic && !reduce;
+
   return (
     <div className="slide">
       <div className="container">
@@ -50,12 +51,17 @@ export default function Team({
         </Reveal>
         <div className="team">
           {people.map((p, i) => {
-            const initials = p.name
-              .split(/\s+/)
-              .map((w) => w[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase();
+            const initials =
+              p.initials ??
+              (typeof p.name === 'string'
+                ? p.name
+                    .split(/\s+/)
+                    .map((w) => w[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase()
+                : '');
+
             return (
               <motion.div
                 key={i}
@@ -69,7 +75,14 @@ export default function Team({
                 }}
               >
                 <span className="person-ava">
-                  {p.img ? <img src={p.img} alt={p.name} /> : initials}
+                  {p.img ? (
+                    <img
+                      src={p.img}
+                      alt={typeof p.name === 'string' ? p.name : ''}
+                    />
+                  ) : (
+                    initials
+                  )}
                 </span>
                 <div className="person-name">{p.name}</div>
                 {p.role && <div className="person-role">{p.role}</div>}

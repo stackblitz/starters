@@ -1,12 +1,8 @@
 import { motion } from 'motion/react';
 import { useEffect } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { useDeck } from '@/deck/DeckContext';
+import { useDeck } from './DeckContext';
 
-/* Click-build (the Slidev "v-click"): this element stays hidden until the
-   presenter advances to step `at` (1-based) on the current slide, then it
-   animates in. Reveal content in beats: <Build at={1}>…</Build>. The deck
-   advances builds before moving to the next slide. */
 export default function Build({
   at = 1,
   y = 16,
@@ -21,6 +17,7 @@ export default function Build({
   style?: CSSProperties;
 }) {
   const { clicks, isStatic, registerMax } = useDeck();
+
   useEffect(() => {
     registerMax?.(at);
   }, [at, registerMax]);
@@ -33,6 +30,7 @@ export default function Build({
     );
 
   const shown = clicks >= at;
+
   return (
     <motion.div
       className={className}

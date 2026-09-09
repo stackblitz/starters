@@ -1,0 +1,334 @@
+import { getPath, useStore } from '../data/store';
+import {
+  DECK_KIND_ATTR,
+  DECK_PATH_ATTR,
+  DECK_PIPE_ATTR,
+  DECK_SLIDE_ATTR,
+  closestDeckField,
+  readDeckField,
+  splicePipe,
+  type DeckField,
+} from './deckPath';
+import { serializeCodeRoot, serializeRichRoot } from './richDom';
+
+const DEBOUNCE_MS = 120;
+
+/** Bolt inspector wrappers / the contenteditable it turns on. */
+const INSPECTOR_TREE =
+  '[contenteditable]:not([contenteditable="false"]),' +
+  '[data-bolt-visual-edit-text],' +
+  '[data-bolt-visual-edit-link],' +
+  '[data-bolt-visual-edit-list],' +
+  '[data-bolt-visual-edit-marker],' +
+  '[data-bolt-inspector]';
+
+type Dirty = DeckField & { fallback: HTMLElement };
+
+function fieldKey(field: Pick<DeckField, 'slideId' | 'path' | 'pipeIndex'>) {
+  return `${field.slideId}\0${field.path}\0${field.pipeIndex ?? ''}`;
+}
+
+function attrValue(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function liveField(field: DeckField): HTMLElement | null {
+  const pipeSel =
+    field.pipeIndex != null
+      ? `[${DECK_PIPE_ATTR}="${attrValue(String(field.pipeIndex))}"]`
+      : `:not([${DECK_PIPE_ATTR}])`;
+  const kindSel =
+    field.kind === 'code'
+      ? `[${DECK_KIND_ATTR}="code"]`
+      : `:not([${DECK_KIND_ATTR}])`;
+  const nodes = document.querySelectorAll(
+    `[${DECK_SLIDE_ATTR}="${attrValue(
+      field.slideId
+    )}"][${DECK_PATH_ATTR}="${attrValue(field.path)}"]${pipeSel}${kindSel}`
+  );
+
+  for (const node of nodes) {
+    if (!(node instanceof HTMLElement) || !node.isConnected) continue;
+
+    /* Prefer the on-stage copy over rail thumbs. */
+    if (node.closest('.ed-frame-inner, .deck-live-stage, .slide-stage')) {
+      return node;
+    }
+  }
+
+  return (nodes[0] as HTMLElement | null) ?? null;
+}
+
+function resolveEl(entry: Dirty): HTMLElement | null {
+  if (entry.fallback.isConnected) return entry.fallback;
+
+  const el = liveField(entry);
+
+  return el?.isConnected ? el : null;
+}
+
+function editingRoot(node: Node | null): HTMLElement | null {
+  const start = node instanceof Element ? node : node?.parentElement;
+
+  if (!start) return null;
+
+  const root = start.closest('[contenteditable="true"]');
+
+  return root instanceof HTMLElement ? root : null;
+}
+
+/** Inspector may make a parent (h1) editable, not the stamped span. */
+function isActivelyEditing(el: HTMLElement): boolean {
+  const active = document.activeElement;
+
+  if (!(active instanceof HTMLElement)) return false;
+
+  const root = editingRoot(active);
+
+  if (!root) return false;
+
+  return root === el || root.contains(el) || el.contains(root);
+}
+
+function inInspectorTree(node: Node | null): boolean {
+  const start = node instanceof Element ? node : node?.parentElement;
+
+  if (!start) return false;
+
+  return !!start.closest(INSPECTOR_TREE);
+}
+
+function nodeIsInspector(node: Node): boolean {
+  if (inInspectorTree(node)) return true;
+
+  return node instanceof Element && !!node.querySelector(INSPECTOR_TREE);
+}
+
+/** CountUp / motion / React reconcile the same stamps. Only persist inspector edits. */
+function mutationFromInspector(record: MutationRecord): boolean {
+  if (inInspectorTree(record.target)) return true;
+
+  for (const node of record.addedNodes) {
+    if (nodeIsInspector(node)) return true;
+  }
+
+  for (const node of record.removedNodes) {
+    if (nodeIsInspector(node)) return true;
+  }
+
+  return false;
+}
+
+function overlaps(root: Node, el: HTMLElement) {
+  return (
+    root === el ||
+    (root instanceof Node && (root.contains(el) || el.contains(root)))
+  );
+}
+
+function remember(
+  dirty: Map<string, Dirty>,
+  touched: Set<string>,
+  field: DeckField,
+  fallback: HTMLElement
+) {
+  const key = fieldKey(field);
+
+  dirty.set(key, { ...field, fallback });
+  touched.add(key);
+}
+
+function collectFromNode(
+  dirty: Map<string, Dirty>,
+  touched: Set<string>,
+  node: Node | null
+) {
+  const host = closestDeckField(node);
+  const field = readDeckField(host);
+
+  if (host && field) {
+    remember(dirty, touched, field, host);
+  }
+}
+
+function collectRemovedStamp(
+  dirty: Map<string, Dirty>,
+  touched: Set<string>,
+  removed: Node,
+  parent: Node
+) {
+  if (!(removed instanceof HTMLElement) || !(parent instanceof HTMLElement)) {
+    return;
+  }
+
+  const field = readDeckField(removed);
+
+  if (!field || !parent.isConnected) return;
+
+  remember(dirty, touched, field, parent);
+}
+
+function decodeValue(el: HTMLElement, field: DeckField, prev: unknown) {
+  if (field.kind === 'code') return serializeCodeRoot(el);
+
+  const next = serializeRichRoot(el);
+
+  if (field.pipeIndex != null) return splicePipe(prev, field.pipeIndex, next);
+
+  if (typeof prev === 'number') {
+    const n = parseFloat(String(next).replace(/[^\d.-]/g, ''));
+
+    return Number.isFinite(n) ? n : prev;
+  }
+
+  return next;
+}
+
+function commit(entry: Dirty) {
+  const el = resolveEl(entry);
+
+  if (!el) return;
+
+  const slide = useStore
+    .getState()
+    .slides.find((row) => row.id === entry.slideId);
+
+  if (!slide) return;
+
+  const prev = getPath(slide.props, entry.path);
+  const next = decodeValue(el, entry, prev);
+
+  if (next === prev || String(next) === String(prev ?? '')) return;
+
+  useStore.getState().setProp(entry.slideId, entry.path, next);
+}
+
+/**
+ * Visual edits patch the preview DOM. This watches stamped fields and writes
+ * `deck.json` through the existing persist path. Style-only patches are
+ * ignored until those map onto tokens or slide backgrounds.
+ *
+ * Entrance animations (CountUp, chart ticks, motion) mutate the same
+ * stamps; those writes are ignored unless the Bolt inspector is in the tree.
+ * Do not write while the inspector is typing: `setProp` re-renders `T` and
+ * the caret jumps. Flush on focusout instead. Capture-phase `focusout`
+ * still reports the contenteditable as `activeElement`, so that path
+ * force-commits; nested focus inside the same field does not.
+ */
+export function startVisualEditDeckSync(): () => void {
+  const dirty = new Map<string, Dirty>();
+  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  const flush = (key: string, force = false) => {
+    const timer = timers.get(key);
+
+    if (timer) clearTimeout(timer);
+
+    timers.delete(key);
+
+    const entry = dirty.get(key);
+
+    if (!entry) return;
+
+    const el = resolveEl(entry);
+
+    if (!force && el && isActivelyEditing(el)) return;
+
+    dirty.delete(key);
+    commit(entry);
+  };
+
+  const flushAll = () => {
+    for (const key of [...dirty.keys()]) flush(key, true);
+  };
+
+  const schedule = (key: string) => {
+    const entry = dirty.get(key);
+    const el = entry ? resolveEl(entry) : null;
+
+    if (el && isActivelyEditing(el)) {
+      const prev = timers.get(key);
+
+      if (prev) clearTimeout(prev);
+
+      timers.delete(key);
+
+      return;
+    }
+
+    const prev = timers.get(key);
+
+    if (prev) clearTimeout(prev);
+
+    timers.set(
+      key,
+      setTimeout(() => flush(key), DEBOUNCE_MS)
+    );
+  };
+
+  const observer = new MutationObserver((records) => {
+    const touched = new Set<string>();
+
+    for (const record of records) {
+      if (!mutationFromInspector(record)) continue;
+
+      collectFromNode(dirty, touched, record.target);
+
+      for (const added of record.addedNodes) {
+        collectFromNode(dirty, touched, added);
+      }
+
+      for (const removed of record.removedNodes) {
+        collectRemovedStamp(dirty, touched, removed, record.target);
+      }
+    }
+
+    for (const key of touched) schedule(key);
+  });
+
+  const onFocusOut = (event: FocusEvent) => {
+    const target = event.target;
+
+    if (!(target instanceof Node)) return;
+
+    /* Inner caret moves inside one inspector field. */
+    const next = event.relatedTarget;
+
+    if (next instanceof Node) {
+      const leaving = editingRoot(target);
+      const entering = editingRoot(next);
+
+      if (leaving && leaving === entering) return;
+    }
+
+    for (const key of [...dirty.keys()]) {
+      const entry = dirty.get(key);
+
+      if (!entry) continue;
+
+      const el = resolveEl(entry);
+
+      if (el && overlaps(target, el)) flush(key, true);
+    }
+  };
+
+  observer.observe(document.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    characterDataOldValue: false,
+  });
+  document.addEventListener('focusout', onFocusOut, true);
+  window.addEventListener('pagehide', flushAll);
+
+  return () => {
+    observer.disconnect();
+    document.removeEventListener('focusout', onFocusOut, true);
+    window.removeEventListener('pagehide', flushAll);
+
+    for (const timer of timers.values()) clearTimeout(timer);
+
+    timers.clear();
+    dirty.clear();
+  };
+}
