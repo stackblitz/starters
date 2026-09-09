@@ -8,6 +8,7 @@ import {
   IconLeft,
   IconRight,
   IconClose,
+  IconPlay,
   IconPause,
   IconStop,
   IconStopwatch,
@@ -118,6 +119,7 @@ export default function Presenter({
 
   const currentSlide = slides[slideIndex];
   const nextSlide = slides[slideIndex + 1];
+  const timerIdle = !running && elapsed === 0;
   const progress = slideCount > 1 ? (slideIndex / (slideCount - 1)) * 100 : 100;
   const builds =
     buildMax > 0
@@ -133,12 +135,18 @@ export default function Presenter({
           </span>
           <button
             type="button"
-            className="pres-icon"
+            className={'pres-icon' + (!timerIdle && !running ? ' is-play' : '')}
             onClick={() => setRunning((runningNow) => !runningNow)}
             title={running ? 'Pause (T)' : 'Start (T)'}
             aria-label={running ? 'Pause timer' : 'Start timer'}
           >
-            {running ? <IconPause /> : <IconStopwatch />}
+            {timerIdle ? (
+              <IconStopwatch />
+            ) : running ? (
+              <IconPause />
+            ) : (
+              <IconPlay />
+            )}
           </button>
           <button
             type="button"

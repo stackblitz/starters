@@ -2297,6 +2297,10 @@ strong {
   height: 16px;
   display: block;
 }
+.pres-timer .pres-icon.is-play svg {
+  /* triangle's optical center sits left of the viewBox midpoint */
+  transform: translateX(1px);
+}
 .pres-icon:hover:not(:disabled) {
   background: var(--ed-util-hover);
   color: var(--ed-text);
