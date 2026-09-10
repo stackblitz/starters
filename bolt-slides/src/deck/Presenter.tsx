@@ -11,6 +11,7 @@ import {
   IconPlay,
   IconPause,
   IconStop,
+  IconStopwatch,
   IconType,
 } from './icons';
 
@@ -118,6 +119,7 @@ export default function Presenter({
 
   const currentSlide = slides[slideIndex];
   const nextSlide = slides[slideIndex + 1];
+  const timerIdle = !running && elapsed === 0;
   const progress = slideCount > 1 ? (slideIndex / (slideCount - 1)) * 100 : 100;
   const builds =
     buildMax > 0
@@ -133,12 +135,18 @@ export default function Presenter({
           </span>
           <button
             type="button"
-            className={'pres-icon' + (running ? '' : ' is-play')}
+            className={'pres-icon' + (!timerIdle && !running ? ' is-play' : '')}
             onClick={() => setRunning((runningNow) => !runningNow)}
             title={running ? 'Pause (T)' : 'Start (T)'}
             aria-label={running ? 'Pause timer' : 'Start timer'}
           >
-            {running ? <IconPause /> : <IconPlay />}
+            {timerIdle ? (
+              <IconStopwatch />
+            ) : running ? (
+              <IconPause />
+            ) : (
+              <IconPlay />
+            )}
           </button>
           <button
             type="button"
@@ -213,7 +221,7 @@ export default function Presenter({
 
       <div className="pres-body">
         <section className="pres-stage">
-          <div className="pres-label">On screen now</div>
+          <div className="pres-label">Current slide</div>
           <div className="pres-now">
             {currentSlide ? (
               <Thumb ctx={liveCtx}>{renderSlide(currentSlide)}</Thumb>

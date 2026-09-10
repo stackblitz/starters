@@ -14,11 +14,11 @@ This repo is a complete slide **studio**. Author content into it.
 
 - `/` — in the Bolt preview iframe (and local Vite): studio. Side panel
   (S) and grid (G) reorder / duplicate / delete; the dock holds notes,
-  Download (PDF or JSON), Present, and Presenter. Present opens a new
+  Download (PDF or JSON), Speaker view, and Present. Present opens a new
   tab (`/?present=1`); the studio stays put. Grid selection is the
   start slide. The published site at `/` is the audience deck (notes
-  stripped). **P** opens the presenter console in a new tab.
-- `/?presenter=1` — presenter console (on-screen now, up next, notes
+  stripped). **P** opens speaker view in a new tab.
+- `/?presenter=1` — speaker view (current slide, up next, notes
   read-only, timer, note text size). `/present` is the same route.
 
 **Your job is CONTENT.** A deck is `deck.json`. Write that file (and

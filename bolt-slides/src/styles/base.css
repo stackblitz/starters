@@ -2403,7 +2403,7 @@ strong {
   background: var(--ed-bg-secondary);
 }
 
-/* label above the box, exactly like "On screen now" — so both columns start
+/* label above the box, exactly like "Current slide" — so both columns start
    on the same line and their boxes align */
 .pres-notes-col {
   display: flex;
