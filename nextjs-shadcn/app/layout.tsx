@@ -1,8 +1,18 @@
 import './globals.css';
+import { Geist_Mono, Inter } from 'next/font/google';
+import { ThemeProvider } from '@/components/theme-provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { DirectionProvider } from '@/components/ui/direction';
+import { Toaster } from '@/components/ui/toast';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+
+const fontMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+});
 
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -26,12 +36,30 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(
+        'antialiased',
+        fontMono.variable,
+        'font-sans',
+        inter.variable
+      )}
+    >
+      <body className="min-h-dvh">
+        <ThemeProvider>
+          <DirectionProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+            </TooltipProvider>
+          </DirectionProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

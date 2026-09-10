@@ -1,14 +1,7 @@
-export default function Home() {
+export default function Page() {
   return (
-    <div
-      style={{
-        maxWidth: 1280,
-        margin: '0 auto',
-        padding: '2rem',
-        textAlign: 'center',
-      }}
-    >
-      Start prompting.
+    <div className="min-h-dvh  flex items-center justify-center">
+      <p>Start prompting (or editing) to see magic happen :)</p>
     </div>
   );
 }
