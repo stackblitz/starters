@@ -1,31 +1,33 @@
 import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
 
-import { saveTerm } from '@/admin/api';
-import { taxonomyLabel } from '@/admin/labels';
+import { COLLECTIONS, insertCollection } from '@/admin/api';
+import { errorMessage, isRejectedByUser } from '@/admin/hooks';
 import { slugify } from '@/lib/cms/format';
 import type { Term } from '@/lib/cms/types';
 
 import { Button, Card, Checkbox, Input, useToast } from './ui';
 
 /**
- * Category-style (checklist, hierarchical) or tag-style (chips) term picker.
- * New terms are created immediately so ids exist when the post saves.
+ * Category checklist (hierarchical) or tag chips, bound to a `bigint[]` of ids.
+ * New terms are created immediately so their ids exist when the post saves.
  */
 export function TermsPanel({
-  taxonomy,
+  kind,
   terms,
   selected,
   onChange,
-  onTermCreated,
+  onCreated,
+  disabled,
 }: {
-  taxonomy: string;
+  kind: 'category' | 'tag';
   terms: Term[];
   selected: number[];
   onChange: (ids: number[]) => void;
-  onTermCreated: (term: Term) => void;
+  onCreated?: (term: Term) => void;
+  disabled?: boolean;
 }) {
-  const tagStyle = /tag/i.test(taxonomy);
+  const { label, singular } = COLLECTIONS[kind];
   const [draft, setDraft] = useState('');
   const [adding, setAdding] = useState(false);
   const toast = useToast();
@@ -43,22 +45,21 @@ export function TermsPanel({
     }
     setAdding(true);
     try {
-      const term = await saveTerm({
-        taxonomy,
+      const term = await insertCollection(kind, {
         name: clean,
         slug: slugify(clean),
       });
-      onTermCreated(term);
+      onCreated?.(term);
       onChange([...selected, term.id]);
       setDraft('');
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not add term', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     } finally {
       setAdding(false);
     }
   }
 
-  if (tagStyle) {
+  if (kind === 'tag') {
     const chosen = terms.filter((t) => selected.includes(t.id));
     const suggestions = draft
       ? terms
@@ -70,7 +71,7 @@ export function TermsPanel({
           .slice(0, 6)
       : [];
     return (
-      <Card title={taxonomyLabel(taxonomy, true)}>
+      <Card title={label}>
         <div className="flex flex-wrap gap-1.5">
           {chosen.map((t) => (
             <span
@@ -82,7 +83,8 @@ export function TermsPanel({
                 type="button"
                 onClick={() => onChange(selected.filter((id) => id !== t.id))}
                 aria-label={`Remove ${t.name}`}
-                className="text-bolt-ds-iconTertiary hover:text-bolt-ds-textPrimary"
+                disabled={disabled}
+                className="text-bolt-ds-iconTertiary hover:text-bolt-ds-textPrimary disabled:opacity-40"
               >
                 <X size={12} />
               </button>
@@ -92,9 +94,7 @@ export function TermsPanel({
         <div className="relative mt-2">
           <Input
             value={draft}
-            placeholder={`Add ${taxonomyLabel(
-              taxonomy
-            ).toLowerCase()}, press Enter`}
+            placeholder={`Add ${singular}, press Enter`}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ',') {
@@ -102,7 +102,7 @@ export function TermsPanel({
                 void create(draft);
               }
             }}
-            disabled={adding}
+            disabled={disabled || adding}
           />
           {suggestions.length > 0 && (
             <ul className="absolute z-10 mt-1 w-full list-none rounded-md border border-bolt-ds-borderSecondary bg-bolt-ds-bgAlt p-1 text-sm shadow-lg">
@@ -129,17 +129,22 @@ export function TermsPanel({
 
   const tree = buildTree(terms);
   return (
-    <Card title={taxonomyLabel(taxonomy, true)}>
+    <Card title={label}>
       <div className="max-h-56 overflow-y-auto">
         {tree.length === 0 && (
           <p className="m-0 text-xs text-bolt-ds-textTertiary">None yet.</p>
         )}
-        <TermChecklist nodes={tree} selected={selected} onChange={onChange} />
+        <TermChecklist
+          nodes={tree}
+          selected={selected}
+          onChange={onChange}
+          disabled={disabled}
+        />
       </div>
       <div className="mt-3 flex gap-2">
         <Input
           value={draft}
-          placeholder={`New ${taxonomyLabel(taxonomy).toLowerCase()}`}
+          placeholder={`New ${singular}`}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -147,13 +152,14 @@ export function TermsPanel({
               void create(draft);
             }
           }}
+          disabled={disabled}
         />
         <Button
           size="sm"
           icon={<Plus size={14} />}
           loading={adding}
           onClick={() => create(draft)}
-          disabled={!draft.trim()}
+          disabled={disabled || !draft.trim()}
         >
           Add
         </Button>
@@ -169,7 +175,7 @@ function buildTree(terms: Term[]): TermNode[] {
   terms.forEach((t) => byId.set(t.id, { ...t, children: [] }));
   const roots: TermNode[] = [];
   byId.forEach((n) => {
-    const parent = n.parent_id ? byId.get(n.parent_id) : undefined;
+    const parent = n.parent ? byId.get(n.parent) : undefined;
     if (parent) parent.children.push(n);
     else roots.push(n);
   });
@@ -180,11 +186,13 @@ function TermChecklist({
   nodes,
   selected,
   onChange,
+  disabled,
   depth = 0,
 }: {
   nodes: TermNode[];
   selected: number[];
   onChange: (ids: number[]) => void;
+  disabled?: boolean;
   depth?: number;
 }) {
   return (
@@ -194,6 +202,7 @@ function TermChecklist({
           <Checkbox
             className="py-0.5"
             checked={selected.includes(n.id)}
+            disabled={disabled}
             onChange={(e) =>
               onChange(
                 e.target.checked
@@ -208,6 +217,7 @@ function TermChecklist({
               nodes={n.children}
               selected={selected}
               onChange={onChange}
+              disabled={disabled}
               depth={depth + 1}
             />
           )}

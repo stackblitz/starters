@@ -3,15 +3,19 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import {
-  deletePostPermanently,
-  getPostTypeCounts,
+  CONTENT_TYPES,
+  countContent,
+  deleteContent,
+  isContentType,
+  listCollection,
   listContent,
-  setPostStatus,
+  setContentStatus,
+  STATUSES,
+  type ContentType,
 } from '@/admin/api';
 import {
   Badge,
   Button,
-  confirmAction,
   EmptyState,
   ErrorNote,
   Input,
@@ -25,35 +29,53 @@ import {
   Th,
   useToast,
 } from '@/admin/components/ui';
-import { useAsync, useDebounced } from '@/admin/hooks';
-import { typeLabel } from '@/admin/labels';
-import { formatDateTime, type PostStatus } from '@/lib/cms';
+import {
+  errorMessage,
+  isRejectedByUser,
+  useAsync,
+  useCanEdit,
+  useDebounced,
+} from '@/admin/hooks';
+import { formatDateTime } from '@/lib/cms';
 
-type StatusTab = 'all' | PostStatus;
+type StatusTab = 'all' | (typeof STATUSES)[number];
 
 const PER_PAGE = 20;
 
-export default function ContentList() {
-  const { type = 'post' } = useParams();
+const TAB_LABELS: Record<StatusTab, string> = {
+  all: 'All',
+  publish: 'Published',
+  draft: 'Drafts',
+  trash: 'Trash',
+};
+
+export default function ContentListRoute() {
+  const { type } = useParams();
+  if (!isContentType(type)) return <ErrorNote message="Unknown content type" />;
+  return <ContentList key={type} type={type} />;
+}
+
+function ContentList({ type }: { type: ContentType }) {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const canEdit = useCanEdit();
+  const { label, singular } = CONTENT_TYPES[type];
 
-  const status = (params.get('status') as StatusTab | null) ?? 'all';
+  const param = params.get('status');
+  const status: StatusTab =
+    param && (STATUSES as readonly string[]).includes(param)
+      ? (param as StatusTab)
+      : 'all';
   const page = Number(params.get('page') ?? '1') || 1;
   const [search, setSearch] = useState(params.get('s') ?? '');
   const debounced = useDebounced(search);
 
-  const counts = useAsync(async () => {
-    const all = await getPostTypeCounts();
-    const mine: Record<string, number> = {};
-    for (const c of all) if (c.type === type) mine[c.status] = c.count;
-    return mine;
-  }, [type]);
-
+  const counts = useAsync(() => countContent(type), [type]);
+  const authors = useAsync(() => listCollection('author'), []);
   const list = useAsync(
     () =>
-      listContent({ type, status, search: debounced, page, perPage: PER_PAGE }),
+      listContent(type, { status, search: debounced, page, perPage: PER_PAGE }),
     [type, status, debounced, page]
   );
 
@@ -66,61 +88,41 @@ export default function ContentList() {
     setParams(p);
   };
 
-  async function changeStatus(id: number, next: PostStatus, label: string) {
+  async function run(action: () => Promise<unknown>, done: string) {
     try {
-      await setPostStatus(id, next);
-      toast(label);
+      await action();
+      toast(done);
       await Promise.all([list.refetch(), counts.refetch()]);
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Action failed', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     }
   }
 
-  async function destroy(id: number) {
-    if (!confirmAction('Permanently delete this item? This cannot be undone.'))
-      return;
-    try {
-      await deletePostPermanently(id);
-      toast('Deleted permanently');
-      await Promise.all([list.refetch(), counts.refetch()]);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
-    }
-  }
-
-  const total = list.data?.count ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
   const c = counts.data ?? {};
   const nonTrash = Object.entries(c).reduce(
     (sum, [s, n]) => (s === 'trash' ? sum : sum + n),
     0
   );
-
-  const allTabs: Array<{ value: StatusTab; label: string; count?: number }> = [
-    { value: 'all', label: 'All', count: nonTrash },
-    { value: 'publish', label: 'Published', count: c.publish },
-    { value: 'draft', label: 'Drafts', count: c.draft },
-    { value: 'pending', label: 'Pending', count: c.pending },
-    { value: 'private', label: 'Private', count: c.private },
-    { value: 'trash', label: 'Trash', count: c.trash },
-  ];
-  const tabs = allTabs.filter(
-    (t) =>
-      t.value === 'all' ||
-      t.value === 'publish' ||
-      t.value === 'draft' ||
-      (t.count ?? 0) > 0
-  );
+  const rows = list.data ?? [];
+  // ponytail: no count query per search term; with a search the pager only knows "is there a next page"
+  const known = debounced ? null : status === 'all' ? nonTrash : c[status] ?? 0;
+  const total = known ?? (page - 1) * PER_PAGE + rows.length;
+  const pages =
+    known !== null
+      ? Math.max(1, Math.ceil(known / PER_PAGE))
+      : page + (rows.length === PER_PAGE ? 1 : 0);
+  const authorName = new Map(authors.data?.map((a) => [a.id, a.name]));
 
   return (
     <>
       <PageHeader
-        title={typeLabel(type, true)}
+        title={label}
         actions={
           <Button
             variant="primary"
             icon={<Plus size={14} />}
-            onClick={() => navigate(`/admin/content/${type}/new`)}
+            disabled={!canEdit}
+            onClick={() => navigate(`/bolt-admin/content/${type}/new`)}
           >
             Add new
           </Button>
@@ -130,12 +132,16 @@ export default function ContentList() {
       <Tabs
         value={status}
         onChange={(v) => set({ status: v === 'all' ? null : v, page: null })}
-        items={tabs}
+        items={(['all', ...STATUSES] as StatusTab[]).map((value) => ({
+          value,
+          label: TAB_LABELS[value],
+          count: value === 'all' ? nonTrash : c[value] ?? 0,
+        }))}
       />
 
       <div className="mb-3 flex items-center justify-between gap-3">
         <Input
-          placeholder={`Search ${typeLabel(type, true).toLowerCase()}…`}
+          placeholder={`Search ${label.toLowerCase()}…`}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -148,18 +154,16 @@ export default function ContentList() {
       {list.error && <ErrorNote message={list.error} />}
       {list.loading && !list.data ? (
         <Spinner />
-      ) : !list.data?.data.length ? (
+      ) : !rows.length ? (
         <EmptyState
           title={
             status === 'trash'
               ? 'Trash is empty'
-              : `No ${typeLabel(type, true).toLowerCase()} found`
+              : `No ${label.toLowerCase()} found`
           }
           description={
             status === 'all' && !debounced
-              ? `Create your first ${typeLabel(
-                  type
-                ).toLowerCase()} to see it here.`
+              ? `Create your first ${singular} to see it here.`
               : undefined
           }
           action={
@@ -167,7 +171,8 @@ export default function ContentList() {
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => navigate(`/admin/content/${type}/new`)}
+                disabled={!canEdit}
+                onClick={() => navigate(`/bolt-admin/content/${type}/new`)}
               >
                 Add new
               </Button>
@@ -187,79 +192,93 @@ export default function ContentList() {
               </tr>
             </thead>
             <tbody>
-              {list.data.data.map((post) => (
-                <tr key={post.id} className="group hover:bg-bolt-ds-bgHover">
-                  <Td>
-                    <Link
-                      to={`/admin/content/${type}/${post.id}`}
-                      className="font-medium no-underline hover:text-bolt-ds-brand"
-                    >
-                      {post.title || '(no title)'}
-                    </Link>
-                    <p className="m-0 mt-0.5 font-mono text-[11px] text-bolt-ds-textTertiary">
-                      /{post.slug}
-                    </p>
-                  </Td>
-                  <Td className="text-bolt-ds-textSecondary">
-                    {post.author?.name ?? '—'}
-                  </Td>
-                  <Td>
-                    <Badge tone={statusTone(post.status)}>{post.status}</Badge>
-                  </Td>
-                  <Td className="text-xs text-bolt-ds-textTertiary">
-                    {formatDateTime(post.date)}
-                  </Td>
-                  <Td>
-                    <div className="flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                      {post.status === 'publish' && (
-                        <a
-                          href={`/${post.slug}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded text-bolt-ds-iconSecondary hover:bg-bolt-ds-utilHover"
-                          title="View"
-                        >
-                          <ExternalLink size={14} />
-                        </a>
-                      )}
-                      {post.status === 'trash' ? (
-                        <>
+              {rows.map((post) => {
+                const postStatus = post.status ?? 'publish';
+                return (
+                  <tr key={post.id} className="group hover:bg-bolt-ds-bgHover">
+                    <Td>
+                      <Link
+                        to={`/bolt-admin/content/${type}/${post.id}`}
+                        className="font-medium no-underline hover:text-bolt-ds-brand"
+                      >
+                        {post.title || '(no title)'}
+                      </Link>
+                      <p className="m-0 mt-0.5 font-mono text-[11px] text-bolt-ds-textTertiary">
+                        /{post.slug}
+                      </p>
+                    </Td>
+                    <Td className="text-bolt-ds-textSecondary">
+                      {(post.author !== null && authorName.get(post.author)) ||
+                        '—'}
+                    </Td>
+                    <Td>
+                      <Badge tone={statusTone(postStatus)}>{postStatus}</Badge>
+                    </Td>
+                    <Td className="text-xs text-bolt-ds-textTertiary">
+                      {formatDateTime(post.published_at)}
+                    </Td>
+                    <Td>
+                      <div className="flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        {postStatus === 'publish' && (
+                          <a
+                            href={`/${post.slug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded text-bolt-ds-iconSecondary hover:bg-bolt-ds-utilHover"
+                            title="View"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                        {postStatus === 'trash' ? (
                           <Button
                             size="sm"
                             variant="ghost"
                             icon={<RotateCcw size={14} />}
                             title="Restore"
+                            disabled={!canEdit}
                             onClick={() =>
-                              changeStatus(
-                                post.id,
-                                'draft',
+                              run(
+                                () => setContentStatus(type, post.id, 'draft'),
                                 'Restored to drafts'
                               )
                             }
                           />
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<Trash2 size={14} />}
+                            title="Move to trash"
+                            disabled={!canEdit}
+                            onClick={() =>
+                              run(
+                                () => setContentStatus(type, post.id, 'trash'),
+                                'Moved to trash'
+                              )
+                            }
+                          />
+                        )}
+                        {status === 'trash' && (
                           <Button
                             size="sm"
                             variant="ghost"
                             icon={<Trash2 size={14} />}
                             title="Delete permanently"
-                            onClick={() => destroy(post.id)}
+                            disabled={!canEdit}
+                            onClick={() =>
+                              run(
+                                () => deleteContent(type, post.id),
+                                'Deleted permanently'
+                              )
+                            }
                           />
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon={<Trash2 size={14} />}
-                          title="Move to trash"
-                          onClick={() =>
-                            changeStatus(post.id, 'trash', 'Moved to trash')
-                          }
-                        />
-                      )}
-                    </div>
-                  </Td>
-                </tr>
-              ))}
+                        )}
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </Table>
           <Pager

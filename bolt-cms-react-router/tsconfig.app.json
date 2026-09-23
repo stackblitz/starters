@@ -31,5 +31,6 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["app", ".react-router/types/**/*", "bolt-cms.json"]
+  "include": ["app", ".react-router/types/**/*", "bolt-cms.json"],
+  "exclude": ["app/**/*.check.ts"]
 }

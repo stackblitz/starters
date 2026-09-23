@@ -1,35 +1,28 @@
 /**
- * Renders one `cms_fields` row as an input. Adding a new column to a table and
- * a matching `cms_fields` row is all it takes for it to show up in the admin.
+ * Renders one `cms_fields` registry row as an input, driven by its
+ * `primitive`. Adding a column plus a matching `cms_fields` row is all it takes
+ * for a field to show up in the admin (once its queries carry the column).
  */
 import { ImageOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { getRow, listRows } from '@/admin/api';
+import {
+  getAsset,
+  isCollectionKind,
+  isContentType,
+  listCollection,
+  listContentOptions,
+} from '@/admin/api';
 import { useAsync } from '@/admin/hooks';
 import { slugify } from '@/lib/cms/format';
-import { mediaUrl } from '@/lib/cms/media';
-import type { FieldDef, Media } from '@/lib/cms/types';
+import { assetUrl } from '@/lib/cms/media';
+import type { FieldDef } from '@/lib/cms/types';
 
 import { MediaPicker } from '../MediaPicker';
+import { TermsPanel } from '../TermsPanel';
 import { Button, Checkbox, Field, Input, Select, Textarea } from '../ui';
 
-export type Row = Record<string, unknown>;
-
-export interface FieldContext {
-  /** Row being edited (for slug-from-title, same_type references, self-exclusion). */
-  row: Row;
-  table: string;
-}
-
-export interface FieldInputProps {
-  field: FieldDef;
-  value: unknown;
-  onChange: (value: unknown) => void;
-  context: FieldContext;
-  /** Hide the label wrapper (the caller renders its own). */
-  bare?: boolean;
-}
+const LONG_TEXT = ['excerpt', 'bio', 'description'];
 
 export function FieldInput({
   field,
@@ -37,30 +30,77 @@ export function FieldInput({
   onChange,
   context,
   bare,
-}: FieldInputProps) {
+  disabled,
+}: {
+  field: FieldDef;
+  value: unknown;
+  onChange: (v: unknown) => void;
+  context: {
+    row: Record<string, unknown>;
+    typeName: string;
+    slugSource?: 'title' | 'name';
+  };
+  bare?: boolean;
+  disabled?: boolean;
+}) {
   const opts = field.options ?? {};
-  const readonly = Boolean(opts.readonly);
-  const id = `${field.table_name}-${field.column_name}`;
+  const id = `${field.type_name}-${field.column_name}`;
+  const to = (opts.to as string[] | undefined)?.[0];
+  const of = opts.of as { primitive?: string; to?: string[] } | undefined;
+  const ofKind = of?.to?.[0];
+
+  // Components that carry their own label/card.
+  if (field.primitive === 'boolean')
+    return (
+      <Checkbox
+        id={id}
+        checked={Boolean(value)}
+        onChange={(e) => onChange(e.target.checked)}
+        label={bare ? undefined : field.title}
+        disabled={disabled}
+      />
+    );
+  if (
+    field.primitive === 'array' &&
+    of?.primitive === 'reference' &&
+    (ofKind === 'category' || ofKind === 'tag')
+  )
+    return (
+      <TermsField
+        kind={ofKind}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    );
 
   const control = (() => {
-    switch (field.type) {
+    switch (field.primitive) {
       case 'string':
-        return (
+        return LONG_TEXT.includes(field.name) ? (
+          <Textarea
+            id={id}
+            rows={3}
+            value={str(value)}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+          />
+        ) : (
           <Input
             id={id}
             value={str(value)}
             onChange={(e) => onChange(e.target.value)}
-            readOnly={readonly}
+            disabled={disabled}
           />
         );
-      case 'text':
+      case 'slug':
         return (
-          <Textarea
+          <SlugInput
             id={id}
             value={str(value)}
-            rows={Number(opts.rows ?? 3)}
-            onChange={(e) => onChange(e.target.value)}
-            readOnly={readonly}
+            onChange={onChange}
+            from={str(context.row[context.slugSource ?? 'title'])}
+            disabled={disabled}
           />
         );
       case 'number':
@@ -68,20 +108,12 @@ export function FieldInput({
           <Input
             id={id}
             type="number"
-            value={value === null || value === undefined ? '' : String(value)}
+            step={opts.integer ? 1 : 'any'}
+            value={str(value)}
             onChange={(e) =>
               onChange(e.target.value === '' ? null : Number(e.target.value))
             }
-            readOnly={readonly}
-          />
-        );
-      case 'boolean':
-        return (
-          <Checkbox
-            id={id}
-            checked={Boolean(value)}
-            onChange={(e) => onChange(e.target.checked)}
-            label={bare ? undefined : field.label}
+            disabled={disabled}
           />
         );
       case 'date':
@@ -91,6 +123,7 @@ export function FieldInput({
             type="date"
             value={toDateInput(value)}
             onChange={(e) => onChange(e.target.value || null)}
+            disabled={disabled}
           />
         );
       case 'datetime':
@@ -104,79 +137,43 @@ export function FieldInput({
                 e.target.value ? new Date(e.target.value).toISOString() : null
               )
             }
+            disabled={disabled}
           />
         );
-      case 'select':
+      case 'image':
+      case 'file':
         return (
-          <Select
-            id={id}
-            value={str(value)}
-            onChange={(e) => onChange(e.target.value)}
-          >
-            {(opts.choices as string[] | undefined)?.map((c) => (
-              <option key={c} value={c}>
-                {c === '' ? '—' : c}
-              </option>
-            ))}
-          </Select>
-        );
-      case 'slug':
-        return (
-          <SlugInput
-            id={id}
-            value={str(value)}
+          <AssetField
+            image={field.primitive === 'image'}
+            value={value}
             onChange={onChange}
-            from={str(context.row[String(opts.from ?? '')])}
+            disabled={disabled}
           />
         );
       case 'reference':
         return (
           <ReferenceSelect
-            id={id}
-            field={field}
-            value={value}
+            to={to ?? ''}
+            value={value === null || value === undefined ? null : Number(value)}
             onChange={onChange}
-            context={context}
+            excludeId={to === context.typeName ? (context.row.id as number | null) : null}
+            disabled={disabled}
           />
         );
-      case 'image':
-      case 'file':
-        return <MediaField field={field} value={value} onChange={onChange} />;
-      case 'object':
-        return (
-          <ObjectFields
-            field={field}
-            value={value}
-            onChange={onChange}
-            context={context}
-          />
-        );
-      case 'richtext':
-        // The content editor owns rich text; if a richtext field is placed in a
-        // generic form, fall back to raw HTML.
-        return (
-          <Textarea
-            id={id}
-            value={str(value)}
-            rows={10}
-            onChange={(e) => onChange(e.target.value)}
-            className="font-mono text-xs"
-          />
-        );
-      case 'array':
-      case 'json':
       default:
-        return <JsonInput id={id} value={value} onChange={onChange} />;
+        return (
+          <JsonInput id={id} value={value} onChange={onChange} disabled={disabled} />
+        );
     }
   })();
 
-  if (bare || field.type === 'boolean') return control;
+  if (bare) return control;
   return (
     <Field
-      label={field.label}
+      label={field.title}
       htmlFor={id}
-      required={Boolean(opts.required)}
-      hint={opts.help as string | undefined}
+      required={field.required}
+      hint={field.description ?? undefined}
     >
       {control}
     </Field>
@@ -211,11 +208,13 @@ function SlugInput({
   value,
   onChange,
   from,
+  disabled,
 }: {
   id: string;
   value: string;
   onChange: (v: string) => void;
   from: string;
+  disabled?: boolean;
 }) {
   const [dirty, setDirty] = useState(Boolean(value));
   const lastFrom = useRef(from);
@@ -235,6 +234,7 @@ function SlugInput({
       id={id}
       value={value}
       className="font-mono text-xs"
+      disabled={disabled}
       onChange={(e) => {
         setDirty(true);
         onChange(slugify(e.target.value) || e.target.value);
@@ -246,139 +246,105 @@ function SlugInput({
   );
 }
 
-function ReferenceSelect({
-  id,
-  field,
+/** Picks a row of another type by id; `to` is a type name. */
+export function ReferenceSelect({
+  to,
   value,
   onChange,
-  context,
+  excludeId,
+  disabled,
 }: {
-  id: string;
-  field: FieldDef;
-  value: unknown;
-  onChange: (v: unknown) => void;
-  context: FieldContext;
+  to: string;
+  value: number | null;
+  onChange: (id: number | null) => void;
+  excludeId?: number | null;
+  disabled?: boolean;
 }) {
-  const opts = field.options;
-  const table = String(opts.table ?? '');
-  const labelCol = String(opts.label ?? 'name');
-  const sameType =
-    Boolean(opts.same_type) && typeof context.row.type === 'string';
-  const sameTaxonomy =
-    Boolean(opts.same_taxonomy) && typeof context.row.taxonomy === 'string';
-
   const options = useAsync(async () => {
-    if (!table) return [];
-    const filters = [];
-    if (sameType)
-      filters.push({
-        column: 'type',
-        op: 'eq' as const,
-        value: context.row.type,
-      });
-    if (sameTaxonomy)
-      filters.push({
-        column: 'taxonomy',
-        op: 'eq' as const,
-        value: context.row.taxonomy,
-      });
-    const { data } = await listRows<Row>(table, {
-      columns: `id, ${labelCol}`,
-      filters,
-      order: [{ column: labelCol }],
-      perPage: 500,
-    });
-    // A row can't be its own parent; only exclude self for self-references.
-    const selfReference = table === context.table;
-    return selfReference ? data.filter((r) => r.id !== context.row.id) : data;
-  }, [
-    table,
-    context.table,
-    labelCol,
-    sameType ? context.row.type : null,
-    sameTaxonomy ? context.row.taxonomy : null,
-  ]);
+    if (isCollectionKind(to))
+      return (await listCollection(to)).map((r) => ({ id: r.id, label: r.name }));
+    if (isContentType(to))
+      return (await listContentOptions(to)).map((r) => ({ id: r.id, label: r.title }));
+    return null;
+  }, [to]);
+
+  if (!isCollectionKind(to) && !isContentType(to))
+    return <Input value={value === null ? '' : String(value)} disabled readOnly />;
 
   return (
     <Select
-      id={id}
-      value={value === null || value === undefined ? '' : String(value)}
+      value={value === null ? '' : String(value)}
       onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+      disabled={disabled}
     >
       <option value="">— None —</option>
-      {options.data?.map((r) => (
-        <option key={String(r.id)} value={String(r.id)}>
-          {str(r[labelCol]) || `#${String(r.id)}`}
-        </option>
-      ))}
+      {options.data
+        ?.filter((o) => o.id !== excludeId)
+        .map((o) => (
+          <option key={o.id} value={String(o.id)}>
+            {o.label || `#${o.id}`}
+          </option>
+        ))}
     </Select>
   );
 }
 
-/**
- * Image/file picker. Stores a media id (`options.value = "id"`, default for
- * `*_id` columns) or a URL string (`options.value = "url"`, used inside objects
- * like `seo.og_image`).
- */
-function MediaField({
-  field,
+/** Stores a `cms_assets.id`. */
+function AssetField({
+  image,
   value,
   onChange,
+  disabled,
 }: {
-  field: FieldDef;
+  image: boolean;
   value: unknown;
   onChange: (v: unknown) => void;
+  disabled?: boolean;
 }) {
-  const storesUrl =
-    field.options.value === 'url' ||
-    (!field.column_name.endsWith('_id') && field.options.value !== 'id');
   const [open, setOpen] = useState(false);
-
-  const media = useAsync(async () => {
-    if (storesUrl || !value) return null;
-    return getRow<Media>('cms_media', Number(value));
-  }, [storesUrl ? null : value]);
-
-  const url = storesUrl
-    ? str(value)
-    : mediaUrl(media.data ?? null, 'medium') ?? mediaUrl(media.data ?? null);
-  const isImage = field.type === 'image';
+  const asset = useAsync(
+    async () => (value ? getAsset(String(value)) : null),
+    [value]
+  );
+  const url = assetUrl(asset.data);
 
   return (
     <div className="grid gap-2">
       <div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-md border border-dashed border-bolt-ds-borderPrimary bg-bolt-ds-bgSecondary">
-        {url ? (
-          isImage ? (
-            <img src={url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="truncate px-3 text-xs text-bolt-ds-textSecondary">
-              {url}
-            </span>
-          )
+        {url && image && asset.data?.kind === 'image' ? (
+          <img
+            src={url}
+            alt={asset.data.alt ?? ''}
+            className="h-full w-full object-cover"
+          />
+        ) : asset.data ? (
+          <span className="truncate px-3 text-xs text-bolt-ds-textSecondary">
+            {asset.data.filename}
+          </span>
         ) : (
           <ImageOff size={18} className="text-bolt-ds-iconTertiary" />
         )}
       </div>
       <div className="flex gap-2">
-        <Button
-          size="sm"
-          onClick={() => setOpen(true)}
-          disabled={Boolean(field.options.readonly)}
-        >
-          {url ? 'Replace' : `Choose ${isImage ? 'image' : 'file'}`}
+        <Button size="sm" onClick={() => setOpen(true)} disabled={disabled}>
+          {value ? 'Replace' : `Choose ${image ? 'image' : 'file'}`}
         </Button>
-        {url && (
-          <Button size="sm" variant="ghost" onClick={() => onChange(null)}>
+        {Boolean(value) && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onChange(null)}
+            disabled={disabled}
+          >
             Remove
           </Button>
         )}
       </div>
       <MediaPicker
         open={open}
-        accept={isImage ? 'image/*' : '*/*'}
         onClose={() => setOpen(false)}
-        onSelect={(m) => {
-          onChange(storesUrl ? mediaUrl(m) : m.id);
+        onSelect={(a) => {
+          onChange(a.id);
           setOpen(false);
         }}
       />
@@ -386,58 +352,28 @@ function MediaField({
   );
 }
 
-/** A jsonb column edited as a set of sub-fields (`options.fields`). */
-function ObjectFields({
-  field,
+/** A `bigint[]` of category/tag ids. */
+function TermsField({
+  kind,
   value,
   onChange,
-  context,
+  disabled,
 }: {
-  field: FieldDef;
+  kind: 'category' | 'tag';
   value: unknown;
   onChange: (v: unknown) => void;
-  context: FieldContext;
+  disabled?: boolean;
 }) {
-  const subfields =
-    (field.options.fields as
-      | Array<{
-          key: string;
-          label: string;
-          type: FieldDef['type'];
-          options?: Row;
-        }>
-      | undefined) ?? [];
-  const obj = (value && typeof value === 'object' ? (value as Row) : {}) as Row;
-
-  if (subfields.length === 0)
-    return (
-      <JsonInput id={field.column_name} value={value} onChange={onChange} />
-    );
-
+  const terms = useAsync(() => listCollection(kind), [kind]);
   return (
-    <div className="grid gap-3">
-      {subfields.map((sf) => (
-        <FieldInput
-          key={sf.key}
-          field={{
-            table_name: field.table_name,
-            column_name: `${field.column_name}.${sf.key}`,
-            label: sf.label,
-            type: sf.type,
-            options: {
-              value:
-                sf.type === 'image' || sf.type === 'file' ? 'url' : undefined,
-              ...(sf.options ?? {}),
-            },
-            group_name: field.group_name,
-            position: 0,
-          }}
-          value={obj[sf.key]}
-          onChange={(v) => onChange({ ...obj, [sf.key]: v })}
-          context={context}
-        />
-      ))}
-    </div>
+    <TermsPanel
+      kind={kind}
+      terms={terms.data ?? []}
+      selected={Array.isArray(value) ? (value as number[]) : []}
+      onChange={onChange}
+      onCreated={(term) => terms.setData((prev) => [...(prev ?? []), term])}
+      disabled={disabled}
+    />
   );
 }
 
@@ -445,13 +381,15 @@ function JsonInput({
   id,
   value,
   onChange,
+  disabled,
 }: {
   id: string;
   value: unknown;
   onChange: (v: unknown) => void;
+  disabled?: boolean;
 }) {
   const [text, setText] = useState(() =>
-    value === undefined ? '' : JSON.stringify(value, null, 2)
+    value === undefined || value === null ? '' : JSON.stringify(value, null, 2)
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -463,6 +401,7 @@ function JsonInput({
         rows={6}
         spellCheck={false}
         className="font-mono text-xs"
+        disabled={disabled}
         onChange={(e) => {
           setText(e.target.value);
           try {

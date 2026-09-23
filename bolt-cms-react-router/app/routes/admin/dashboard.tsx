@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
+  countAssets,
+  countComments,
+  countContent,
+  CONTENT_TYPES,
   getAdminSettings,
-  getCommentCounts,
-  getPostTypeCounts,
-  listContent,
-  listMedia,
-  savePost,
-  summarizeTypes,
+  insertContent,
   listComments,
+  listContent,
 } from '@/admin/api';
 import {
   Badge,
@@ -24,35 +24,38 @@ import {
   Textarea,
   useToast,
 } from '@/admin/components/ui';
-import { useAsync } from '@/admin/hooks';
-import { typeLabel } from '@/admin/labels';
-import { formatDateTime, pluralize, stripHtml, truncate } from '@/lib/cms';
+import {
+  errorMessage,
+  isRejectedByUser,
+  useAsync,
+  useCanEdit,
+} from '@/admin/hooks';
+import {
+  escapeHtml,
+  formatDateTime,
+  pluralize,
+  portableTextToHtml,
+  slugify,
+  stripHtml,
+  truncate,
+} from '@/lib/cms';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const canEdit = useCanEdit();
   const glance = useAsync(async () => {
-    const [types, comments, media, settings] = await Promise.all([
-      getPostTypeCounts(),
-      getCommentCounts(),
-      listMedia({ perPage: 1 }),
+    const [post, page, comments, assets, settings] = await Promise.all([
+      countContent('post'),
+      countContent('page'),
+      countComments(),
+      countAssets(''),
       getAdminSettings(),
     ]);
-    return {
-      types: summarizeTypes(types),
-      comments,
-      mediaTotal: media.count ?? 0,
-      settings,
-    };
+    return { counts: { post, page }, comments, assets, settings };
   }, []);
 
-  const recent = useAsync(
-    async () =>
-      (await listContent({ type: 'post', status: 'all', perPage: 6 })).data,
-    []
-  );
-  const pending = useAsync(
-    async () => (await listComments({ status: 'hold', perPage: 5 })).data,
-    []
-  );
+  const recent = useAsync(() => listContent('post', { perPage: 6 }), []);
+  const comments = useAsync(() => listComments({ perPage: 5 }), []);
 
   return (
     <>
@@ -60,14 +63,17 @@ export default function Dashboard() {
         title="Dashboard"
         description={
           glance.data
-            ? `${glance.data.settings.site_title} · ${glance.data.settings.tagline}`
+            ? [glance.data.settings.site_title, glance.data.settings.tagline]
+                .filter(Boolean)
+                .join(' · ')
             : undefined
         }
         actions={
           <Button
             variant="primary"
             icon={<Plus size={14} />}
-            onClick={() => (window.location.href = '/admin/content/post/new')}
+            disabled={!canEdit}
+            onClick={() => navigate('/bolt-admin/content/post/new')}
           >
             New post
           </Button>
@@ -80,48 +86,50 @@ export default function Dashboard() {
             <Spinner />
           ) : (
             <ul className="m-0 grid list-none gap-2 p-0 text-sm">
-              {glance.data?.types.map((t) => (
-                <li key={t.type}>
-                  <Link
-                    to={`/admin/content/${t.type}`}
-                    className="flex items-center gap-2 text-bolt-ds-textPrimary no-underline hover:text-bolt-ds-brand"
-                  >
-                    {t.type === 'page' ? (
-                      <Files size={14} />
-                    ) : (
-                      <FileText size={14} />
-                    )}
-                    <span>
-                      {t.byStatus.publish ?? 0}{' '}
-                      {typeLabel(t.type, (t.byStatus.publish ?? 0) !== 1)}
-                    </span>
-                    {(t.byStatus.draft ?? 0) > 0 && (
-                      <Badge tone="warning">{t.byStatus.draft} draft</Badge>
-                    )}
-                  </Link>
-                </li>
-              ))}
+              {(['post', 'page'] as const).map((type) => {
+                const counts = glance.data?.counts[type] ?? {};
+                const published = counts.publish ?? 0;
+                return (
+                  <li key={type}>
+                    <Link
+                      to={`/bolt-admin/content/${type}`}
+                      className="flex items-center gap-2 text-bolt-ds-textPrimary no-underline hover:text-bolt-ds-brand"
+                    >
+                      {type === 'page' ? (
+                        <Files size={14} />
+                      ) : (
+                        <FileText size={14} />
+                      )}
+                      <span>
+                        {pluralize(
+                          published,
+                          CONTENT_TYPES[type].singular,
+                          CONTENT_TYPES[type].label.toLowerCase()
+                        )}
+                      </span>
+                      {(counts.draft ?? 0) > 0 && (
+                        <Badge tone="warning">{counts.draft} draft</Badge>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
               <li>
                 <Link
-                  to="/admin/media"
+                  to="/bolt-admin/media"
                   className="flex items-center gap-2 no-underline hover:text-bolt-ds-brand"
                 >
                   <Image size={14} />{' '}
-                  {pluralize(glance.data?.mediaTotal ?? 0, 'media file')}
+                  {pluralize(glance.data?.assets ?? 0, 'media file')}
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/admin/comments"
+                  to="/bolt-admin/comments"
                   className="flex items-center gap-2 no-underline hover:text-bolt-ds-brand"
                 >
                   <MessageSquare size={14} />{' '}
-                  {pluralize(glance.data?.comments.approved ?? 0, 'comment')}
-                  {(glance.data?.comments.hold ?? 0) > 0 && (
-                    <Badge tone="warning">
-                      {glance.data?.comments.hold} in moderation
-                    </Badge>
-                  )}
+                  {pluralize(glance.data?.comments ?? 0, 'comment')}
                 </Link>
               </li>
             </ul>
@@ -146,14 +154,16 @@ export default function Dashboard() {
                   className="flex items-center justify-between gap-3 px-4 py-2.5"
                 >
                   <Link
-                    to={`/admin/content/post/${p.id}`}
+                    to={`/bolt-admin/content/post/${p.id}`}
                     className="truncate font-medium no-underline hover:text-bolt-ds-brand"
                   >
                     {p.title || '(no title)'}
                   </Link>
                   <span className="flex shrink-0 items-center gap-2 text-xs text-bolt-ds-textTertiary">
-                    <Badge tone={statusTone(p.status)}>{p.status}</Badge>
-                    {formatDateTime(p.date)}
+                    <Badge tone={statusTone(p.status ?? 'publish')}>
+                      {p.status ?? 'publish'}
+                    </Badge>
+                    {formatDateTime(p.published_at)}
                   </span>
                 </li>
               ))}
@@ -166,36 +176,36 @@ export default function Dashboard() {
           )}
         </Card>
 
-        <Card title="Awaiting moderation" padded={false}>
-          {pending.loading ? (
+        <Card title="Recent comments" padded={false}>
+          {comments.loading ? (
             <Spinner />
-          ) : pending.data?.length ? (
+          ) : comments.data?.length ? (
             <ul className="m-0 list-none divide-y divide-bolt-ds-borderSecondary p-0 text-sm">
-              {pending.data.map((c) => (
+              {comments.data.map((c) => (
                 <li key={c.id} className="px-4 py-2.5">
                   <p className="m-0 text-xs text-bolt-ds-textTertiary">
                     <strong className="text-bolt-ds-textSecondary">
-                      {c.author_name}
+                      {c.author_name ?? 'Anonymous'}
                     </strong>{' '}
-                    on {c.post?.title ?? 'a post'}
+                    on {c.post_title ?? 'a post'}
                   </p>
                   <p className="m-0 mt-0.5 line-clamp-2">
-                    {truncate(stripHtml(c.content_html), 120)}
+                    {truncate(stripHtml(portableTextToHtml(c.body ?? [])), 120)}
                   </p>
                 </li>
               ))}
               <li className="px-4 py-2 text-xs">
                 <Link
-                  to="/admin/comments"
+                  to="/bolt-admin/comments"
                   className="no-underline text-bolt-ds-brand"
                 >
-                  Moderate comments →
+                  All comments →
                 </Link>
               </li>
             </ul>
           ) : (
             <p className="m-0 px-4 py-6 text-center text-sm text-bolt-ds-textTertiary">
-              Nothing waiting. Nice.
+              No comments yet.
             </p>
           )}
         </Card>
@@ -210,31 +220,47 @@ function QuickDraft() {
   const [saving, setSaving] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
+  const canEdit = useCanEdit();
 
   async function save() {
     setSaving(true);
     try {
-      const post = await savePost({
-        type: 'post',
-        status: 'draft',
+      const post = await insertContent('post', {
         title,
-        slug: title
-          ? title
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-+|-+$/g, '')
-          : `draft-${Date.now()}`,
-        content_html: content
-          ? `<p>${content
-              .replace(/\n{2,}/g, '</p><p>')
-              .replace(/\n/g, '<br />')}</p>`
-          : '',
-        author_id: 1,
+        slug: slugify(title) || `draft-${Date.now()}`,
+        excerpt: null,
+        body: content
+          ? [
+              {
+                _type: 'block',
+                _key: crypto.randomUUID().slice(0, 8),
+                style: 'normal',
+                markDefs: [],
+                children: [
+                  {
+                    _type: 'span',
+                    _key: crypto.randomUUID().slice(0, 8),
+                    text: content,
+                    marks: [],
+                  },
+                ],
+              },
+            ]
+          : null,
+        content_html: content ? `<p>${escapeHtml(content)}</p>` : null,
+        status: 'draft',
+        author: null,
+        featured_image: null,
+        categories: [],
+        tags: [],
+        parent: null,
+        menu_order: null,
+        published_at: null,
       });
       toast('Draft saved');
-      navigate(`/admin/content/post/${post.id}`);
+      navigate(`/bolt-admin/content/post/${post.id}`);
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not save draft', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     } finally {
       setSaving(false);
     }
@@ -263,7 +289,7 @@ function QuickDraft() {
             variant="primary"
             size="sm"
             loading={saving}
-            disabled={!title && !content}
+            disabled={!canEdit || (!title && !content)}
             onClick={save}
           >
             Save draft

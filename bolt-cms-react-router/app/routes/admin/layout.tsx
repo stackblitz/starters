@@ -6,24 +6,22 @@ import {
   LayoutDashboard,
   MessageSquare,
   Navigation,
-  Plug,
   Settings,
   Tags,
+  Users,
   ExternalLink,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { NavLink, Outlet } from 'react-router';
 
+import { hello, isInsideBolt } from '@/admin/bridge/client';
 import {
-  getTaxonomies,
-  getPostTypeCounts,
-  hello,
-  summarizeTypes,
-} from '@/admin/api';
-import { isAdminShell } from '@/admin/bridge/client';
-import { cx, ToastProvider } from '@/admin/components/ui';
-import { useAsync } from '@/admin/hooks';
-import { typeLabel, taxonomyLabel } from '@/admin/labels';
+  cx,
+  ErrorNote,
+  Spinner,
+  ToastProvider,
+} from '@/admin/components/ui';
+import { AdminContext, errorMessage } from '@/admin/hooks';
 
 export function meta() {
   return [
@@ -32,15 +30,32 @@ export function meta() {
   ];
 }
 
+type Connection =
+  | { state: 'connecting' }
+  | { state: 'ready'; canEdit: boolean }
+  | { state: 'error'; message: string };
+
 /**
- * The admin only renders inside a Bolt project (framed by the Bolt UI) or in
- * local dev. Opened directly on the published site it is a blank page.
+ * The admin only works inside Bolt's Admin tab, which frames this page and
+ * answers bridge requests. `bolt.hello` runs once before any screen renders.
  */
 export default function AdminLayout() {
-  const [shell, setShell] = useState<boolean | null>(null);
+  const [inside, setInside] = useState<boolean | null>(null);
+  const [connection, setConnection] = useState<Connection>({
+    state: 'connecting',
+  });
 
   useEffect(() => {
-    setShell(isAdminShell());
+    const framed = isInsideBolt();
+    setInside(framed);
+    if (!framed) return;
+    hello().then(
+      (h) => setConnection({ state: 'ready', canEdit: h.permissions.canEdit }),
+      (e) => setConnection({ state: 'error', message: errorMessage(e) })
+    );
+  }, []);
+
+  useEffect(() => {
     // Follow the OS/Bolt color scheme for the admin chrome.
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = () =>
@@ -50,17 +65,30 @@ export default function AdminLayout() {
     return () => mq.removeEventListener('change', apply);
   }, []);
 
-  // Not framed by Bolt and not local dev: render nothing.
-  if (shell === null || !shell) return null;
+  if (inside === null) return null;
+  if (!inside)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bolt-ds-bg px-6 text-bolt-ds-textSecondary">
+        <p className="m-0 text-sm">Open this page from the Admin tab in Bolt.</p>
+      </div>
+    );
 
   return (
     <ToastProvider>
       <div className="flex min-h-screen bg-bolt-ds-bg text-bolt-ds-textPrimary antialiased">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
+          <TopBar connection={connection} />
           <main className="flex-1 px-6 py-6">
-            <Outlet />
+            {connection.state === 'ready' ? (
+              <AdminContext.Provider value={{ canEdit: connection.canEdit }}>
+                <Outlet />
+              </AdminContext.Provider>
+            ) : connection.state === 'error' ? (
+              <ErrorNote message={connection.message} />
+            ) : (
+              <Spinner label="Connecting to Bolt" />
+            )}
           </main>
         </div>
       </div>
@@ -69,27 +97,6 @@ export default function AdminLayout() {
 }
 
 function Sidebar() {
-  const types = useAsync(
-    async () => summarizeTypes(await getPostTypeCounts()),
-    []
-  );
-  const taxonomies = useAsync(getTaxonomies, []);
-
-  const contentTypes = types.data ?? [
-    { type: 'post', total: 0, byStatus: {} },
-    { type: 'page', total: 0, byStatus: {} },
-  ];
-  const known = new Set(contentTypes.map((t) => t.type));
-  if (!known.has('post'))
-    contentTypes.unshift({ type: 'post', total: 0, byStatus: {} });
-  if (!known.has('page'))
-    contentTypes.splice(1, 0, { type: 'page', total: 0, byStatus: {} });
-
-  const taxList = taxonomies.data ?? [
-    { taxonomy: 'category', count: 0 },
-    { taxonomy: 'post_tag', count: 0 },
-  ];
-
   return (
     <aside className="hidden w-56 shrink-0 flex-col border-r border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary md:flex">
       <div className="flex items-center gap-2 px-4 py-4">
@@ -97,56 +104,49 @@ function Sidebar() {
         <span className="text-sm font-semibold">Bolt CMS</span>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 px-2 pb-4 text-sm">
-        <SideLink to="/admin" end icon={<LayoutDashboard size={15} />}>
+        <SideLink to="/bolt-admin" end icon={<LayoutDashboard size={15} />}>
           Dashboard
         </SideLink>
 
         <SectionLabel>Content</SectionLabel>
-        {contentTypes.map((t) => (
-          <SideLink
-            key={t.type}
-            to={`/admin/content/${t.type}`}
-            icon={
-              t.type === 'page' ? (
-                <Files size={15} />
-              ) : t.type === 'post' ? (
-                <FileText size={15} />
-              ) : (
-                <Plug size={15} />
-              )
-            }
-            count={t.total}
-          >
-            {typeLabel(t.type, true)}
-          </SideLink>
-        ))}
-        <SideLink to="/admin/media" icon={<Image size={15} />}>
-          Media
+        <SideLink to="/bolt-admin/content/post" icon={<FileText size={15} />}>
+          Posts
         </SideLink>
-        <SideLink to="/admin/comments" icon={<MessageSquare size={15} />}>
+        <SideLink to="/bolt-admin/content/page" icon={<Files size={15} />}>
+          Pages
+        </SideLink>
+        <SideLink to="/bolt-admin/comments" icon={<MessageSquare size={15} />}>
           Comments
+        </SideLink>
+        <SideLink to="/bolt-admin/media" icon={<Image size={15} />}>
+          Media
         </SideLink>
 
         <SectionLabel>Organize</SectionLabel>
-        {taxList.map((t) => (
-          <SideLink
-            key={t.taxonomy}
-            to={`/admin/terms/${t.taxonomy}`}
-            icon={<Tags size={15} />}
-            count={t.count}
-          >
-            {taxonomyLabel(t.taxonomy, true)}
-          </SideLink>
-        ))}
-        <SideLink to="/admin/menus" icon={<Navigation size={15} />}>
+        <SideLink
+          to="/bolt-admin/collection/author"
+          icon={<Users size={15} />}
+        >
+          Authors
+        </SideLink>
+        <SideLink
+          to="/bolt-admin/collection/category"
+          icon={<Tags size={15} />}
+        >
+          Categories
+        </SideLink>
+        <SideLink to="/bolt-admin/collection/tag" icon={<Tags size={15} />}>
+          Tags
+        </SideLink>
+        <SideLink to="/bolt-admin/menus" icon={<Navigation size={15} />}>
           Menus
         </SideLink>
 
         <SectionLabel>Site</SectionLabel>
-        <SideLink to="/admin/appearance" icon={<Brush size={15} />}>
+        <SideLink to="/bolt-admin/appearance" icon={<Brush size={15} />}>
           Appearance
         </SideLink>
-        <SideLink to="/admin/settings" icon={<Settings size={15} />}>
+        <SideLink to="/bolt-admin/settings" icon={<Settings size={15} />}>
           Settings
         </SideLink>
       </nav>
@@ -166,13 +166,11 @@ function SideLink({
   to,
   end,
   icon,
-  count,
   children,
 }: {
   to: string;
   end?: boolean;
   icon: React.ReactNode;
-  count?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -188,40 +186,31 @@ function SideLink({
     >
       <span className="text-bolt-ds-iconSecondary">{icon}</span>
       <span className="flex-1 truncate">{children}</span>
-      {count !== undefined && count > 0 && (
-        <span className="text-[11px] text-bolt-ds-textTertiary">{count}</span>
-      )}
     </NavLink>
   );
 }
 
-function TopBar() {
-  const location = useLocation();
-  const host = useAsync(hello, []);
-
-  const status = host.loading
-    ? 'Connecting to Bolt…'
-    : host.error
-    ? 'Host unavailable'
-    : `Connected · ${host.data?.host}`;
-  const tone = host.loading
-    ? 'bg-bolt-ds-warning'
-    : host.error
-    ? 'bg-bolt-ds-danger'
-    : 'bg-bolt-ds-success';
+function TopBar({ connection }: { connection: Connection }) {
+  const [status, tone] =
+    connection.state === 'connecting'
+      ? ['Connecting to Bolt…', 'bg-bolt-ds-warning']
+      : connection.state === 'error'
+      ? [connection.message, 'bg-bolt-ds-danger']
+      : connection.canEdit
+      ? ['Connected', 'bg-bolt-ds-success']
+      : ['Read-only access', 'bg-bolt-ds-warning'];
 
   return (
     <header className="flex h-12 items-center justify-between border-b border-bolt-ds-borderSecondary px-6">
       <div className="flex items-center gap-2 text-xs text-bolt-ds-textTertiary">
         <span className={cx('inline-block h-1.5 w-1.5 rounded-full', tone)} />
-        <span title={host.error ?? undefined}>{status}</span>
+        <span>{status}</span>
       </div>
       <a
         href="/"
         target="_blank"
         rel="noreferrer"
         className="inline-flex items-center gap-1.5 text-xs text-bolt-ds-textSecondary hover:text-bolt-ds-textPrimary"
-        data-path={location.pathname}
       >
         View site <ExternalLink size={12} />
       </a>

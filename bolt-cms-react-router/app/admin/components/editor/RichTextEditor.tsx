@@ -1,21 +1,16 @@
 /**
  * Tiptap-based rich text editor.
  *
- * Content round-trips as HTML (what WordPress gives us and what the site
- * renders) and ProseMirror JSON (`content_json`, the editor's canonical
- * document). Imported posts open from HTML; Tiptap parses it natively, so no
- * conversion step is needed. On change both representations are emitted.
+ * Opens from the post's Portable Text `body` (or the imported `content_html`
+ * when there is no body) and emits both on change: Portable Text is what the
+ * site renders, HTML is the fallback copy stored in `content_html`.
  */
+import { generateHTML } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import Youtube from '@tiptap/extension-youtube';
-import {
-  EditorContent,
-  useEditor,
-  type Content,
-  type Editor,
-} from '@tiptap/react';
+import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
   Bold,
@@ -36,61 +31,55 @@ import {
   Undo,
   Video as VideoIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
-import type { Media } from '@/lib/cms/types';
-import { mediaUrl } from '@/lib/cms/media';
+import { assetUrl } from '@/lib/cms/media';
+import {
+  portableTextToHtml,
+  proseMirrorToPortableText,
+  type PortableTextBlock,
+} from '@/lib/cms/portable-text';
+import type { Asset } from '@/lib/cms/types';
 
 import { MediaPicker } from '../MediaPicker';
-import { Button, cx, Textarea } from '../ui';
+import { Button, cx, Input, Textarea } from '../ui';
 
-export interface RichTextValue {
-  html: string;
-  json: unknown;
-}
+const extensions = [
+  StarterKit.configure({
+    heading: { levels: [1, 2, 3, 4] },
+    link: { openOnClick: false, autolink: true, defaultProtocol: 'https' },
+  }),
+  Image.configure({
+    inline: false,
+    allowBase64: false,
+    HTMLAttributes: { loading: 'lazy' },
+  }),
+  TableKit.configure({ table: { resizable: false } }),
+  Youtube.configure({ nocookie: true, width: 640, height: 360 }),
+  Placeholder.configure({ placeholder: 'Start writing…' }),
+];
 
-function isDoc(value: unknown): value is Content {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as { type?: unknown }).type === 'doc'
-  );
-}
-
+/** Initial content is read once; remount (`key`) to load another document. */
 export function RichTextEditor({
-  html,
-  json,
+  initialBody,
+  initialHtml,
   onChange,
-  placeholder = 'Start writing…',
 }: {
-  html: string;
-  json?: unknown;
-  onChange: (value: RichTextValue) => void;
-  placeholder?: string;
+  initialBody: PortableTextBlock[] | null;
+  initialHtml: string | null;
+  onChange: (value: { body: PortableTextBlock[]; html: string }) => void;
 }) {
+  const [initial] = useState(() =>
+    initialBody?.length ? portableTextToHtml(initialBody) : initialHtml ?? ''
+  );
   const [mode, setMode] = useState<'visual' | 'html'>('visual');
   const [pickImage, setPickImage] = useState(false);
-  const [source, setSource] = useState(html);
-  const lastEmitted = useRef<string>(html);
+  const [source, setSource] = useState(initial);
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4] },
-        link: { openOnClick: false, autolink: true, defaultProtocol: 'https' },
-      }),
-      Image.configure({
-        inline: false,
-        allowBase64: false,
-        HTMLAttributes: { loading: 'lazy' },
-      }),
-      TableKit.configure({ table: { resizable: false } }),
-      Youtube.configure({ nocookie: true, width: 640, height: 360 }),
-      Placeholder.configure({ placeholder }),
-    ],
-    // Prefer the editor's own JSON when we have it; fall back to WordPress HTML.
-    content: isDoc(json) ? json : html,
+    extensions,
+    content: initial,
     editorProps: {
       attributes: {
         class:
@@ -98,22 +87,16 @@ export function RichTextEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      const nextHtml = editor.getHTML();
-      lastEmitted.current = nextHtml;
-      setSource(nextHtml);
-      onChange({ html: nextHtml, json: editor.getJSON() });
+      const html = editor.getHTML();
+      setSource(html);
+      onChange({
+        body: proseMirrorToPortableText(editor.getJSON(), (node) =>
+          generateHTML({ type: 'doc', content: [node] }, extensions)
+        ),
+        html,
+      });
     },
   });
-
-  // External resets (e.g. loading a different post into the same editor).
-  useEffect(() => {
-    if (!editor) return;
-    if (html !== lastEmitted.current && editor.getHTML() !== html) {
-      editor.commands.setContent(html, { emitUpdate: false });
-      lastEmitted.current = html;
-      setSource(html);
-    }
-  }, [html, editor]);
 
   function applySource() {
     if (!editor) return;
@@ -121,19 +104,19 @@ export function RichTextEditor({
     setMode('visual');
   }
 
-  function insertMedia(media: Media) {
-    const url = mediaUrl(media);
+  function insertAsset(asset: Asset) {
+    const url = assetUrl(asset);
+    setPickImage(false);
     if (!url || !editor) return;
     editor
       .chain()
       .focus()
       .setImage({
         src: url,
-        alt: media.alt_text ?? '',
-        title: media.title ?? undefined,
+        alt: asset.alt ?? '',
+        title: asset.caption ?? undefined,
       })
       .run();
-    setPickImage(false);
   }
 
   return (
@@ -167,7 +150,7 @@ export function RichTextEditor({
       <MediaPicker
         open={pickImage}
         onClose={() => setPickImage(false)}
-        onSelect={insertMedia}
+        onSelect={insertAsset}
       />
     </div>
   );
@@ -185,23 +168,23 @@ function Toolbar({
   onImage: () => void;
 }) {
   const disabled = !editor || mode === 'html';
+  // Inline URL entry: the Bolt sandbox blocks native prompt dialogs.
+  const [draft, setDraft] = useState<{
+    kind: 'link' | 'youtube';
+    url: string;
+  } | null>(null);
 
-  const setLink = () => {
-    if (!editor) return;
-    const previous = editor.getAttributes('link').href as string | undefined;
-    const url = window.prompt('Link URL', previous ?? 'https://');
-    if (url === null) return;
-    if (url === '') {
+  const applyDraft = () => {
+    if (!editor || !draft) return;
+    const url = draft.url.trim();
+    setDraft(null);
+    if (draft.kind === 'youtube') {
+      if (url) editor.chain().focus().setYoutubeVideo({ src: url }).run();
+    } else if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
+    } else {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
     }
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  };
-
-  const addYoutube = () => {
-    if (!editor) return;
-    const url = window.prompt('YouTube URL');
-    if (url) editor.chain().focus().setYoutubeVideo({ src: url }).run();
   };
 
   const items: Array<
@@ -265,7 +248,13 @@ function Toolbar({
         {
           icon: <LinkIcon size={14} />,
           label: 'Link',
-          run: setLink,
+          run: () =>
+            setDraft({
+              kind: 'link',
+              url:
+                (editor.getAttributes('link').href as string | undefined) ??
+                'https://',
+            }),
           active: editor.isActive('link'),
         },
         'sep',
@@ -300,7 +289,11 @@ function Toolbar({
         },
         'sep',
         { icon: <ImageIcon size={14} />, label: 'Image', run: onImage },
-        { icon: <VideoIcon size={14} />, label: 'YouTube', run: addYoutube },
+        {
+          icon: <VideoIcon size={14} />,
+          label: 'YouTube',
+          run: () => setDraft({ kind: 'youtube', url: '' }),
+        },
         {
           icon: <TableIcon size={14} />,
           label: 'Table',
@@ -316,6 +309,7 @@ function Toolbar({
     : [];
 
   return (
+    <>
     <div className="flex flex-wrap items-center gap-0.5 border-b border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary px-2 py-1">
       {items.map((item, i) =>
         item === 'sep' ? (
@@ -349,6 +343,34 @@ function Toolbar({
         </ModeButton>
       </div>
     </div>
+    {draft && (
+      <div className="flex items-center gap-2 border-b border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary px-2 py-1.5">
+        <Input
+          autoFocus
+          value={draft.url}
+          placeholder={draft.kind === 'link' ? 'https://… (empty removes the link)' : 'YouTube URL'}
+          aria-label={draft.kind === 'link' ? 'Link URL' : 'YouTube URL'}
+          className="h-7 py-1 text-xs"
+          onChange={(e) => setDraft({ ...draft, url: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              applyDraft();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              setDraft(null);
+            }
+          }}
+        />
+        <Button size="sm" variant="primary" onClick={applyDraft}>
+          Apply
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>
+          Cancel
+        </Button>
+      </div>
+    )}
+    </>
   );
 }
 
