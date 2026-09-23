@@ -18,8 +18,8 @@ export default [
     route('*', 'routes/site/catch-all.tsx'),
   ]),
 
-  /* Bolt CMS admin. Only renders inside a Bolt project (or local dev). */
-  route('admin', 'routes/admin/layout.tsx', [
+  /* Bolt CMS admin. Renders only inside Bolt's Admin tab (bolt-admin bridge). */
+  route('bolt-admin', 'routes/admin/layout.tsx', [
     index('routes/admin/dashboard.tsx'),
     route('content/:type', 'routes/admin/content-list.tsx'),
     route('content/:type/new', 'routes/admin/content-edit.tsx', {
@@ -30,7 +30,7 @@ export default [
     }),
     route('media', 'routes/admin/media.tsx'),
     route('comments', 'routes/admin/comments.tsx'),
-    route('terms/:taxonomy', 'routes/admin/terms.tsx'),
+    route('collection/:kind', 'routes/admin/collection.tsx'),
     route('menus', 'routes/admin/menus.tsx'),
     route('appearance', 'routes/admin/appearance.tsx'),
     route('settings/:tab?', 'routes/admin/settings.tsx'),

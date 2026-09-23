@@ -7,7 +7,8 @@
     "build": "react-router build",
     "preview": "vite preview --outDir build/client",
     "lint": "eslint .",
-    "typecheck": "react-router typegen && tsc --noEmit -p tsconfig.app.json",
+    "typecheck": "react-router typegen && tsc --noEmit -p tsconfig.app.json && npm run manifest -- --check",
+    "manifest": "node --experimental-strip-types scripts/build-admin-manifest.ts",
     "check": "node --experimental-strip-types app/lib/cms/portable-text.check.ts"
   },
   "dependencies": {

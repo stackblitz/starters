@@ -17,5 +17,5 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "react-router.config.ts", "dev/**/*.ts"]
+  "include": ["vite.config.ts", "react-router.config.ts", "scripts/**/*.ts"]
 }

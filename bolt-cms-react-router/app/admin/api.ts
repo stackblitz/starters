@@ -1,452 +1,285 @@
 /**
- * Typed data access for the admin, built on the bridge client. Every function
- * here maps to one or more `CmsOp`s; nothing talks to Supabase directly.
+ * Typed data access for the admin. Every function runs one named query from
+ * `./queries.ts` through Bolt's bridge; nothing talks to Supabase directly.
+ *
+ * Parameter conventions: scalars as-is (`null` allowed), `bigint[]` via
+ * `pgArray`, `jsonb` via `JSON.stringify`, timestamps as ISO strings.
  */
-import type {
-  Author,
-  Comment,
-  CommentStatus,
-  FieldDef,
-  Media,
-  Menu,
-  MenuItem,
-  Post,
-  PostStatus,
-  SiteSettings,
-  Term,
+import type { PortableTextBlock } from '@/lib/cms/portable-text';
+import {
+  mergeSettings,
+  type Asset,
+  type Author,
+  type Comment,
+  type ContentTable,
+  type FieldDef,
+  type Menu,
+  type MenuItem,
+  type Post,
+  type SiteRow,
+  type SiteSettings,
+  type Term,
 } from '@/lib/cms/types';
-import { settingsFromRows } from '@/lib/cms/types';
 
-import { cms, type CmsResult } from './bridge/client';
-import type { Filter, Order, Row } from './bridge/protocol';
-
-/* ------------------------------------------------------------------------ */
-/* Generic rows                                                              */
-/* ------------------------------------------------------------------------ */
-
-export interface ListOptions {
-  columns?: string;
-  filters?: Filter[];
-  order?: Order[];
-  page?: number;
-  perPage?: number;
-  count?: boolean;
-}
-
-export async function listRows<T = Row>(
-  table: string,
-  options: ListOptions = {}
-): Promise<CmsResult<T[]>> {
-  const perPage = options.perPage ?? 20;
-  const page = Math.max(1, options.page ?? 1);
-  const range = options.perPage
-    ? { from: (page - 1) * perPage, to: page * perPage - 1 }
-    : undefined;
-  return cms.request<T[]>({
-    kind: 'select',
-    table,
-    columns: options.columns,
-    filters: options.filters,
-    order: options.order,
-    range,
-    count: options.count,
-  });
-}
-
-export async function getRow<T = Row>(
-  table: string,
-  id: number | string,
-  columns = '*'
-): Promise<T | null> {
-  const { data } = await cms.request<T | null>({
-    kind: 'select',
-    table,
-    columns,
-    filters: [{ column: 'id', op: 'eq', value: id }],
-    single: true,
-  });
-  return data;
-}
-
-export async function insertRow<T = Row>(
-  table: string,
-  values: Row
-): Promise<T> {
-  const { data } = await cms.request<T[]>({ kind: 'insert', table, values });
-  return data[0];
-}
-
-export async function updateRow<T = Row>(
-  table: string,
-  id: number | string,
-  values: Row
-): Promise<T> {
-  const { data } = await cms.request<T[]>({
-    kind: 'update',
-    table,
-    values,
-    filters: [{ column: 'id', op: 'eq', value: id }],
-  });
-  return data[0];
-}
-
-export async function deleteRow(
-  table: string,
-  id: number | string
-): Promise<void> {
-  await cms.request({
-    kind: 'delete',
-    table,
-    filters: [{ column: 'id', op: 'eq', value: id }],
-  });
-}
-
-export async function hello(): Promise<{ host: string; version: number }> {
-  const { data } = await cms.request<{ host: string; version: number }>({
-    kind: 'hello',
-  });
-  return data;
-}
+import { pgArray, runQuery } from './bridge/client';
+import type { AdminQueryName } from './queries';
 
 /* ------------------------------------------------------------------------ */
-/* Fields                                                                    */
+/* Posts and pages                                                           */
 /* ------------------------------------------------------------------------ */
 
-export async function getFields(table: string): Promise<FieldDef[]> {
-  const { data } = await listRows<FieldDef>('cms_fields', {
-    filters: [{ column: 'table_name', op: 'eq', value: table }],
-    order: [{ column: 'position' }],
-  });
-  return data;
-}
+export type ContentType = 'post' | 'page';
 
-/* ------------------------------------------------------------------------ */
-/* Content (cms_posts)                                                       */
-/* ------------------------------------------------------------------------ */
+type ContentQuery = 'list' | 'count' | 'get' | 'insert' | 'update' | 'setStatus' | 'remove' | 'options';
 
-export const POST_ADMIN_SELECT =
-  '*, author:cms_authors(id, name), featured_media:cms_media(id, local_path, source_url, alt_text)';
-
-export type AdminPost = Post & {
-  author: Pick<Author, 'id' | 'name'> | null;
-  featured_media: Pick<
-    Media,
-    'id' | 'local_path' | 'source_url' | 'alt_text'
-  > | null;
+export const CONTENT_TYPES: Record<
+  ContentType,
+  { label: string; singular: string; table: ContentTable; queries: Record<ContentQuery, AdminQueryName> }
+> = {
+  post: {
+    label: 'Posts',
+    singular: 'post',
+    table: 'cms_posts',
+    queries: {
+      list: 'listPosts',
+      count: 'countPosts',
+      get: 'getPost',
+      insert: 'insertPost',
+      update: 'updatePost',
+      setStatus: 'setPostStatus',
+      remove: 'deletePost',
+      options: 'listPostOptions',
+    },
+  },
+  page: {
+    label: 'Pages',
+    singular: 'page',
+    table: 'cms_pages',
+    queries: {
+      list: 'listPages',
+      count: 'countPages',
+      get: 'getPage',
+      insert: 'insertPage',
+      update: 'updatePage',
+      setStatus: 'setPageStatus',
+      remove: 'deletePage',
+      options: 'listPageOptions',
+    },
+  },
 };
 
-export interface ListContentOptions {
-  type: string;
-  status?: PostStatus | 'all';
-  search?: string;
-  page?: number;
-  perPage?: number;
+export function isContentType(value: string | undefined): value is ContentType {
+  return value === 'post' || value === 'page';
 }
 
-export async function listContent(
-  options: ListContentOptions
-): Promise<CmsResult<AdminPost[]>> {
-  const filters: Filter[] = [{ column: 'type', op: 'eq', value: options.type }];
-  if (options.status && options.status !== 'all')
-    filters.push({ column: 'status', op: 'eq', value: options.status });
-  else filters.push({ column: 'status', op: 'neq', value: 'trash' });
-  if (options.search)
-    filters.push({
-      column: 'title',
-      op: 'ilike',
-      value: `%${options.search}%`,
-    });
+/** Bolt stores the WordPress status as free text; imported rows are `publish`. */
+export const STATUSES = ['publish', 'draft', 'trash'] as const;
 
-  return listRows<AdminPost>('cms_posts', {
-    columns: POST_ADMIN_SELECT,
-    filters,
-    order: [{ column: 'date', ascending: false }],
-    page: options.page,
-    perPage: options.perPage ?? 20,
-    count: true,
-  });
+export interface ContentInput {
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  body: PortableTextBlock[] | null;
+  content_html: string | null;
+  status: string;
+  author: number | null;
+  featured_image: string | null;
+  categories: number[];
+  tags: number[];
+  parent: number | null;
+  menu_order: number | null;
+  published_at: string | null;
 }
 
-export async function getPost(id: number): Promise<Post | null> {
-  return getRow<Post>('cms_posts', id);
+export type ContentListRow = Pick<
+  Post,
+  'id' | 'title' | 'slug' | 'status' | 'author' | 'featured_image' | 'published_at' | 'modified_at'
+>;
+
+export interface ContentOption {
+  id: number;
+  title: string;
 }
 
-export async function savePost(
-  values: Partial<Post> & { type: string },
-  id?: number
-): Promise<Post> {
-  const row: Row = { ...values };
-  delete row.id;
-  if (id) return updateRow<Post>('cms_posts', id, row);
-  return insertRow<Post>('cms_posts', row);
+/** imported rows may carry null arrays */
+function normalizePost(row: Post): Post {
+  return { ...row, categories: row.categories ?? [], tags: row.tags ?? [] };
 }
 
-export async function setPostStatus(
-  id: number,
-  status: PostStatus
-): Promise<void> {
-  await updateRow('cms_posts', id, { status });
+function contentParams(input: ContentInput) {
+  return [
+    input.title,
+    input.slug,
+    input.excerpt,
+    input.body === null ? null : JSON.stringify(input.body),
+    input.content_html,
+    input.status,
+    input.author,
+    input.featured_image,
+    pgArray(input.categories),
+    pgArray(input.tags),
+    input.parent,
+    input.menu_order,
+    input.published_at,
+  ];
 }
 
-export async function deletePostPermanently(id: number): Promise<void> {
-  await deleteRow('cms_posts', id);
-}
-
-export interface PostTypeCount {
-  type: string;
-  status: PostStatus;
-  count: number;
-}
-
-export async function getPostTypeCounts(): Promise<PostTypeCount[]> {
-  const { data } = await listRows<PostTypeCount>('cms_post_type_counts');
-  return data;
-}
-
-export function summarizeTypes(
-  counts: PostTypeCount[]
-): Array<{ type: string; total: number; byStatus: Record<string, number> }> {
-  const map = new Map<
-    string,
-    { type: string; total: number; byStatus: Record<string, number> }
-  >();
-  for (const c of counts) {
-    const entry = map.get(c.type) ?? { type: c.type, total: 0, byStatus: {} };
-    entry.byStatus[c.status] = (entry.byStatus[c.status] ?? 0) + c.count;
-    if (c.status !== 'trash') entry.total += c.count;
-    map.set(c.type, entry);
-  }
-  // Posts, then pages, then everything else alphabetically.
-  const order = (t: string) => (t === 'post' ? 0 : t === 'page' ? 1 : 2);
-  return Array.from(map.values()).sort(
-    (a, b) => order(a.type) - order(b.type) || a.type.localeCompare(b.type)
-  );
-}
-
-/* ------------------------------------------------------------------------ */
-/* Terms                                                                     */
-/* ------------------------------------------------------------------------ */
-
-export async function listTerms(taxonomy: string): Promise<Term[]> {
-  const { data } = await listRows<Term>('cms_terms', {
-    filters: [{ column: 'taxonomy', op: 'eq', value: taxonomy }],
-    order: [{ column: 'name' }],
-  });
-  return data;
-}
-
-export async function getTaxonomies(): Promise<
-  Array<{ taxonomy: string; count: number }>
-> {
-  const { data } = await listRows<{ taxonomy: string; count: number }>(
-    'cms_taxonomy_counts'
-  );
-  const order = (t: string) =>
-    t === 'category' ? 0 : t === 'post_tag' ? 1 : 2;
-  return data.sort(
-    (a, b) =>
-      order(a.taxonomy) - order(b.taxonomy) ||
-      a.taxonomy.localeCompare(b.taxonomy)
-  );
-}
-
-export async function getPostTermIds(postId: number): Promise<number[]> {
-  const { data } = await listRows<{ term_id: number }>(
-    'cms_term_relationships',
-    {
-      columns: 'term_id',
-      filters: [{ column: 'post_id', op: 'eq', value: postId }],
-    }
-  );
-  return data.map((r) => r.term_id);
-}
-
-/** Replace a post's terms within the given taxonomy's term ids. */
-export async function setPostTerms(
-  postId: number,
-  taxonomyTermIds: number[],
-  nextIds: number[]
-): Promise<void> {
-  const current = await getPostTermIds(postId);
-  const inTaxonomy = new Set(taxonomyTermIds);
-  const currentInTax = current.filter((id) => inTaxonomy.has(id));
-  const toRemove = currentInTax.filter((id) => !nextIds.includes(id));
-  const toAdd = nextIds.filter((id) => !currentInTax.includes(id));
-
-  if (toRemove.length) {
-    await cms.request({
-      kind: 'delete',
-      table: 'cms_term_relationships',
-      filters: [
-        { column: 'post_id', op: 'eq', value: postId },
-        { column: 'term_id', op: 'in', value: toRemove },
-      ],
-    });
-  }
-  if (toAdd.length) {
-    await cms.request({
-      kind: 'insert',
-      table: 'cms_term_relationships',
-      values: toAdd.map((term_id) => ({ post_id: postId, term_id })),
-    });
-  }
-}
-
-export async function saveTerm(
-  values: Partial<Term> & { taxonomy: string },
-  id?: number
-): Promise<Term> {
-  const row: Row = { ...values };
-  delete row.id;
-  delete row.count;
-  if (id) return updateRow<Term>('cms_terms', id, row);
-  return insertRow<Term>('cms_terms', row);
-}
-
-/* ------------------------------------------------------------------------ */
-/* Media                                                                     */
-/* ------------------------------------------------------------------------ */
-
-export async function listMedia(
-  options: { page?: number; perPage?: number; search?: string } = {}
-): Promise<CmsResult<Media[]>> {
-  const filters: Filter[] = [];
-  if (options.search)
-    filters.push({
-      column: 'title',
-      op: 'ilike',
-      value: `%${options.search}%`,
-    });
-  return listRows<Media>('cms_media', {
-    filters,
-    order: [{ column: 'date', ascending: false }],
-    page: options.page,
-    perPage: options.perPage ?? 40,
-    count: true,
-  });
-}
-
-export async function uploadMedia(file: File): Promise<Media> {
-  const dataBase64 = await fileToBase64(file);
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-');
-  const path = `${yyyy}/${mm}/${Date.now().toString(36)}-${safeName}`;
-
-  const { data } = await cms.request<{ url: string }>({
-    kind: 'upload',
-    path,
-    contentType: file.type,
-    dataBase64,
-  });
-
-  const dims = file.type.startsWith('image/')
-    ? await imageDimensions(file)
-    : null;
-
-  return insertRow<Media>('cms_media', {
-    slug: safeName.replace(/\.[^.]+$/, '').toLowerCase(),
-    title: file.name.replace(/\.[^.]+$/, ''),
-    mime_type: file.type,
-    media_type: file.type.startsWith('image/') ? 'image' : 'file',
-    local_path: data.url,
-    width: dims?.width ?? null,
-    height: dims?.height ?? null,
-  });
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
-function imageDimensions(
-  file: File
-): Promise<{ width: number; height: number } | null> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () => {
-      resolve(null);
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
-  });
-}
-
-/* ------------------------------------------------------------------------ */
-/* Comments                                                                  */
-/* ------------------------------------------------------------------------ */
-
-export type AdminComment = Comment & {
-  post: Pick<Post, 'id' | 'title' | 'slug'> | null;
-};
-
-export async function listComments(
-  options: {
-    status?: CommentStatus | 'all';
-    page?: number;
-    perPage?: number;
-  } = {}
+export function listContent(
+  type: ContentType,
+  { status = 'all', search = '', page = 1, perPage = 20 }: { status?: string; search?: string; page?: number; perPage?: number } = {}
 ) {
-  const filters: Filter[] = [];
-  if (options.status && options.status !== 'all')
-    filters.push({ column: 'status', op: 'eq', value: options.status });
-  return listRows<AdminComment>('cms_comments', {
-    columns: '*, post:cms_posts(id, title, slug)',
-    filters,
-    order: [{ column: 'date', ascending: false }],
-    page: options.page,
-    perPage: options.perPage ?? 20,
-    count: true,
-  });
+  return runQuery<ContentListRow>(CONTENT_TYPES[type].queries.list, [status, search, perPage, (page - 1) * perPage]);
 }
 
-export async function getCommentCounts(): Promise<Record<string, number>> {
-  const { data } = await listRows<{ status: CommentStatus }>('cms_comments', {
-    columns: 'status',
-  });
-  const counts: Record<string, number> = {};
-  for (const c of data) counts[c.status] = (counts[c.status] ?? 0) + 1;
-  return counts;
+export async function countContent(type: ContentType): Promise<Record<string, number>> {
+  const rows = await runQuery<{ status: string; count: number }>(CONTENT_TYPES[type].queries.count);
+  return Object.fromEntries(rows.map((r) => [r.status, r.count]));
+}
+
+export async function getContent(type: ContentType, id: number): Promise<Post | null> {
+  const [row] = await runQuery<Post>(CONTENT_TYPES[type].queries.get, [id]);
+  return row ? normalizePost(row) : null;
+}
+
+export async function insertContent(type: ContentType, input: ContentInput): Promise<Post> {
+  const [row] = await runQuery<Post>(CONTENT_TYPES[type].queries.insert, contentParams(input));
+  return normalizePost(row);
+}
+
+export async function updateContent(type: ContentType, id: number, input: ContentInput): Promise<Post> {
+  const [row] = await runQuery<Post>(CONTENT_TYPES[type].queries.update, [id, ...contentParams(input)]);
+  return normalizePost(row);
+}
+
+export function setContentStatus(type: ContentType, id: number, status: string) {
+  return runQuery<{ id: number; status: string }>(CONTENT_TYPES[type].queries.setStatus, [id, status]);
+}
+
+export function deleteContent(type: ContentType, id: number) {
+  return runQuery<{ id: number }>(CONTENT_TYPES[type].queries.remove, [id]);
+}
+
+export function listContentOptions(type: ContentType) {
+  return runQuery<ContentOption>(CONTENT_TYPES[type].queries.options);
 }
 
 /* ------------------------------------------------------------------------ */
-/* Menus                                                                     */
+/* Authors, categories, tags                                                 */
 /* ------------------------------------------------------------------------ */
 
-export async function listMenus(): Promise<Menu[]> {
-  const { data } = await listRows<Menu>('cms_menus', {
-    order: [{ column: 'name' }],
-  });
-  return data;
+export type CollectionKind = 'author' | 'category' | 'tag';
+
+export const COLLECTIONS: Record<
+  CollectionKind,
+  {
+    label: string;
+    singular: string;
+    typeName: string;
+    hierarchical: boolean;
+    columns: string[];
+    queries: Record<'list' | 'insert' | 'update' | 'remove', AdminQueryName>;
+  }
+> = {
+  author: {
+    label: 'Authors',
+    singular: 'author',
+    typeName: 'author',
+    hierarchical: false,
+    columns: ['name', 'slug', 'bio', 'avatar_url', 'url'],
+    queries: { list: 'listAuthors', insert: 'insertAuthor', update: 'updateAuthor', remove: 'deleteAuthor' },
+  },
+  category: {
+    label: 'Categories',
+    singular: 'category',
+    typeName: 'category',
+    hierarchical: true,
+    columns: ['name', 'slug', 'description', 'parent'],
+    queries: { list: 'listCategories', insert: 'insertCategory', update: 'updateCategory', remove: 'deleteCategory' },
+  },
+  tag: {
+    label: 'Tags',
+    singular: 'tag',
+    typeName: 'tag',
+    hierarchical: false,
+    columns: ['name', 'slug', 'description'],
+    queries: { list: 'listTags', insert: 'insertTag', update: 'updateTag', remove: 'deleteTag' },
+  },
+};
+
+export function isCollectionKind(value: string | undefined): value is CollectionKind {
+  return value === 'author' || value === 'category' || value === 'tag';
 }
 
-export async function listMenuItems(menuId: number): Promise<MenuItem[]> {
-  const { data } = await listRows<MenuItem>('cms_menu_items', {
-    filters: [{ column: 'menu_id', op: 'eq', value: menuId }],
-    order: [{ column: 'position' }],
-  });
-  return data;
+export type CollectionRow<K extends CollectionKind> = K extends 'author' ? Author : Term;
+
+export type CollectionValues = Record<string, unknown>;
+
+const collectionParams = (kind: CollectionKind, values: CollectionValues) =>
+  COLLECTIONS[kind].columns.map((column) => values[column] ?? null);
+
+export function listCollection<K extends CollectionKind>(kind: K) {
+  return runQuery<CollectionRow<K>>(COLLECTIONS[kind].queries.list);
 }
 
-export async function saveMenuItems(items: MenuItem[]): Promise<void> {
-  if (!items.length) return;
-  await cms.request({
-    kind: 'upsert',
-    table: 'cms_menu_items',
-    values: items.map((i) => ({ ...i })),
-    onConflict: 'id',
-  });
+export async function insertCollection<K extends CollectionKind>(kind: K, values: CollectionValues) {
+  const [row] = await runQuery<CollectionRow<K>>(COLLECTIONS[kind].queries.insert, collectionParams(kind, values));
+  return row;
+}
+
+export async function updateCollection<K extends CollectionKind>(kind: K, id: number, values: CollectionValues) {
+  const [row] = await runQuery<CollectionRow<K>>(COLLECTIONS[kind].queries.update, [
+    id,
+    ...collectionParams(kind, values),
+  ]);
+  return row;
+}
+
+export function deleteCollection(kind: CollectionKind, id: number) {
+  return runQuery<{ id: number }>(COLLECTIONS[kind].queries.remove, [id]);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Comments (read-only + delete)                                             */
+/* ------------------------------------------------------------------------ */
+
+export interface AdminComment extends Omit<Comment, 'link'> {
+  post_title: string | null;
+  post_slug: string | null;
+}
+
+export function listComments({ page = 1, perPage = 20 }: { page?: number; perPage?: number } = {}) {
+  return runQuery<AdminComment>('listComments', [perPage, (page - 1) * perPage]);
+}
+
+export async function countComments(): Promise<number> {
+  const [row] = await runQuery<{ count: number }>('countComments');
+  return row?.count ?? 0;
+}
+
+export function deleteComment(id: number) {
+  return runQuery<{ id: number }>('deleteComment', [id]);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Media (`cms_assets`: read + metadata only)                                */
+/* ------------------------------------------------------------------------ */
+
+export function listAssets({ search = '', page = 1, perPage = 40 }: { search?: string; page?: number; perPage?: number } = {}) {
+  return runQuery<Asset>('listAssets', [search, perPage, (page - 1) * perPage]);
+}
+
+export async function countAssets(search = ''): Promise<number> {
+  const [row] = await runQuery<{ count: number }>('countAssets', [search]);
+  return row?.count ?? 0;
+}
+
+export async function getAsset(id: string): Promise<Asset | null> {
+  const [row] = await runQuery<Asset>('getAsset', [id]);
+  return row ?? null;
+}
+
+export function updateAsset(id: string, values: { title: string | null; alt: string | null; caption: string | null }) {
+  return runQuery<{ id: string }>('updateAsset', [id, values.title, values.alt, values.caption]);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -454,36 +287,74 @@ export async function saveMenuItems(items: MenuItem[]): Promise<void> {
 /* ------------------------------------------------------------------------ */
 
 export async function getAdminSettings(): Promise<SiteSettings> {
-  const { data } = await listRows<{ key: string; value: unknown }>(
-    'cms_settings',
-    { columns: 'key, value' }
-  );
-  return settingsFromRows(data);
+  const [rows, [site]] = await Promise.all([
+    runQuery<{ key: string; value: unknown }>('listSettings'),
+    runQuery<SiteRow>('getSite'),
+  ]);
+  return mergeSettings(rows, site ?? null);
 }
 
-export async function saveSettings(
-  values: Partial<Record<keyof SiteSettings, unknown>>
-): Promise<void> {
-  const rows = Object.entries(values).map(([key, value]) => ({
-    key,
-    value: value ?? null,
-  }));
-  if (!rows.length) return;
-  await cms.request({
-    kind: 'upsert',
-    table: 'cms_settings',
-    values: rows,
-    onConflict: 'key',
-  });
+export async function saveSettings(values: Partial<SiteSettings>) {
+  for (const [key, value] of Object.entries(values)) {
+    await runQuery('upsertSetting', [key, JSON.stringify(value ?? null)]);
+  }
 }
 
 /* ------------------------------------------------------------------------ */
-/* Authors                                                                   */
+/* Menus                                                                     */
 /* ------------------------------------------------------------------------ */
 
-export async function listAuthors(): Promise<Author[]> {
-  const { data } = await listRows<Author>('cms_authors', {
-    order: [{ column: 'name' }],
-  });
-  return data;
+export function listMenus() {
+  return runQuery<Menu>('listMenus');
+}
+
+export async function insertMenu(menu: { name: string; slug: string; location: string | null }): Promise<Menu> {
+  const [row] = await runQuery<Menu>('insertMenu', [menu.name, menu.slug, menu.location]);
+  return row;
+}
+
+export function updateMenuLocation(id: number, location: string | null) {
+  return runQuery<Menu>('updateMenuLocation', [id, location]);
+}
+
+export function deleteMenu(id: number) {
+  return runQuery<{ id: number }>('deleteMenu', [id]);
+}
+
+export function listMenuItems(menuId: number) {
+  return runQuery<MenuItem>('listMenuItems', [menuId]);
+}
+
+const menuItemParams = (item: Omit<MenuItem, 'id' | 'menu_id'>) => [
+  item.parent_id,
+  item.position,
+  item.title,
+  item.url,
+  item.object_type,
+  item.object_id,
+  item.target,
+  item.classes,
+  item.description,
+];
+
+export async function insertMenuItem(item: Omit<MenuItem, 'id'>): Promise<MenuItem> {
+  const [row] = await runQuery<MenuItem>('insertMenuItem', [item.menu_id, ...menuItemParams(item)]);
+  return row;
+}
+
+export async function updateMenuItem(item: MenuItem): Promise<MenuItem> {
+  const [row] = await runQuery<MenuItem>('updateMenuItem', [item.id, ...menuItemParams(item)]);
+  return row;
+}
+
+export function deleteMenuItem(id: number) {
+  return runQuery<{ id: number }>('deleteMenuItem', [id]);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Field registry                                                            */
+/* ------------------------------------------------------------------------ */
+
+export function getFields(typeName: string) {
+  return runQuery<FieldDef>('listFields', [typeName]);
 }

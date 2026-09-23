@@ -1,6 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
-import { CmsBridgeError } from './bridge/client';
+import { BoltBridgeError } from './bridge/client';
+
+/** Set by the admin layout from `bolt.hello` before any screen renders. */
+export const AdminContext = createContext<{ canEdit: boolean }>({ canEdit: false });
+
+export function useCanEdit() {
+  return useContext(AdminContext).canEdit;
+}
+
+/** The Bolt user dismissed Bolt's approval dialog: a cancel, not an error. */
+export function isRejectedByUser(e: unknown) {
+  return e instanceof BoltBridgeError && e.code === 'rejected_by_user';
+}
 
 export interface AsyncState<T> {
   data: T | undefined;
@@ -56,8 +68,7 @@ export function useAsync<T>(
 }
 
 export function errorMessage(e: unknown): string {
-  if (e instanceof CmsBridgeError)
-    return e.code ? `${e.message} (${e.code})` : e.message;
+  if (e instanceof BoltBridgeError) return `${e.message} (${e.code})`;
   if (e instanceof Error) return e.message;
   return String(e);
 }
