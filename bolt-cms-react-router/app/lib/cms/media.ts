@@ -1,32 +1,12 @@
-import type { Media } from './types';
+import type { Asset } from './types';
 
 /**
- * Public URL for a media row. Imported files are copied into
- * `public/wp-content/uploads/...` (mirroring the WordPress path so URLs inside
- * post HTML resolve unchanged); fall back to the original source URL.
+ * Public URL for a `cms_assets` row: the copy in the `cms-media` bucket, or the
+ * original WordPress URL when the importer could not upload it.
  */
-export function mediaUrl(
-  media: Media | null | undefined,
-  size?: string
-): string | null {
-  if (!media) return null;
-  if (size && media.sizes?.[size]?.source_url) {
-    const sized = media.sizes[size].source_url!;
-    return media.local_path ? rewriteToLocal(sized, media) : sized;
-  }
-  return media.local_path || media.source_url || null;
-}
-
-function rewriteToLocal(url: string, media: Media): string {
-  // `sizes.*.source_url` is absolute on the old host; keep the file name,
-  // swap in the local directory.
-  try {
-    const file = new URL(url).pathname.split('/').pop();
-    const dir = (media.local_path ?? '').split('/').slice(0, -1).join('/');
-    return file && dir ? `${dir}/${file}` : url;
-  } catch {
-    return url;
-  }
+export function assetUrl(asset: Asset | null | undefined): string | null {
+  if (!asset) return null;
+  return asset.upload_error ? asset.original_url : asset.public_url;
 }
 
 export function formatBytes(bytes: number | null | undefined): string {

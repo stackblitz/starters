@@ -5,3 +5,4 @@ export * from './seo';
 export * from './media';
 export * from './format';
 export * from './urls';
+export * from './portable-text';

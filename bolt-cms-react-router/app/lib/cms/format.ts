@@ -1,3 +1,10 @@
+import { portableTextToHtml, type PortableTextBlock } from './portable-text';
+
+/** Rendered body: Portable Text when present, else the imported WordPress HTML. */
+export function postHtml(post: { body: PortableTextBlock[] | null; content_html: string | null }): string {
+  return post.body && post.body.length > 0 ? portableTextToHtml(post.body) : (post.content_html ?? '');
+}
+
 /** Date helpers. WordPress' default `F j, Y` is "September 23, 2026". */
 export function formatDate(
   iso: string | null | undefined,

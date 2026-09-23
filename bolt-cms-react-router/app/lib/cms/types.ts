@@ -1,110 +1,111 @@
 /**
- * Row types for the `cms_*` tables. Keep in sync with
- * `supabase/migrations/0001_cms_core.sql`.
+ * Row types for the Bolt CMS schema (`supabase/migrations/0001_bolt_cms_schema.sql`,
+ * generated from Bolt's WordPress importer) and the starter's own tables
+ * (`0002_starter.sql`).
  */
-
-export type PostStatus =
-  | 'publish'
-  | 'draft'
-  | 'pending'
-  | 'private'
-  | 'future'
-  | 'trash';
-
-export type CommentStatus = 'approved' | 'hold' | 'spam' | 'trash';
-
-export interface SeoFields {
-  title?: string | null;
-  description?: string | null;
-  og_image?: string | null;
-  canonical?: string | null;
-  noindex?: boolean | null;
-}
+import type { PortableTextBlock } from './portable-text';
 
 export interface Author {
   id: number;
-  slug: string;
   name: string;
-  email: string | null;
-  url: string | null;
-  description: string | null;
-  avatar_url: string | null;
-}
-
-export interface Media {
-  id: number;
-  slug: string | null;
-  title: string | null;
-  alt_text: string | null;
-  caption: string | null;
-  description: string | null;
-  mime_type: string | null;
-  media_type: string | null;
-  source_url: string | null;
-  local_path: string | null;
-  width: number | null;
-  height: number | null;
-  sizes: Record<
-    string,
-    { source_url?: string; width?: number; height?: number }
-  >;
-  author_id: number | null;
-  date: string;
-  modified: string;
-}
-
-export interface Post {
-  id: number;
-  type: string;
-  status: PostStatus;
   slug: string;
-  title: string;
-  excerpt: string | null;
-  content_html: string | null;
-  content_json: unknown | null;
-  author_id: number | null;
-  featured_media_id: number | null;
-  parent_id: number | null;
-  menu_order: number;
-  date: string;
-  modified: string;
-  comment_status: 'open' | 'closed';
-  sticky: boolean;
-  format: string | null;
-  template: string | null;
-  seo: SeoFields;
-}
-
-/** A post with its usual joins resolved. */
-export interface PostWithRelations extends Post {
-  author: Author | null;
-  featured_media: Media | null;
-  terms: Term[];
+  bio: string | null;
+  avatar_url: string | null;
+  url: string | null;
 }
 
 export interface Term {
   id: number;
-  taxonomy: string;
   name: string;
   slug: string;
   description: string | null;
-  parent_id: number | null;
-  count: number;
+  parent?: number | null;
+}
+
+export interface Asset {
+  id: string;
+  kind: 'image' | 'file';
+  mime_type: string | null;
+  filename: string;
+  title: string | null;
+  alt: string | null;
+  caption: string | null;
+  width: number | null;
+  height: number | null;
+  original_url: string;
+  public_url: string;
+  upload_error: string | null;
+}
+
+export interface Post {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  body: PortableTextBlock[] | null;
+  content_html: string | null;
+  status: string | null;
+  author: number | null;
+  featured_image: string | null;
+  categories: number[];
+  tags: number[];
+  parent: number | null;
+  menu_order: number | null;
+  link: string | null;
+  published_at: string | null;
+  modified_at: string | null;
+}
+
+/** A post with its references resolved (see `attachRelations`). */
+export interface PostWithRelations extends Post {
+  authorRow: Author | null;
+  featuredAsset: Asset | null;
+  categoryTerms: Term[];
+  tagTerms: Term[];
 }
 
 export interface Comment {
   id: number;
-  post_id: number;
-  parent_id: number | null;
-  author_id: number | null;
-  author_name: string;
-  author_email: string | null;
-  author_url: string | null;
-  author_avatar_url: string | null;
-  content_html: string;
-  status: CommentStatus;
-  type: string;
-  date: string;
+  post: number;
+  parent: number | null;
+  author_name: string | null;
+  body: PortableTextBlock[] | null;
+  created_at: string | null;
+  link: string | null;
+}
+
+export type ContentTable = 'cms_posts' | 'cms_pages';
+
+export type TermKind = 'category' | 'tag';
+
+export const TERM_TABLE: Record<TermKind, 'cms_categories' | 'cms_tags'> = {
+  category: 'cms_categories',
+  tag: 'cms_tags',
+};
+
+/** A `cms_fields` registry row. */
+export interface FieldDef {
+  type_name: string;
+  name: string;
+  title: string;
+  primitive:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'date'
+    | 'datetime'
+    | 'image'
+    | 'file'
+    | 'reference'
+    | 'array'
+    | 'object'
+    | 'block'
+    | 'slug';
+  column_name: string;
+  required: boolean;
+  description: string | null;
+  options: Record<string, unknown>;
+  position: number;
 }
 
 export interface Menu {
@@ -138,36 +139,9 @@ export interface Redirect {
   status: number;
 }
 
-export type FieldType =
-  | 'string'
-  | 'text'
-  | 'richtext'
-  | 'number'
-  | 'boolean'
-  | 'date'
-  | 'datetime'
-  | 'image'
-  | 'file'
-  | 'reference'
-  | 'array'
-  | 'object'
-  | 'slug'
-  | 'select'
-  | 'json';
-
-export interface FieldDef {
-  table_name: string;
-  column_name: string;
-  label: string;
-  type: FieldType;
-  options: Record<string, unknown>;
-  group_name: string;
-  position: number;
-}
-
 export type ThemeName = 'classic' | 'editorial' | 'minimal';
 
-/** Typed view over `cms_settings` key/value rows. */
+/** Typed view over `cms_site` + `cms_settings` key/value rows. */
 export interface SiteSettings {
   site_title: string;
   tagline: string;
@@ -175,14 +149,11 @@ export interface SiteSettings {
   language: string;
   timezone: string;
   date_format: string;
-  permalink_structure: string;
   show_on_front: 'posts' | 'page';
   page_on_front: number | null;
   page_for_posts: number | null;
   posts_per_page: number;
   theme: ThemeName;
-  comments_enabled: boolean;
-  default_comment_status: 'open' | 'closed';
   seo: {
     title_template: string;
     description: string;
@@ -194,20 +165,17 @@ export interface SiteSettings {
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
-  site_title: 'My WordPress Site',
-  tagline: 'Just another WordPress site',
+  site_title: 'My Site',
+  tagline: '',
   site_url: '',
   language: 'en-US',
   timezone: 'UTC',
   date_format: 'F j, Y',
-  permalink_structure: '/%postname%/',
   show_on_front: 'posts',
   page_on_front: null,
   page_for_posts: null,
   posts_per_page: 10,
   theme: 'classic',
-  comments_enabled: true,
-  default_comment_status: 'open',
   seo: {
     title_template: '%title% | %site_title%',
     description: '',
@@ -218,14 +186,28 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   imported_from: null,
 };
 
-export function settingsFromRows(
-  rows: Array<{ key: string; value: unknown }>
+export interface SiteRow {
+  name: string;
+  description: string | null;
+  url: string;
+  home_url: string | null;
+  source: string;
+}
+
+/** `cms_settings` rows win over `cms_site`, which wins over the defaults. */
+export function mergeSettings(
+  rows: Array<{ key: string; value: unknown }>,
+  site: SiteRow | null
 ): SiteSettings {
-  const merged: Record<string, unknown> = { ...DEFAULT_SETTINGS };
+  const merged: Record<string, unknown> = {
+    ...DEFAULT_SETTINGS,
+    site_title: site?.name ?? DEFAULT_SETTINGS.site_title,
+    tagline: site?.description ?? '',
+    site_url: site?.home_url ?? site?.url ?? '',
+    imported_from: site?.source === 'wordpress' ? site.url : null,
+  };
   for (const row of rows) {
-    if (row.value !== null && row.value !== undefined) {
-      merged[row.key] = row.value;
-    }
+    if (row.value !== null && row.value !== undefined) merged[row.key] = row.value;
   }
   return merged as unknown as SiteSettings;
 }
