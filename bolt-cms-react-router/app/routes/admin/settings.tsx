@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
-import { getAdminSettings, listContent, saveSettings } from '@/admin/api';
-import { FieldInput } from '@/admin/components/fields/FieldInput';
+import { getAdminSettings, listContentOptions, saveSettings } from '@/admin/api';
 import {
   Button,
   Card,
@@ -17,16 +16,14 @@ import {
   Toggle,
   useToast,
 } from '@/admin/components/ui';
-import { useAsync } from '@/admin/hooks';
+import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
 import { invalidateSettings, type SiteSettings } from '@/lib/cms';
 
-type Tab = 'general' | 'reading' | 'discussion' | 'permalinks' | 'seo';
+type Tab = 'general' | 'reading' | 'seo';
 
 const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'general', label: 'General' },
   { value: 'reading', label: 'Reading' },
-  { value: 'discussion', label: 'Discussion' },
-  { value: 'permalinks', label: 'Permalinks' },
   { value: 'seo', label: 'SEO' },
 ];
 
@@ -35,6 +32,7 @@ export default function Settings() {
   const { tab = 'general' } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const canEdit = useCanEdit();
 
   const remote = useAsync(getAdminSettings, []);
   const [draft, setDraft] = useState<SiteSettings | null>(null);
@@ -44,12 +42,7 @@ export default function Settings() {
     if (remote.data) setDraft(remote.data);
   }, [remote.data]);
 
-  const pages = useAsync(
-    async () =>
-      (await listContent({ type: 'page', status: 'publish', perPage: 200 }))
-        .data,
-    []
-  );
+  const pages = useAsync(() => listContentOptions('page'), []);
 
   const set = <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) =>
     setDraft((d) => (d ? { ...d, [key]: value } : d));
@@ -69,10 +62,7 @@ export default function Settings() {
       toast('Settings saved');
       await remote.refetch();
     } catch (e) {
-      toast(
-        e instanceof Error ? e.message : 'Could not save settings',
-        'error'
-      );
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     } finally {
       setSaving(false);
     }
@@ -91,7 +81,7 @@ export default function Settings() {
           <Button
             variant="primary"
             loading={saving}
-            disabled={!dirty}
+            disabled={!canEdit || !dirty}
             onClick={save}
           >
             Save changes
@@ -100,7 +90,7 @@ export default function Settings() {
       />
       <Tabs
         value={tab as Tab}
-        onChange={(v) => navigate(`/admin/settings/${v}`)}
+        onChange={(v) => navigate(`/bolt-admin/settings/${v}`)}
         items={TABS}
       />
       {remote.error && <ErrorNote message={remote.error} />}
@@ -127,8 +117,8 @@ export default function Settings() {
                   />
                 </Field>
                 <Field
-                  label="Original site URL"
-                  hint="The WordPress address this site was imported from. Used to rewrite old links."
+                  label="Site URL"
+                  hint="The public address of the site. Imported sites start with their WordPress address."
                 >
                   <Input
                     value={draft.site_url}
@@ -150,6 +140,13 @@ export default function Settings() {
                     />
                   </Field>
                 </div>
+                <Field label="Date format" hint="PHP-style, as in WordPress (e.g. F j, Y).">
+                  <Input
+                    value={draft.date_format}
+                    onChange={(e) => set('date_format', e.target.value)}
+                    className="max-w-48 font-mono text-xs"
+                  />
+                </Field>
               </div>
             </Card>
           )}
@@ -227,59 +224,6 @@ export default function Settings() {
             </Card>
           )}
 
-          {tab === 'discussion' && (
-            <Card>
-              <div className="grid gap-5">
-                <Toggle
-                  checked={draft.comments_enabled}
-                  onChange={(v) => set('comments_enabled', v)}
-                  label="Allow people to submit comments"
-                  description="New comments always wait for moderation."
-                />
-                <Field label="Default comment status for new posts">
-                  <Select
-                    value={draft.default_comment_status}
-                    onChange={(e) =>
-                      set(
-                        'default_comment_status',
-                        e.target.value as 'open' | 'closed'
-                      )
-                    }
-                  >
-                    <option value="open">Open</option>
-                    <option value="closed">Closed</option>
-                  </Select>
-                </Field>
-              </div>
-            </Card>
-          )}
-
-          {tab === 'permalinks' && (
-            <Card>
-              <div className="grid gap-4">
-                <Field
-                  label="Imported permalink structure"
-                  hint="Kept for reference. Posts resolve by slug and pages by path; old URLs redirect via the cms_redirects table."
-                >
-                  <Input
-                    value={draft.permalink_structure}
-                    onChange={(e) => set('permalink_structure', e.target.value)}
-                    className="font-mono text-xs"
-                  />
-                </Field>
-                <p className="m-0 text-sm text-bolt-ds-textSecondary">
-                  Post URLs: <code className="text-xs">/&lt;slug&gt;</code> ·
-                  Page URLs:{' '}
-                  <code className="text-xs">/&lt;parent&gt;/&lt;slug&gt;</code>{' '}
-                  · Archives:{' '}
-                  <code className="text-xs">/category/&lt;slug&gt;</code>,{' '}
-                  <code className="text-xs">/tag/&lt;slug&gt;</code>,{' '}
-                  <code className="text-xs">/author/&lt;slug&gt;</code>
-                </p>
-              </div>
-            </Card>
-          )}
-
           {tab === 'seo' && (
             <Card>
               <div className="grid gap-4">
@@ -307,25 +251,16 @@ export default function Settings() {
                     }
                   />
                 </Field>
-                <FieldInput
-                  field={{
-                    table_name: 'cms_settings',
-                    column_name: 'seo.og_image',
-                    label: 'Default social image',
-                    type: 'image',
-                    options: { value: 'url' },
-                    group_name: 'main',
-                    position: 0,
-                  }}
-                  value={draft.seo.og_image}
-                  onChange={(v) =>
-                    set('seo', {
-                      ...draft.seo,
-                      og_image: (v as string | null) ?? null,
-                    })
-                  }
-                  context={{ row: {}, table: 'cms_settings' }}
-                />
+                <Field label="Default social image URL">
+                  <Input
+                    type="url"
+                    value={draft.seo.og_image ?? ''}
+                    onChange={(e) =>
+                      set('seo', { ...draft.seo, og_image: e.target.value || null })
+                    }
+                    placeholder="https://"
+                  />
+                </Field>
                 <Field label="Twitter / X handle">
                   <Input
                     value={draft.seo.twitter}

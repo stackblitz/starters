@@ -11,7 +11,7 @@ import {
   Spinner,
   useToast,
 } from '@/admin/components/ui';
-import { useAsync } from '@/admin/hooks';
+import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
 import { invalidateSettings, type ThemeName } from '@/lib/cms';
 import { THEMES } from '@/theme/themes';
 
@@ -20,6 +20,7 @@ export default function Appearance() {
   const [theme, setTheme] = useState<ThemeName>('classic');
   const [saving, setSaving] = useState(false);
   const toast = useToast();
+  const canEdit = useCanEdit();
 
   useEffect(() => {
     if (settings.data) setTheme(settings.data.theme);
@@ -33,7 +34,7 @@ export default function Appearance() {
       toast('Theme updated');
       await settings.refetch();
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not save', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     } finally {
       setSaving(false);
     }
@@ -50,7 +51,7 @@ export default function Appearance() {
           <Button
             variant="primary"
             loading={saving}
-            disabled={!changed}
+            disabled={!canEdit || !changed}
             onClick={save}
           >
             Save

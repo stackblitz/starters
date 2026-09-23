@@ -9,19 +9,20 @@ import {
 import { useEffect, useState } from 'react';
 
 import {
-  deleteRow,
-  insertRow,
+  deleteMenu,
+  deleteMenuItem,
+  insertMenu,
+  insertMenuItem,
+  listCollection,
   listContent,
   listMenuItems,
   listMenus,
-  listTerms,
-  saveMenuItems,
-  updateRow,
+  updateMenuItem,
+  updateMenuLocation,
 } from '@/admin/api';
 import {
   Button,
   Card,
-  confirmAction,
   EmptyState,
   ErrorNote,
   Field,
@@ -31,9 +32,9 @@ import {
   Spinner,
   useToast,
 } from '@/admin/components/ui';
-import { useAsync } from '@/admin/hooks';
+import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
 import { slugify } from '@/lib/cms/format';
-import type { Menu, MenuItem } from '@/lib/cms/types';
+import type { MenuItem } from '@/lib/cms/types';
 
 /**
  * WordPress-style menu editor: a flat, ordered list where indenting an item
@@ -41,12 +42,14 @@ import type { Menu, MenuItem } from '@/lib/cms/types';
  */
 export default function Menus() {
   const toast = useToast();
+  const canEdit = useCanEdit();
   const menus = useAsync(listMenus, []);
   const [menuId, setMenuId] = useState<number | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [location, setLocation] = useState('');
+  const [newName, setNewName] = useState<string | null>(null);
 
   useEffect(() => {
     if (menus.data?.length && menuId === null) setMenuId(menus.data[0].id);
@@ -68,19 +71,10 @@ export default function Menus() {
     setLocation(menu?.location ?? '');
   }, [menu]);
 
-  const pages = useAsync(
-    async () =>
-      (await listContent({ type: 'page', status: 'publish', perPage: 200 }))
-        .data,
-    []
-  );
-  const posts = useAsync(
-    async () =>
-      (await listContent({ type: 'post', status: 'publish', perPage: 50 }))
-        .data,
-    []
-  );
-  const categories = useAsync(() => listTerms('category'), []);
+  // listContent, not listContentOptions: menu items store the URL, so we need the slug
+  const pages = useAsync(() => listContent('page', { status: 'publish', perPage: 200 }), []);
+  const posts = useAsync(() => listContent('post', { status: 'publish', perPage: 50 }), []);
+  const categories = useAsync(() => listCollection('category'), []);
 
   function mutate(next: MenuItem[]) {
     setItems(next);
@@ -144,74 +138,62 @@ export default function Menus() {
     if (!menu) return;
     setSaving(true);
     try {
+      const original = new Map((loaded.data ?? []).map((i) => [i.id, i]));
       const kept = new Set(items.map((i) => i.id));
-      const removed = (loaded.data ?? []).filter((i) => !kept.has(i.id));
-      for (const r of removed) await deleteRow('cms_menu_items', r.id);
+      for (const id of original.keys()) if (!kept.has(id)) await deleteMenuItem(id);
 
       // Insert new items first to obtain real ids, then remap parents.
       const idMap = new Map<number, number>();
-      for (const item of items) {
-        if (item.id < 0) {
-          const rest: Partial<MenuItem> = { ...item };
-          delete rest.id;
-          const created = await insertRow<MenuItem>('cms_menu_items', {
-            ...rest,
-            parent_id: null,
-          });
-          idMap.set(item.id, created.id);
-        }
+      for (const [position, item] of items.entries()) {
+        if (item.id >= 0) continue;
+        const { id, ...rest } = item;
+        idMap.set(id, (await insertMenuItem({ ...rest, parent_id: null, position })).id);
       }
-      const finalItems = items.map((item, index) => ({
-        ...item,
-        id: idMap.get(item.id) ?? item.id,
-        parent_id:
-          item.parent_id === null
-            ? null
-            : idMap.get(item.parent_id) ?? item.parent_id,
-        position: index,
-      }));
-      await saveMenuItems(finalItems);
+      for (const [position, item] of items.entries()) {
+        const next: MenuItem = {
+          ...item,
+          id: idMap.get(item.id) ?? item.id,
+          parent_id: item.parent_id === null ? null : (idMap.get(item.parent_id) ?? item.parent_id),
+          position,
+        };
+        const changed =
+          item.id < 0 ? next.parent_id !== null : JSON.stringify(next) !== JSON.stringify(original.get(item.id));
+        if (changed) await updateMenuItem(next);
+      }
 
-      if (location !== (menu.location ?? ''))
-        await updateRow('cms_menus', menu.id, { location: location || null });
+      if (location !== (menu.location ?? '')) await updateMenuLocation(menu.id, location || null);
 
       toast('Menu saved');
-      await Promise.all([loaded.refetch(), menus.refetch()]);
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not save menu', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     } finally {
       setSaving(false);
+      // resync with the database, also after a partial failure
+      await Promise.all([loaded.refetch(), menus.refetch()]);
     }
   }
 
   async function createMenu() {
-    const name = window.prompt('Menu name');
+    const name = newName?.trim();
     if (!name) return;
     try {
-      const created = await insertRow<Menu>('cms_menus', {
-        name,
-        slug: slugify(name),
-        location: null,
-      });
+      const created = await insertMenu({ name, slug: slugify(name), location: null });
+      setNewName(null);
       await menus.refetch();
       setMenuId(created.id);
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not create menu', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     }
   }
 
-  async function deleteMenu() {
-    if (
-      !menu ||
-      !confirmAction(`Delete the "${menu.name}" menu and its items?`)
-    )
-      return;
+  async function removeMenu() {
+    if (!menu) return;
     try {
-      await deleteRow('cms_menus', menu.id);
+      await deleteMenu(menu.id);
       setMenuId(null);
       await menus.refetch();
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not delete menu', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     }
   }
 
@@ -227,19 +209,47 @@ export default function Menus() {
     return d;
   };
 
+  const newMenuForm =
+    newName === null ? (
+      <Button icon={<Plus size={14} />} disabled={!canEdit} onClick={() => setNewName('')}>
+        New menu
+      </Button>
+    ) : (
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void createMenu();
+        }}
+      >
+        <Input
+          autoFocus
+          placeholder="Menu name"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Escape' && setNewName(null)}
+          className="w-48"
+        />
+        <Button type="submit" variant="primary" disabled={!newName.trim()}>
+          Create
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => setNewName(null)}>
+          Cancel
+        </Button>
+      </form>
+    );
+
   return (
     <>
       <PageHeader
         title="Menus"
         actions={
           <>
-            <Button icon={<Plus size={14} />} onClick={createMenu}>
-              New menu
-            </Button>
+            {newMenuForm}
             <Button
               variant="primary"
               loading={saving}
-              disabled={!dirty && location === (menu?.location ?? '')}
+              disabled={!canEdit || (!dirty && location === (menu?.location ?? ''))}
               onClick={save}
             >
               Save menu
@@ -248,16 +258,12 @@ export default function Menus() {
         }
       />
       {menus.error && <ErrorNote message={menus.error} />}
-      {menus.loading ? (
+      {menus.loading && !menus.data ? (
         <Spinner />
       ) : !menus.data?.length ? (
         <EmptyState
           title="No menus"
-          action={
-            <Button variant="primary" onClick={createMenu}>
-              Create a menu
-            </Button>
-          }
+          description="Without a primary menu the site header lists your top-level pages."
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
@@ -303,7 +309,8 @@ export default function Menus() {
                 <Button
                   variant="ghost"
                   icon={<Trash2 size={14} />}
-                  onClick={deleteMenu}
+                  disabled={!canEdit}
+                  onClick={removeMenu}
                 >
                   Delete menu
                 </Button>

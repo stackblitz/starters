@@ -1,239 +1,129 @@
-import { Trash2, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import {
-  deleteRow,
-  getFields,
-  listMedia,
-  updateRow,
-  uploadMedia,
-} from '@/admin/api';
-import { FieldGroup } from '@/admin/components/fields/FieldGroup';
-import { MediaGrid, MediaThumb } from '@/admin/components/MediaPicker';
-import {
-  Button,
-  confirmAction,
-  Dialog,
-  EmptyState,
-  ErrorNote,
-  Input,
-  PageHeader,
-  Pager,
-  Spinner,
-  useToast,
-} from '@/admin/components/ui';
-import { useAsync, useDebounced } from '@/admin/hooks';
-import { formatDateTime, mediaUrl, type Media } from '@/lib/cms';
-
-const PER_PAGE = 40;
+import { updateAsset } from '@/admin/api';
+import { AssetBrowser, MEDIA_NOTE, MediaThumb } from '@/admin/components/MediaPicker';
+import { Button, Dialog, Field, Input, PageHeader, Textarea, useToast } from '@/admin/components/ui';
+import { errorMessage, isRejectedByUser, useCanEdit } from '@/admin/hooks';
+import { assetUrl, type Asset } from '@/lib/cms';
 
 export default function MediaLibrary() {
-  const [search, setSearch] = useState('');
-  const debounced = useDebounced(search);
-  const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<Media | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const toast = useToast();
-
-  const media = useAsync(
-    () => listMedia({ search: debounced, page, perPage: PER_PAGE }),
-    [debounced, page]
-  );
-  const fields = useAsync(() => getFields('cms_media'), []);
-
-  async function onFiles(files: FileList | null) {
-    if (!files?.length) return;
-    setUploading(true);
-    try {
-      for (const file of Array.from(files)) await uploadMedia(file);
-      toast(`Uploaded ${files.length} file${files.length === 1 ? '' : 's'}`);
-      await media.refetch();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Upload failed', 'error');
-    } finally {
-      setUploading(false);
-      if (fileInput.current) fileInput.current.value = '';
-    }
-  }
-
-  const total = media.data?.count ?? 0;
+  const [selected, setSelected] = useState<Asset | null>(null);
+  const [version, setVersion] = useState(0);
 
   return (
     <>
-      <PageHeader
-        title="Media"
-        description="Files live in public/wp-content/uploads and deploy with the site."
-        actions={
-          <>
-            <input
-              ref={fileInput}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => onFiles(e.target.files)}
-            />
-            <Button
-              variant="primary"
-              icon={<Upload size={14} />}
-              loading={uploading}
-              onClick={() => fileInput.current?.click()}
-            >
-              Upload
-            </Button>
-          </>
-        }
-      />
-      <div className="mb-3">
-        <Input
-          placeholder="Search media…"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="max-w-xs"
-        />
-      </div>
-      {media.error && <ErrorNote message={media.error} />}
-      {media.loading && !media.data ? (
-        <Spinner />
-      ) : !media.data?.data.length ? (
-        <EmptyState
-          title="No media yet"
-          description="Upload images and files, or import them from WordPress."
-        />
-      ) : (
-        <>
-          <MediaGrid
-            items={media.data.data}
-            onSelect={setSelected}
-            selectedId={selected?.id}
-          />
-          <Pager
-            page={page}
-            pages={Math.max(1, Math.ceil(total / PER_PAGE))}
-            total={total}
-            onChange={setPage}
-          />
-        </>
-      )}
-
+      <PageHeader title="Media" description={MEDIA_NOTE} />
+      <AssetBrowser onSelect={setSelected} selectedId={selected?.id} version={version} />
       <MediaDetails
-        media={selected}
-        fields={fields.data ?? []}
+        asset={selected}
         onClose={() => setSelected(null)}
-        onChanged={async () => {
-          await media.refetch();
-        }}
+        onSaved={() => setVersion((v) => v + 1)}
       />
     </>
   );
 }
 
 function MediaDetails({
-  media,
-  fields,
+  asset,
   onClose,
-  onChanged,
+  onSaved,
 }: {
-  media: Media | null;
-  fields: Awaited<ReturnType<typeof getFields>>;
+  asset: Asset | null;
   onClose: () => void;
-  onChanged: () => Promise<void>;
+  onSaved: () => void;
 }) {
-  const [row, setRow] = useState<Record<string, unknown> | null>(null);
+  const [meta, setMeta] = useState({ title: '', alt: '', caption: '' });
   const [saving, setSaving] = useState(false);
+  const canEdit = useCanEdit();
   const toast = useToast();
 
   useEffect(() => {
-    setRow(media ? { ...media } : null);
-  }, [media]);
+    setMeta({ title: asset?.title ?? '', alt: asset?.alt ?? '', caption: asset?.caption ?? '' });
+  }, [asset]);
 
   async function save() {
-    if (!media || !row) return;
+    if (!asset) return;
     setSaving(true);
     try {
-      const values: Record<string, unknown> = {};
-      for (const f of fields)
-        if (!f.options?.readonly) values[f.column_name] = row[f.column_name];
-      await updateRow('cms_media', media.id, values);
+      await updateAsset(asset.id, {
+        title: meta.title || null,
+        alt: meta.alt || null,
+        caption: meta.caption || null,
+      });
       toast('Media updated');
-      await onChanged();
+      onSaved();
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not save', 'error');
+      if (!isRejectedByUser(e)) toast(errorMessage(e), 'error');
     } finally {
       setSaving(false);
     }
   }
 
-  async function destroy() {
-    if (
-      !media ||
-      !confirmAction(
-        'Delete this file from the library? Posts referencing it will lose the image.'
-      )
-    )
-      return;
-    try {
-      await deleteRow('cms_media', media.id);
-      toast('Deleted');
-      await onChanged();
-      onClose();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not delete', 'error');
-    }
-  }
-
-  const url = media ? mediaUrl(media) : null;
+  const url = assetUrl(asset);
 
   return (
     <Dialog
-      open={Boolean(media)}
+      open={Boolean(asset)}
       onClose={onClose}
       title="Attachment details"
       wide
       footer={
-        <>
-          <Button variant="ghost" icon={<Trash2 size={14} />} onClick={destroy}>
-            Delete permanently
-          </Button>
-          <Button variant="primary" loading={saving} onClick={save}>
-            Save
-          </Button>
-        </>
+        <Button variant="primary" loading={saving} disabled={!canEdit} onClick={save}>
+          Save
+        </Button>
       }
     >
-      {media && row && (
+      {asset && (
         <div className="grid gap-6 md:grid-cols-[1fr_18rem]">
           <div className="overflow-hidden rounded-md border border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary">
-            <MediaThumb media={media} className="max-h-[60vh] object-contain" />
+            <MediaThumb asset={asset} className="max-h-[60vh] object-contain" />
           </div>
           <div className="grid content-start gap-4 text-sm">
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-bolt-ds-textTertiary">
-              <dt>Uploaded</dt>
-              <dd className="m-0">{formatDateTime(media.date)}</dd>
+              <dt>File</dt>
+              <dd className="m-0 break-all">{asset.filename}</dd>
               <dt>Type</dt>
-              <dd className="m-0">{media.mime_type ?? '—'}</dd>
-              {media.width && (
+              <dd className="m-0">{asset.mime_type ?? '—'}</dd>
+              {asset.width && (
                 <>
                   <dt>Size</dt>
                   <dd className="m-0">
-                    {media.width} × {media.height}
+                    {asset.width} × {asset.height}
                   </dd>
                 </>
               )}
               <dt>URL</dt>
               <dd className="m-0 break-all">{url}</dd>
+              {asset.upload_error && (
+                <>
+                  <dt>Upload</dt>
+                  <dd className="m-0">Failed, served from the original URL</dd>
+                </>
+              )}
             </dl>
-            <FieldGroup
-              fields={fields}
-              group="main"
-              row={row}
-              table="cms_media"
-              onChange={(c, v) => setRow((r) => (r ? { ...r, [c]: v } : r))}
-            />
+            <Field label="Title">
+              <Input
+                value={meta.title}
+                disabled={!canEdit}
+                onChange={(e) => setMeta((m) => ({ ...m, title: e.target.value }))}
+              />
+            </Field>
+            <Field label="Alternative text">
+              <Input
+                value={meta.alt}
+                disabled={!canEdit}
+                onChange={(e) => setMeta((m) => ({ ...m, alt: e.target.value }))}
+              />
+            </Field>
+            <Field label="Caption">
+              <Textarea
+                rows={3}
+                value={meta.caption}
+                disabled={!canEdit}
+                onChange={(e) => setMeta((m) => ({ ...m, caption: e.target.value }))}
+              />
+            </Field>
           </div>
         </div>
       )}

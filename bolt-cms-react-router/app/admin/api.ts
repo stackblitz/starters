@@ -294,7 +294,7 @@ export async function getAdminSettings(): Promise<SiteSettings> {
   return mergeSettings(rows, site ?? null);
 }
 
-export async function saveSettings(values: Partial<SiteSettings>) {
+export async function saveSettings(values: Partial<Record<keyof SiteSettings, unknown>>) {
   for (const [key, value] of Object.entries(values)) {
     await runQuery('upsertSetting', [key, JSON.stringify(value ?? null)]);
   }
