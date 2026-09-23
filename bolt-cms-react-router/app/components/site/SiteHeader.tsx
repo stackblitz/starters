@@ -2,8 +2,7 @@ import { Menu as MenuIcon, Search, X } from 'lucide-react';
 import { useState } from 'react';
 import { Form, Link, NavLink } from 'react-router';
 
-import type { MenuItemNode, SiteSettings } from '@/lib/cms';
-import { resolveMenuUrl } from '@/lib/cms/urls';
+import { resolveMenuUrl, type MenuItemNode, type SiteSettings } from '@/lib/cms';
 
 export function SiteHeader({
   settings,

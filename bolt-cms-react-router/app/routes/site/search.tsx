@@ -17,7 +17,6 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const settings = await getSettings();
   const page = Number(url.searchParams.get('page') ?? '1') || 1;
   const result = await listPosts({
-    type: 'post',
     search: query,
     page,
     perPage: settings.posts_per_page,

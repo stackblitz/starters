@@ -10,16 +10,15 @@ export function SetupNotice({
       <div className="site-shell py-3 text-sm">
         {!configured ? (
           <>
-            <strong>Supabase is not configured.</strong> Add{' '}
-            <code>VITE_SUPABASE_URL</code> and{' '}
-            <code>VITE_SUPABASE_ANON_KEY</code> to <code>.env</code>, then apply
-            the migrations in <code>supabase/migrations</code>. Bolt does this
-            for you in a project.
+            <strong>Supabase is not configured.</strong> Connect a Bolt
+            Database (or import a WordPress site) and add{' '}
+            <code>VITE_SUPABASE_URL</code> / <code>VITE_SUPABASE_ANON_KEY</code>{' '}
+            to <code>.env</code>.
           </>
         ) : (
           <>
-            <strong>Could not load site content.</strong> {error}. Have the{' '}
-            <code>supabase/migrations</code> been applied?
+            <strong>Could not load site content.</strong> {error}. Has the
+            database schema in <code>supabase/migrations</code> been applied?
           </>
         )}
       </div>

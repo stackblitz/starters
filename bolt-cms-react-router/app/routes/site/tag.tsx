@@ -18,14 +18,13 @@ export async function clientLoader({
 }: Route.ClientLoaderArgs) {
   const [settings, term] = await Promise.all([
     getSettings(),
-    getTermBySlug('post_tag', params.slug),
+    getTermBySlug('tag', params.slug),
   ]);
   if (!term) throw data('Tag not found', { status: 404 });
   const page =
     Number(new URL(request.url).searchParams.get('page') ?? '1') || 1;
   const result = await listPosts({
-    type: 'post',
-    termId: term.id,
+    tagId: term.id,
     page,
     perPage: settings.posts_per_page,
   });

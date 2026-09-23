@@ -1,7 +1,7 @@
 import type { MetaDescriptor } from 'react-router';
 
 import type { PostWithRelations, SiteSettings } from './types';
-import { mediaUrl } from './media';
+import { assetUrl } from './media';
 
 export function stripHtml(html: string | null | undefined): string {
   return (html ?? '')
@@ -42,32 +42,28 @@ export function siteMeta(settings: SiteSettings): MetaDescriptor[] {
   });
 }
 
+/** Meta for a single post (`article`) or page (`website`). */
 export function postMeta(
   post: PostWithRelations,
-  settings: SiteSettings
+  settings: SiteSettings,
+  kind: 'post' | 'page' = 'post'
 ): MetaDescriptor[] {
-  const seo = post.seo ?? {};
-  const description =
-    seo.description || truncate(stripHtml(post.excerpt || post.content_html));
-  const image =
-    seo.og_image || mediaUrl(post.featured_media) || settings.seo.og_image;
-
   const meta = baseMeta({
-    title: applyTitleTemplate(seo.title || post.title, settings),
-    description,
-    image,
-    noindex: Boolean(seo.noindex) || settings.seo.noindex,
+    title: applyTitleTemplate(post.title, settings),
+    description: truncate(stripHtml(post.excerpt)) || settings.seo.description,
+    image: assetUrl(post.featuredAsset) || settings.seo.og_image,
+    noindex: settings.seo.noindex,
     twitter: settings.seo.twitter,
-    type: post.type === 'post' ? 'article' : 'website',
+    type: kind === 'post' ? 'article' : 'website',
   });
 
-  if (seo.canonical)
-    meta.push({ tagName: 'link', rel: 'canonical', href: seo.canonical });
-  if (post.type === 'post') {
-    meta.push({ property: 'article:published_time', content: post.date });
-    meta.push({ property: 'article:modified_time', content: post.modified });
-    if (post.author?.name)
-      meta.push({ property: 'article:author', content: post.author.name });
+  if (kind === 'post') {
+    if (post.published_at)
+      meta.push({ property: 'article:published_time', content: post.published_at });
+    if (post.modified_at)
+      meta.push({ property: 'article:modified_time', content: post.modified_at });
+    if (post.authorRow)
+      meta.push({ property: 'article:author', content: post.authorRow.name });
   }
   return meta;
 }

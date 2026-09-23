@@ -3,8 +3,8 @@ import { useMemo } from 'react';
 import { sanitizeHtml } from '@/lib/sanitize';
 
 /**
- * Render post HTML. `content_html` is WordPress' rendered markup (or the
- * editor's HTML export after editing in /admin), sanitized before insertion.
+ * Render post HTML (from `postHtml`: Portable Text `body`, else the imported
+ * `content_html`), sanitized before insertion.
  * Styles for core WordPress block classes live in app/theme/tokens.css.
  */
 export function PostContent({

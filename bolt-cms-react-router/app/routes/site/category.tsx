@@ -24,8 +24,7 @@ export async function clientLoader({
   const page =
     Number(new URL(request.url).searchParams.get('page') ?? '1') || 1;
   const result = await listPosts({
-    type: 'post',
-    termId: term.id,
+    categoryId: term.id,
     page,
     perPage: settings.posts_per_page,
   });

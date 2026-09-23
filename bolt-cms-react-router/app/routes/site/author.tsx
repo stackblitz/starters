@@ -24,7 +24,6 @@ export async function clientLoader({
   const page =
     Number(new URL(request.url).searchParams.get('page') ?? '1') || 1;
   const result = await listPosts({
-    type: 'post',
     authorId: author.id,
     page,
     perPage: settings.posts_per_page,
@@ -46,7 +45,7 @@ export default function Author({ loaderData }: Route.ComponentProps) {
       <ArchiveHeader
         kicker="Author"
         title={author.name}
-        description={author.description}
+        description={author.bio}
       />
       <PostList
         posts={loaderData.posts}

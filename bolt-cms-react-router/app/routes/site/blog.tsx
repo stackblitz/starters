@@ -1,7 +1,7 @@
 import { ArchiveHeader } from '@/components/site/ArchiveHeader';
 import { PostList } from '@/components/site/PostList';
 import {
-  getPostById,
+  getPageById,
   getSettings,
   listPosts,
   pageTitleMeta,
@@ -20,9 +20,9 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const page =
     Number(new URL(request.url).searchParams.get('page') ?? '1') || 1;
   const [result, postsPage] = await Promise.all([
-    listPosts({ type: 'post', page, perPage: settings.posts_per_page }),
+    listPosts({ page, perPage: settings.posts_per_page }),
     settings.page_for_posts
-      ? getPostById(settings.page_for_posts)
+      ? getPageById(settings.page_for_posts)
       : Promise.resolve<PostWithRelations | null>(null),
   ]);
   return { ...result, postsPage };

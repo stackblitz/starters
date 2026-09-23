@@ -4,7 +4,7 @@ import { Article } from '@/components/site/Article';
 import { PostList } from '@/components/site/PostList';
 import {
   getComments,
-  getPostById,
+  getPageById,
   getSettings,
   listPosts,
   postMeta,
@@ -37,39 +37,29 @@ export async function clientLoader({
 
   // WordPress "Your homepage displays: A static page".
   if (settings.show_on_front === 'page' && settings.page_on_front) {
-    const post = await getPostById(settings.page_on_front);
-    if (post) {
-      const comments =
-        post.comment_status === 'open' ? await getComments(post.id) : [];
-      return { kind: 'page', post, comments };
-    }
+    const post = await getPageById(settings.page_on_front);
+    if (post) return { kind: 'page', post, comments: await getComments(post.id) };
   }
 
   const page = Number(url.searchParams.get('page') ?? '1') || 1;
-  const result = await listPosts({
-    type: 'post',
-    page,
-    perPage: settings.posts_per_page,
-    sticky: 'first',
-  });
+  const result = await listPosts({ page, perPage: settings.posts_per_page });
   return { kind: 'posts', ...result };
 }
 
 export function meta({ loaderData, matches }: Route.MetaArgs) {
   const settings = settingsFromMatches(matches);
-  if (loaderData?.kind === 'page') return postMeta(loaderData.post, settings);
+  if (loaderData?.kind === 'page')
+    return postMeta(loaderData.post, settings, 'page');
   return siteMeta(settings);
 }
 
-export default function Home({ loaderData, matches }: Route.ComponentProps) {
-  const settings = settingsFromMatches(matches);
-
+export default function Home({ loaderData }: Route.ComponentProps) {
   if (loaderData.kind === 'page') {
     return (
       <Article
+        kind="page"
         post={loaderData.post}
         comments={loaderData.comments}
-        commentsEnabled={settings.comments_enabled}
       />
     );
   }
@@ -88,7 +78,7 @@ export default function Home({ loaderData, matches }: Route.ComponentProps) {
       page={loaderData.page}
       pages={loaderData.pages}
       featureFirst
-      emptyMessage="No posts yet. Publish your first post from the Bolt CMS admin."
+      emptyMessage="No posts yet. Publish your first post from the Admin tab in Bolt."
     />
   );
 }

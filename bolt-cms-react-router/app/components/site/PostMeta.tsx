@@ -9,7 +9,7 @@ export function PostMeta({
   post: PostWithRelations;
   compact?: boolean;
 }) {
-  const categories = post.terms.filter((t) => t.taxonomy === 'category');
+  const categories = post.categoryTerms;
 
   return (
     <p
@@ -17,12 +17,16 @@ export function PostMeta({
         compact ? 'text-xs uppercase tracking-wide' : 'text-sm'
       }`}
     >
-      <time dateTime={post.date}>{formatDate(post.date)}</time>
-      {post.author && (
+      {post.published_at && (
+        <time dateTime={post.published_at}>
+          {formatDate(post.published_at)}
+        </time>
+      )}
+      {post.authorRow && (
         <>
           <span aria-hidden>·</span>
-          <Link to={`/author/${post.author.slug}`} className="no-underline">
-            {post.author.name}
+          <Link to={`/author/${post.authorRow.slug}`} className="no-underline">
+            {post.authorRow.name}
           </Link>
         </>
       )}

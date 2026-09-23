@@ -1,47 +1,29 @@
 /**
  * Public read queries for the site. Everything here runs against the anon
- * Supabase client, so RLS already restricts results to published content.
+ * Supabase client, so RLS already restricts results to what may be public.
+ * Content tables have no foreign keys, so references (author, featured image,
+ * categories, tags) are hydrated with `in()` lookups in `attachRelations`.
  */
 import { getSupabase } from '@/lib/supabase';
 
 import {
-  settingsFromRows,
+  mergeSettings,
+  TERM_TABLE,
+  type Asset,
   type Author,
   type Comment,
+  type ContentTable,
   type Menu,
   type MenuItem,
   type MenuItemNode,
   type Post,
   type PostWithRelations,
   type Redirect,
+  type SiteRow,
   type SiteSettings,
   type Term,
+  type TermKind,
 } from './types';
-
-const POST_SELECT = `
-  *,
-  author:cms_authors(*),
-  featured_media:cms_media(*),
-  term_links:cms_term_relationships(term:cms_terms(*))
-`;
-
-type RawPost = Post & {
-  author: Author | null;
-  featured_media: unknown;
-  term_links: Array<{ term: Term | null }> | null;
-};
-
-function normalizePost(raw: RawPost): PostWithRelations {
-  const { term_links, featured_media, ...rest } = raw;
-  return {
-    ...rest,
-    featured_media:
-      (featured_media as PostWithRelations['featured_media']) ?? null,
-    terms: (term_links ?? [])
-      .map((l) => l.term)
-      .filter((t): t is Term => Boolean(t)),
-  };
-}
 
 let settingsCache: { at: number; promise: Promise<SiteSettings> } | null = null;
 const SETTINGS_TTL_MS = 15_000;
@@ -52,11 +34,18 @@ export function getSettings(): Promise<SiteSettings> {
   if (settingsCache && now - settingsCache.at < SETTINGS_TTL_MS)
     return settingsCache.promise;
   const promise = (async () => {
-    const { data, error } = await getSupabase()
-      .from('cms_settings')
-      .select('key, value');
-    if (error) throw error;
-    return settingsFromRows(data ?? []);
+    const supabase = getSupabase();
+    const [settings, site] = await Promise.all([
+      supabase.from('cms_settings').select('key, value'),
+      supabase
+        .from('cms_site')
+        .select('name, description, url, home_url, source')
+        .eq('id', 1)
+        .maybeSingle(),
+    ]);
+    if (settings.error) throw settings.error;
+    if (site.error) throw site.error;
+    return mergeSettings(settings.data ?? [], site.data as SiteRow | null);
   })();
   settingsCache = { at: now, promise };
   promise.catch(() => {
@@ -78,8 +67,30 @@ export async function getMenu(location: string): Promise<{
     .from('cms_menus')
     .select('*')
     .eq('location', location)
+    .limit(1)
     .maybeSingle();
-  if (!menu) return { menu: null, items: [] };
+  if (!menu) {
+    if (location !== 'primary') return { menu: null, items: [] };
+    // No primary menu yet: behave like WordPress' page-list fallback.
+    const pages = await listTopLevelPages();
+    return {
+      menu: null,
+      items: pages.map((p, i) => ({
+        id: p.id,
+        menu_id: 0,
+        parent_id: null,
+        position: i,
+        title: p.title,
+        url: `/${p.slug}`,
+        object_type: 'page',
+        object_id: p.id,
+        target: '',
+        classes: '',
+        description: '',
+        children: [],
+      })),
+    };
+  }
 
   const { data: items } = await supabase
     .from('cms_menu_items')
@@ -107,14 +118,57 @@ export function buildMenuTree(items: MenuItem[]): MenuItemNode[] {
   return roots;
 }
 
+async function byId<T extends { id: number | string }>(
+  table: string,
+  ids: Array<number | string>
+): Promise<Map<number | string, T>> {
+  if (ids.length === 0) return new Map();
+  const { data, error } = await getSupabase()
+    .from(table)
+    .select('*')
+    .in('id', ids);
+  if (error) throw error;
+  return new Map(((data ?? []) as T[]).map((row) => [row.id, row]));
+}
+
+/** Resolve author, featured image and terms for a batch of posts/pages. Missing ids are dropped. */
+export async function attachRelations(
+  rows: Post[]
+): Promise<PostWithRelations[]> {
+  const posts = rows.map((p) => ({
+    ...p,
+    categories: p.categories ?? [],
+    tags: p.tags ?? [],
+  }));
+  const distinct = <V>(pick: (p: Post) => V[]) => [
+    ...new Set(posts.flatMap(pick)),
+  ];
+  const [authors, assets, categories, tags] = await Promise.all([
+    byId<Author>('cms_authors', distinct((p) => (p.author ? [p.author] : []))),
+    byId<Asset>(
+      'cms_assets',
+      distinct((p) => (p.featured_image ? [p.featured_image] : []))
+    ),
+    byId<Term>(TERM_TABLE.category, distinct((p) => p.categories)),
+    byId<Term>(TERM_TABLE.tag, distinct((p) => p.tags)),
+  ]);
+  return posts.map((p) => ({
+    ...p,
+    authorRow: (p.author && authors.get(p.author)) || null,
+    featuredAsset: (p.featured_image && assets.get(p.featured_image)) || null,
+    categoryTerms: p.categories.flatMap((id) => categories.get(id) ?? []),
+    tagTerms: p.tags.flatMap((id) => tags.get(id) ?? []),
+  }));
+}
+
 export interface ListPostsOptions {
-  type?: string;
-  page?: number;
-  perPage?: number;
-  termId?: number;
+  table?: ContentTable;
+  categoryId?: number;
+  tagId?: number;
   authorId?: number;
   search?: string;
-  sticky?: 'first' | 'ignore';
+  page?: number;
+  perPage?: number;
 }
 
 export async function listPosts(options: ListPostsOptions = {}): Promise<{
@@ -123,80 +177,67 @@ export async function listPosts(options: ListPostsOptions = {}): Promise<{
   page: number;
   pages: number;
 }> {
-  const supabase = getSupabase();
   const page = Math.max(1, options.page ?? 1);
   const perPage = options.perPage ?? 10;
   const from = (page - 1) * perPage;
-  const to = from + perPage - 1;
 
-  let postIds: number[] | undefined;
-  if (options.termId) {
-    const { data: links } = await supabase
-      .from('cms_term_relationships')
-      .select('post_id')
-      .eq('term_id', options.termId);
-    postIds = (links ?? []).map((l) => l.post_id as number);
-    if (postIds.length === 0) return { posts: [], total: 0, page, pages: 0 };
-  }
-
-  let query = supabase
-    .from('cms_posts')
-    .select(POST_SELECT, { count: 'exact' })
-    .eq('type', options.type ?? 'post')
+  let query = getSupabase()
+    .from(options.table ?? 'cms_posts')
+    .select('*', { count: 'exact' })
     .eq('status', 'publish');
-
-  if (postIds) query = query.in('id', postIds);
-  if (options.authorId) query = query.eq('author_id', options.authorId);
+  if (options.categoryId)
+    query = query.contains('categories', [options.categoryId]);
+  if (options.tagId) query = query.contains('tags', [options.tagId]);
+  if (options.authorId) query = query.eq('author', options.authorId);
   if (options.search) {
-    const s = options.search.replace(/[%_]/g, '');
+    // strip LIKE wildcards and PostgREST `or()` syntax characters
+    const s = options.search.replace(/[%_,()]/g, '');
     query = query.or(
-      `title.ilike.%${s}%,content_html.ilike.%${s}%,excerpt.ilike.%${s}%`
+      `title.ilike.%${s}%,excerpt.ilike.%${s}%,content_html.ilike.%${s}%`
     );
   }
-  if (options.sticky === 'first')
-    query = query.order('sticky', { ascending: false });
 
   const { data, error, count } = await query
-    .order('date', { ascending: false })
-    .range(from, to);
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: false })
+    .range(from, from + perPage - 1);
   if (error) throw error;
 
   const total = count ?? 0;
   return {
-    posts: ((data ?? []) as unknown as RawPost[]).map(normalizePost),
+    posts: await attachRelations((data ?? []) as Post[]),
     total,
     page,
     pages: Math.ceil(total / perPage),
   };
 }
 
-export async function getPostBySlug(
-  type: string,
-  slug: string
+async function getPublished(
+  table: ContentTable,
+  column: 'id' | 'slug',
+  value: number | string
 ): Promise<PostWithRelations | null> {
   const { data, error } = await getSupabase()
-    .from('cms_posts')
-    .select(POST_SELECT)
-    .eq('type', type)
-    .eq('slug', slug)
+    .from(table)
+    .select('*')
+    .eq(column, value)
     .eq('status', 'publish')
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return data ? normalizePost(data as unknown as RawPost) : null;
+  return data ? (await attachRelations([data as Post]))[0] : null;
 }
 
-export async function getPostById(
-  id: number
-): Promise<PostWithRelations | null> {
-  const { data, error } = await getSupabase()
-    .from('cms_posts')
-    .select(POST_SELECT)
-    .eq('id', id)
-    .eq('status', 'publish')
-    .maybeSingle();
-  if (error) throw error;
-  return data ? normalizePost(data as unknown as RawPost) : null;
+export function getPostBySlug(slug: string) {
+  return getPublished('cms_posts', 'slug', slug);
+}
+
+export function getPostById(id: number) {
+  return getPublished('cms_posts', 'id', id);
+}
+
+export function getPageById(id: number) {
+  return getPublished('cms_pages', 'id', id);
 }
 
 /**
@@ -208,46 +249,57 @@ export async function getPageByPath(
 ): Promise<PostWithRelations | null> {
   if (segments.length === 0) return null;
   const supabase = getSupabase();
-  let parentId: number | null = null;
-  let current: RawPost | null = null;
+  let current: Post | null = null;
 
   for (const slug of segments) {
     let q = supabase
-      .from('cms_posts')
-      .select(POST_SELECT)
-      .eq('type', 'page')
+      .from('cms_pages')
+      .select('*')
       .eq('slug', slug)
       .eq('status', 'publish');
-    q =
-      parentId === null ? q.is('parent_id', null) : q.eq('parent_id', parentId);
-    const { data } = await q.limit(1).maybeSingle();
+    q = current ? q.eq('parent', current.id) : q.is('parent', null);
+    const { data, error } = await q.limit(1).maybeSingle();
+    if (error) throw error;
     if (!data) return null;
-    current = data as unknown as RawPost;
-    parentId = current.id;
+    current = data as Post;
   }
 
-  return current ? normalizePost(current) : null;
+  return current ? (await attachRelations([current]))[0] : null;
+}
+
+export async function listTopLevelPages(): Promise<
+  Array<Pick<Post, 'id' | 'title' | 'slug'>>
+> {
+  const { data, error } = await getSupabase()
+    .from('cms_pages')
+    .select('id, title, slug')
+    .eq('status', 'publish')
+    .is('parent', null)
+    .order('menu_order', { ascending: true, nullsFirst: false })
+    .order('title')
+    .limit(20);
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function getTermBySlug(
-  taxonomy: string,
+  kind: TermKind,
   slug: string
 ): Promise<Term | null> {
   const { data } = await getSupabase()
-    .from('cms_terms')
+    .from(TERM_TABLE[kind])
     .select('*')
-    .eq('taxonomy', taxonomy)
     .eq('slug', slug)
+    .limit(1)
     .maybeSingle();
   return (data as Term | null) ?? null;
 }
 
-export async function listTerms(taxonomy: string): Promise<Term[]> {
+/** `post_count` is a stale import figure; never display it. */
+export async function listTerms(kind: TermKind): Promise<Term[]> {
   const { data } = await getSupabase()
-    .from('cms_terms')
+    .from(TERM_TABLE[kind])
     .select('*')
-    .eq('taxonomy', taxonomy)
-    .gt('count', 0)
     .order('name');
   return (data as Term[]) ?? [];
 }
@@ -257,6 +309,7 @@ export async function getAuthorBySlug(slug: string): Promise<Author | null> {
     .from('cms_authors')
     .select('*')
     .eq('slug', slug)
+    .limit(1)
     .maybeSingle();
   return (data as Author | null) ?? null;
 }
@@ -265,35 +318,9 @@ export async function getComments(postId: number): Promise<Comment[]> {
   const { data } = await getSupabase()
     .from('cms_comments')
     .select('*')
-    .eq('post_id', postId)
-    .eq('status', 'approved')
-    .order('date', { ascending: true });
+    .eq('post', postId)
+    .order('created_at', { ascending: true });
   return (data as Comment[]) ?? [];
-}
-
-export async function submitComment(input: {
-  post_id: number;
-  parent_id?: number | null;
-  author_name: string;
-  author_email?: string;
-  author_url?: string;
-  content: string;
-}): Promise<void> {
-  const html = `<p>${escapeHtml(input.content)
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/\n/g, '<br />')}</p>`;
-  const { error } = await getSupabase()
-    .from('cms_comments')
-    .insert({
-      post_id: input.post_id,
-      parent_id: input.parent_id ?? null,
-      author_name: input.author_name,
-      author_email: input.author_email ?? null,
-      author_url: input.author_url ?? null,
-      content_html: html,
-      status: 'hold',
-    });
-  if (error) throw error;
 }
 
 export async function getRedirect(path: string): Promise<Redirect | null> {

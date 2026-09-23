@@ -21,6 +21,7 @@ import { settingsFromMatches } from './layout';
 export async function clientLoader({
   params,
 }: Route.ClientLoaderArgs): Promise<{
+  kind: 'post' | 'page';
   post: PostWithRelations;
   comments: Comment[];
 }> {
@@ -30,30 +31,23 @@ export async function clientLoader({
     throw redirect(resolved.to, resolved.status);
   if (resolved.kind === 'not-found') throw data('Not found', { status: 404 });
 
-  const comments =
-    resolved.post.comment_status === 'open'
-      ? await getComments(resolved.post.id)
-      : [];
-  return { post: resolved.post, comments };
+  const comments = await getComments(resolved.post.id);
+  return { kind: resolved.kind, post: resolved.post, comments };
 }
 
 export function meta({ loaderData, matches }: Route.MetaArgs) {
   const settings = settingsFromMatches(matches);
   return loaderData
-    ? postMeta(loaderData.post, settings)
+    ? postMeta(loaderData.post, settings, loaderData.kind)
     : [{ title: settings.site_title }];
 }
 
-export default function CatchAll({
-  loaderData,
-  matches,
-}: Route.ComponentProps) {
-  const settings = settingsFromMatches(matches);
+export default function CatchAll({ loaderData }: Route.ComponentProps) {
   return (
     <Article
+      kind={loaderData.kind}
       post={loaderData.post}
       comments={loaderData.comments}
-      commentsEnabled={settings.comments_enabled}
     />
   );
 }

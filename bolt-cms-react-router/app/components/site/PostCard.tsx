@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
 
 import {
+  assetUrl,
   formatDate,
-  mediaUrl,
   stripHtml,
   truncate,
   type PostWithRelations,
@@ -18,8 +18,7 @@ export function PostCard({
   featured?: boolean;
 }) {
   const href = `/${post.slug}`;
-  const image =
-    mediaUrl(post.featured_media, 'large') ?? mediaUrl(post.featured_media);
+  const image = assetUrl(post.featuredAsset);
   const excerpt = truncate(
     stripHtml(post.excerpt || post.content_html),
     featured ? 260 : 180
@@ -40,7 +39,7 @@ export function PostCard({
         >
           <img
             src={image}
-            alt={post.featured_media?.alt_text ?? ''}
+            alt={post.featuredAsset?.alt ?? ''}
             className="aspect-[16/9] w-full rounded-site-lg object-cover"
             loading="lazy"
           />
@@ -71,9 +70,11 @@ export function PostCard({
           </Link>
         </p>
       </div>
-      <time className="sr-only" dateTime={post.date}>
-        {formatDate(post.date)}
-      </time>
+      {post.published_at && (
+        <time className="sr-only" dateTime={post.published_at}>
+          {formatDate(post.published_at)}
+        </time>
+      )}
     </article>
   );
 }

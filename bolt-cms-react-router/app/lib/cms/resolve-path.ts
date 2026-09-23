@@ -38,8 +38,7 @@ export async function resolvePath(path: string): Promise<Resolved> {
 
   // Last segment is the post slug; leading segments may be a date prefix
   // (`/%year%/%monthnum%/%postname%/`) or a category base.
-  const slug = segments[segments.length - 1];
-  const post = await getPostBySlug('post', slug);
+  const post = await getPostBySlug(segments[segments.length - 1]);
   if (post) return { kind: 'post', post };
 
   return { kind: 'not-found' };
