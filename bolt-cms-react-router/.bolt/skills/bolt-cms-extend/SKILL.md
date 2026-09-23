@@ -1,95 +1,115 @@
 ---
 name: bolt-cms-extend
 description: >-
-  Extend a Bolt CMS site's content model: add a custom post type,
-  custom taxonomy, editable field, or a new table imported from a
-  WordPress plugin (e.g. WooCommerce products). Use whenever the user
-  wants the admin to edit something it does not yet show.
+  Extend a Bolt CMS site's content model: add an editable field to posts
+  or pages, make an imported custom post type editable in the admin, or
+  add a site-specific table. Use whenever the user wants the admin to
+  edit something it does not yet show.
 ---
 
 # Extending the content model
 
-The admin is data-driven. Types and taxonomies are discovered from the
-data; editor forms are described by rows in `cms_fields`. Most
-extensions are SQL only.
+Three places describe a field; all three must agree:
 
-## Custom post type (WordPress CPT)
+1. **The column** on the content table (`cms_posts`, `cms_pages`, …).
+2. **The registry row** in `cms_fields` — the admin editor picks the
+   input from its `primitive` and `options`.
+3. **The admin queries** in `app/admin/queries.ts` — Bolt only runs SQL
+   declared in `.bolt/admin.json`, which `npm run manifest` generates
+   from that file.
 
-Custom types share `cms_posts`; the `type` column is free text.
+Apply schema changes as Bolt's `bolt-database` skill says, and write
+queries by the manifest rules of its `bolt-admin-dashboard` skill — but
+in `app/admin/queries.ts`, never in `.bolt/admin.json` (generated;
+`npm run typecheck` fails with "`.bolt/admin.json` is stale — run
+`npm run manifest`" when it doesn't match `queries.ts`).
 
-1. Insert or import rows with `type = 'portfolio'` (any slug-safe
-   name). The admin sidebar shows **Portfolio** as soon as one row
-   exists (via `cms_post_type_counts`).
-2. Optional public route: add
-   `route('portfolio/:slug', 'routes/site/portfolio.tsx')` in
-   `app/routes.ts` and load with `getPostBySlug('portfolio', slug)`.
-   Without a route, the catch-all resolves `/:slug` for `post` only.
-3. Optional taxonomy: see below. Taxonomies named
-   `<type>_<something>` (e.g. `portfolio_category`) automatically appear
-   in that type's editor; so do non-core taxonomies with no prefix.
+## Add a field to posts (or pages)
 
-## Custom taxonomy
+1. Migration (idempotent):
 
-Insert `cms_terms` rows with `taxonomy = 'genre'`. The admin lists it
-under **Taxonomies**. Hierarchical behavior follows whether any term
-has a `parent_id`; `category`-style checklists and `post_tag`-style
-chips are chosen by `taxonomiesForType()` in `app/admin/labels.ts`
-(edit it to force one mode).
+   ```sql
+   alter table public.cms_posts add column if not exists subtitle text;
+   insert into public.cms_fields (type_name, name, title, primitive, column_name, required, description, options, position)
+   values ('post', 'subtitle', 'Subtitle', 'string', 'subtitle', false, null, '{}', 20)
+   on conflict (type_name, name) do nothing;
+   ```
 
-## Editable field
+   Repeat for `cms_pages` / `type_name = 'page'` if pages need it.
+2. `app/admin/queries.ts` → `contentQueries(table, word)`: add the
+   column to `insert` (next `$n`, e.g. `$14::text`) and `update` (e.g.
+   `$15::text`). Both post and page queries come from this one function,
+   so the column must exist on both tables — otherwise give the new
+   column its own query instead.
+3. `app/admin/api.ts`: add the property to `ContentInput` and append it
+   to `contentParams` in the same `$n` order.
+4. `app/routes/admin/content-edit.tsx`: add the field name to
+   `FIELD_LAYOUT.main` or `FIELD_LAYOUT.sidebar`, and include it when
+   building the `ContentInput` on save.
+5. `npm run manifest`, then publish — Bolt reads `.bolt/admin.json` from
+   the deployed revision.
+6. To show it on the site, read it from the `Post` row (add it to the
+   `Post` interface in `app/lib/cms/types.ts`).
 
-The editor renders one input per `cms_fields` row for the table:
+### `primitive` and `options`
 
-```sql
-insert into cms_fields (table_name, column_name, label, type, options, group_name, position)
-values ('cms_posts', 'subtitle', 'Subtitle', 'string', '{}', 'main', 3);
-```
+`FieldInput` (`app/admin/components/fields/FieldInput.tsx`) renders:
 
-Field `type` is one of: `string`, `text`, `richtext`, `number`,
-`boolean`, `date`, `datetime`, `image`, `file`, `reference`, `array`,
-`object`, `slug`, `select`, `json`. `group_name` is `main`, `sidebar`,
-`seo`, or `advanced`. `position` orders within the group.
+| `primitive`          | Input                                   | `options`                                   |
+| -------------------- | --------------------------------------- | ------------------------------------------- |
+| `string`             | text (textarea for `excerpt`, `bio`, `description`) | —                              |
+| `slug`               | slug input that follows `title`/`name`  | —                                           |
+| `number`             | number input, empty → `null`            | `{"integer": true}`                         |
+| `boolean`            | checkbox                                | —                                           |
+| `date` / `datetime`  | date / datetime-local (stored ISO)      | —                                           |
+| `image` / `file`     | media picker storing `cms_assets.id`    | —                                           |
+| `reference`          | select over another type                | `{"to": ["author"]}` (`author`, `category`, `tag`, `post`, `page`) |
+| `array` of reference | checklist (`bigint[]` column)           | `{"of": {"primitive": "reference", "to": ["category"]}}` |
+| `array` of block     | rich-text editor (Portable Text `jsonb`) | `{"of": {"primitive": "block"}}`           |
+| other `array`/`object` | JSON input                            | —                                           |
 
-`options` by type:
+Parameter casts in the SQL follow the client's conventions: scalars as
+`$n::text|bigint|int|boolean`, `bigint[]` via `pgArray(ids)` →
+`$n::bigint[]`, `jsonb` via `JSON.stringify(value)` → `$n::jsonb`,
+timestamps as ISO strings → `$n::timestamptz`.
 
-- `string`/`text`: `{"required": true, "rows": 3, "readonly": true}`
-- `slug`: `{"from": "title"}` — auto-fills from that column
-- `richtext`: `{"json_column": "content_json"}` — where editor JSON is stored
-- `select`: `{"choices": ["a", "b"]}` or `{"choices": [{"value": "a", "label": "A"}]}`
-- `reference`: `{"table": "cms_authors", "label": "name", "same_type": true}`
-- `image`/`file`: `{"value": "id"}` (default, stores `cms_media.id`) or `{"value": "url"}`
-- `object`: `{"fields": [{"key": "title", "label": "Title", "type": "string"}, …]}`
-- `array`: `{"item": {"type": "string"}}`
+## Make an imported custom post type editable
 
-Real columns need a migration:
+The importer writes custom post types (e.g. `portfolio`) to their own
+table (`select name, table_name from public.cms_types`) with
+`cms_fields` rows; the site and admin ignore them until you wire them
+up. For a table with the same columns as `cms_posts`:
 
-```sql
-alter table cms_posts add column if not exists subtitle text;
-```
+1. `app/admin/queries.ts`: widen the `contentQueries` table/word
+   unions, then spread it into `ADMIN_QUERIES` under new keys:
 
-For per-post extras without a column, use `cms_post_meta`
-(`post_id, key, value jsonb`) and read it with
-`getPostBySlug(...)?.meta`.
+   ```ts
+   const portfolio = contentQueries('cms_portfolio', 'project');
+   // in ADMIN_QUERIES:
+   listPortfolio: portfolio.list, countPortfolio: portfolio.count, getPortfolio: portfolio.get,
+   listPortfolioOptions: portfolio.options, insertPortfolio: portfolio.insert, updatePortfolio: portfolio.update,
+   setPortfolioStatus: portfolio.setStatus, deletePortfolio: portfolio.remove,
+   ```
+2. `app/admin/api.ts`: add the type to `ContentType`, `isContentType`,
+   and `CONTENT_TYPES` (label, singular, table, the eight query names);
+   add the table to `ContentTable` in `app/lib/cms/types.ts`.
+3. Add a sidebar link to `content/<type>` in
+   `app/routes/admin/layout.tsx`.
+4. Optional public route in `app/routes.ts` plus a read helper in
+   `app/lib/cms/queries.ts`.
+5. `npm run manifest`, publish.
 
-## Plugin data (e.g. WooCommerce)
+Different columns → write its eight queries by hand following the
+`contentQueries` shape.
 
-Plugin tables get their own `cms_` table so imports stay deterministic:
+## Site-specific tables
 
-1. Migration: `create table cms_products (id bigint primary key, …)`
-   mirroring the plugin's REST shape (`wc/v3/products` → `name`,
-   `slug`, `price`, `images jsonb`, …). Enable RLS; add a public read
-   policy for the published/visible subset.
-2. `cms_fields` rows for `cms_products` so the admin can edit it. The
-   generic admin list/edit screens work for any `cms_` table that has
-   `id`, `title`-like and `status`-like columns; otherwise add a route
-   under `app/routes/admin/` following `content-list.tsx`.
-3. Public routes in `app/routes.ts` plus a query helper in
-   `app/lib/cms/`.
-
-## Rules
-
-- Tables must start with `cms_`; the host bridge rejects others.
-- Always `enable row level security` and grant anon only what the
-  public site reads.
-- Preserve WordPress ids when importing; sequences start at 1e9.
-- New migrations go in a new numbered file; do not edit applied ones.
+- Prefix with `cms_`, create with `if not exists`, `enable row level
+  security`, and add a public read policy only if the site reads it
+  (wrap `create policy` in a `do $$ … if not exists (select 1 from
+  pg_policies …) … $$` block, as `0002_starter.sql` does).
+- For admin editing, add named queries to `app/admin/queries.ts`
+  following the `bolt-admin-dashboard` manifest rules, then
+  `npm run manifest`, publish.
+- `cms_*` tables the importer owns follow the `bolt-database` safety
+  rules.

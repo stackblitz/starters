@@ -1,9 +1,11 @@
-This is a Bolt CMS site: a React Router 8 (framework mode, `ssr: false`) website backed by Supabase, shaped like a WordPress site so imported WordPress content lands in it 1:1. Content lives in `cms_*` tables (see `supabase/migrations/`); the public site reads them with the anon key; the `/admin` UI (only visible inside Bolt) edits them through the host bridge.
+This is a Bolt CMS site: a React Router 8 (framework mode, `ssr: false`) website backed by Supabase, shaped like a WordPress site so content imported by Bolt's WordPress importer renders as-is. Content lives in `cms_*` tables (see `supabase/migrations/`); the public site reads them with the anon key; the `/bolt-admin` UI (rendered only inside Bolt's Admin tab) edits them through Bolt's bridge: every SQL statement it runs is declared by name in `.bolt/admin.json`.
 
 Import project modules with the `@/` path alias, which maps to `app/` (e.g. `@/lib/cms` == `app/lib/cms`), instead of deep relative paths.
 
 This template uses Vite 8 and React Router 8. `resolve.tsconfigPaths: true` is a valid built-in Vite option; preserve it for the `@/` alias and do not add `vite-tsconfig-paths`. Route modules receive `loaderData` (not `data`) in `meta()` and component props, and use `clientLoader` because the app is a static SPA.
 
-Follow `.bolt/skills/bolt-cms/SKILL.md` before touching content, schema, or the admin. Use `.bolt/skills/bolt-cms-theme/SKILL.md` for visual changes (edit theme tokens, do not restyle components ad hoc) and `.bolt/skills/bolt-cms-extend/SKILL.md` to add a custom post type, taxonomy, or field.
+Follow `.bolt/skills/bolt-cms/SKILL.md` before touching content, schema, or the admin. Use `.bolt/skills/bolt-cms-theme/SKILL.md` for visual changes (edit theme tokens, do not restyle components ad hoc) and `.bolt/skills/bolt-cms-extend/SKILL.md` to add a field, make another content type editable, or add a site-specific table.
 
-Never commit `SUPABASE_SERVICE_ROLE_KEY` or ship it to the browser; only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are public.
+The browser only has the anon key; there is no server and no secret in this project. Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are configured.
+
+Schema changes follow Bolt's `bolt-database` skill; the admin follows Bolt's `bolt-admin-dashboard` skill, except that the admin already exists and its queries are authored in `app/admin/queries.ts` (`.bolt/admin.json` is generated) — see the `bolt-cms` skill.

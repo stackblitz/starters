@@ -2,107 +2,141 @@
 name: bolt-cms
 description: >-
   Work on a Bolt CMS site: a WordPress-shaped React Router + Supabase
-  website with a built-in /admin. Use this whenever the user asks about
-  their imported WordPress content, posts, pages, categories, tags,
-  comments, menus, media, site settings, the admin, or the database
-  behind the site.
+  website with a built-in /bolt-admin edited through Bolt's Admin tab.
+  Use this whenever the user asks about their imported WordPress
+  content, posts, pages, authors, categories, tags, comments, menus,
+  media, site settings, the admin, or the database behind the site.
 ---
 
 # Bolt CMS — a WordPress-shaped site on React Router + Supabase
 
-This project is the landing place for a WordPress import. The schema,
-URLs, and admin screens intentionally mirror WordPress so content maps
-1:1. Keep that shape unless the user asks to change it.
+This project renders the schema Bolt's WordPress importer writes. URLs
+and admin screens mirror WordPress so an imported site keeps working.
+Keep that shape unless the user asks to change it.
 
 ## Map
 
 ```
-supabase/migrations/0001_cms_core.sql   tables, views, triggers, RLS
-supabase/migrations/0002_cms_seed.sql   WordPress fresh-install defaults + cms_fields
-app/lib/cms/                            typed reads for the public site (anon key)
-app/routes/site/                        public routes (home, blog, category, tag, author, search, catch-all)
-app/components/site/                    public UI (header, footer, post list, article, comments)
-app/theme/                              theme contract + classic / editorial / minimal
-app/routes/admin/ + app/admin/          /admin (only renders inside Bolt or `npm run dev`)
-app/admin/bridge/                       postMessage protocol to the Bolt host
-dev/cms-dev-server.ts                   local stand-in for the host: /__cms and /__host
-bolt-cms.json                           `boltCmsVersion` marker used for starter upgrades
+supabase/migrations/0001_bolt_cms_schema.sql  importer schema (generated, never hand-edited)
+supabase/migrations/0002_starter.sql          starter tables, default settings, seed for empty tables
+app/lib/cms/                                  public-site reads (anon key), types, Portable Text, SEO
+app/lib/cms/portable-text.ts                  Portable Text types, portableTextToHtml, proseMirrorToPortableText
+app/routes/site/ + app/components/site/       public routes and UI
+app/theme/                                    theme contract + classic / editorial / minimal
+app/routes/admin/ + app/admin/                /bolt-admin (renders only inside Bolt's Admin tab)
+app/admin/queries.ts                          every admin SQL statement, by name (source of truth)
+.bolt/admin.json                              generated from queries.ts by `npm run manifest`
+app/admin/bridge/client.ts                    bolt.hello / db.run over postMessage
+app/admin/api.ts                              typed admin data access (one named query per call)
+bolt-cms.json                                 `boltCmsVersion` marker used for starter upgrades
 ```
 
-## Data model (WordPress → tables)
+## Data model
 
-| WordPress            | Table                    | Notes                                                |
-| -------------------- | ------------------------ | ---------------------------------------------------- |
-| options              | `cms_settings`           | key → jsonb value (`site_title`, `theme`, `seo`, …)  |
-| users                | `cms_authors`            |                                                      |
-| media                | `cms_media`              | `local_path` under `public/wp-content/uploads/`      |
-| posts / pages / CPTs | `cms_posts`              | `type` column: `post`, `page`, or a custom type      |
-| post meta            | `cms_post_meta`          | key/value, jsonb                                     |
-| categories / tags    | `cms_terms`              | `taxonomy` column: `category`, `post_tag`, or custom |
-| term relationships   | `cms_term_relationships` | trigger keeps `cms_terms.count` in sync              |
-| comments             | `cms_comments`           | anon inserts are forced to `hold`                    |
-| nav menus            | `cms_menus`, `cms_menu_items` | `location` = `primary`, `footer`, …             |
-| redirects            | `cms_redirects`          | old WordPress paths → new paths                      |
-| (admin form config)  | `cms_fields`             | drives the admin editor; see bolt-cms-extend         |
+| Table                                  | Owner    | Notes                                                                 |
+| -------------------------------------- | -------- | --------------------------------------------------------------------- |
+| `cms_site`                             | importer | single row `id = 1`: site name, description, url, home_url, `source` |
+| `cms_types`, `cms_fields`              | importer | registry: one row per content type / per field (`primitive`, `options`) |
+| `cms_assets`                           | importer | media; files live in the public Storage bucket `cms-media`           |
+| `cms_posts`, `cms_pages`               | importer | one table per content type, same columns                              |
+| `cms_authors`, `cms_categories`, `cms_tags` | importer | flat collections; `cms_categories.parent` for hierarchy         |
+| `cms_comments`                         | importer | approved comments only; read-only on the site                        |
+| `cms_settings`                         | starter  | key → jsonb (`theme`, `show_on_front`, `seo`, …)                      |
+| `cms_menus`, `cms_menu_items`          | starter  | `location` = `primary`, `footer`, …                                   |
+| `cms_redirects`                        | starter  | old WordPress paths → new paths                                       |
 
-WordPress ids are preserved as primary keys. Sequences start at
-1,000,000,000 so new rows never collide with imported ids. `cms_posts`
-slugs are unique per `(type, slug, parent)` like WordPress.
+Column conventions on content tables:
 
-Discovery views: `cms_post_type_counts` and `cms_taxonomy_counts`. The
-admin sidebar lists whatever types and taxonomies actually exist, so a
-new `type` value shows up without code changes.
+- `id bigint` has no default (WordPress ids are kept). Admin insert
+  queries use `(select coalesce(max(id), 0) + 1 from …)`.
+- `body` is Portable Text `jsonb`; `content_html` is the imported
+  WordPress HTML, used only when `body` is empty.
+- `categories` / `tags` are `bigint[]` of `cms_categories` / `cms_tags`
+  ids; `author` is a `cms_authors` id; `featured_image` is a
+  `cms_assets.id` (text).
+- `status` is free text: `publish`, `draft`, `trash`. Imported rows are
+  `publish`; the site shows nothing else.
+- There are no foreign keys between content tables; relations are
+  resolved in code (`attachRelations` in `app/lib/cms/queries.ts`).
+- `cms_categories.post_count` / `cms_tags.post_count` are stale import
+  figures — never display them.
+- `cms_products` / `cms_product_categories` (shops only) are neither
+  rendered nor edited by this starter.
 
 ## Security model
 
-- The browser only ever has the **anon** key. RLS lets anon read
-  published posts, approved comments, terms, menus, media, settings,
-  and insert a comment (always stored as `hold`, gated by
-  `comments_enabled` and the post's `comment_status`).
-- All writes from `/admin` go through the Bolt host bridge
-  (`app/admin/bridge/`), which executes them with elevated privileges
-  on the host side. Locally, `npm run dev` provides the same bridge via
-  `dev/cms-dev-server.ts` using `SUPABASE_SERVICE_ROLE_KEY` from `.env`
-  (server-only; never `VITE_`-prefixed).
-- Never put the service role key in `VITE_*` env or in app code.
+- The browser only has the **anon** key; there is no server and no
+  secret in the project. RLS grants anon `select` on every `cms_` table
+  (`using (true)`), so drafts are readable too — the site filters to
+  `status = 'publish'` in its queries. Don't store anything private in
+  `cms_` tables.
+- `cms_*` tables follow the safety rules in Bolt's `bolt-database`
+  skill. They exist because the WordPress importer owns these tables and
+  may re-run against them. One exception to that skill's "use foreign
+  key constraints" advice: don't add foreign keys between importer
+  tables — the importer writes rows (and parent references) in batches
+  that assume none.
+
+## Admin (`/bolt-admin`)
+
+The admin is built on Bolt's `bolt-admin-dashboard` skill: the bridge,
+the manifest rules (`readOnly`, `confirm`, `preview`, `description`),
+error codes and deploy-before-use all apply as written there. This
+project differs in three ways, and these take precedence:
+
+1. **The admin already exists.** Extend it (`bolt-cms-extend`); never
+   build a second dashboard or a new `/bolt-admin` route.
+2. **Queries are authored in `app/admin/queries.ts`**, not in
+   `.bolt/admin.json`. Apply the skill's manifest rules to the entries
+   there, then run `npm run manifest` to regenerate the JSON (it also
+   validates those rules; `npm run typecheck` fails when the JSON is
+   stale).
+3. **The client already exists** at `app/admin/bridge/client.ts` (the
+   skill's client, with `runQuery` typed by `AdminQueryName` and errors
+   as `BoltBridgeError`). Don't create `src/lib/bolt-admin.ts`. Screens
+   read `useCanEdit()` and treat `isRejectedByUser(e)` as a cancel
+   (`app/admin/hooks.ts`); all data goes through `app/admin/api.ts`.
 
 ## Working with content
 
-- Read content in the site with the helpers in `app/lib/cms/queries.ts`
-  (`listPosts`, `getPostBySlug`, `getPageByPath`, `getTermBySlug`,
-  `getMenu`, `getSettings`, …). They already filter to published rows.
-- Render post HTML with `<PostContent html={...} />`, which sanitizes
-  with DOMPurify and applies `.entry-content` block styles. Do not
-  `dangerouslySetInnerHTML` raw content elsewhere.
-- Post bodies keep both `content_html` (WordPress HTML, what the site
-  renders) and `content_json` (Tiptap/ProseMirror JSON the editor
-  prefers). If you edit `content_html` programmatically, set
-  `content_json` to `null` so the editor re-derives it from HTML.
-- URLs follow WordPress: `/:slug` for posts, `/parent/child` for
-  hierarchical pages, `/category/:slug`, `/tag/:slug`, `/author/:slug`,
-  `/?s=` or `/search?s=`, `/blog` when `show_on_front = 'page'`. The
-  catch-all route resolves redirects → page path → post slug.
+- Read on the site with `app/lib/cms/queries.ts`: `listPosts`,
+  `getPostBySlug`, `getPostById`, `getPageById`, `getPageByPath`,
+  `listTopLevelPages`, `getTermBySlug`, `listTerms`, `getAuthorBySlug`,
+  `getComments`, `getMenu`, `getSettings`. They filter to published
+  rows and return `PostWithRelations` (`authorRow`, `featuredAsset`,
+  `categoryTerms`, `tagTerms`).
+- Render bodies with `<PostContent html={postHtml(post)} />`
+  (`app/lib/cms/format.ts`): Portable Text when `body` is non-empty,
+  else `content_html`; sanitized with DOMPurify. Don't
+  `dangerouslySetInnerHTML` content elsewhere. If you rewrite
+  `content_html` by SQL, also update or null `body`, which wins.
+- Image URLs: `assetUrl(asset)` (`app/lib/cms/media.ts`) returns the
+  `cms-media` `public_url`, or `original_url` when the importer could
+  not copy the file (`upload_error` is set).
+- URLs follow WordPress: `/:slug` for posts (date permalinks like
+  `/2024/01/hello-world/` resolve by the last segment), `/parent/child`
+  for pages, `/category/:slug`, `/tag/:slug`, `/author/:slug`,
+  `/search?s=`, `/blog` when `show_on_front = 'page'`. The catch-all
+  resolves redirects → page path → post slug. Without a `primary` menu
+  the header lists top-level pages.
 
 ## Schema changes
 
-Bolt applies migrations with the `apply_migration` tool. Add a new file
-in `supabase/migrations/` (next number, snake_case name) instead of
-editing `0001`/`0002` after they have been applied. Prefix new tables
-with `cms_` so the admin bridge and the dev server will accept them,
-enable RLS, and add a public read policy only for what the site needs.
+Apply them as the `bolt-database` skill says. The two files in
+`supabase/migrations/` were applied when the Bolt Database was created;
+don't add more files there. New tables start with `cms_`, enable RLS,
+and get a public read policy only if the site reads them. See
+`bolt-cms-extend` for making a new column editable.
 
 ## Settings
 
-`cms_settings` rows are jsonb. `app/lib/cms/types.ts#SiteSettings` is
-the typed view; `settingsFromRows` fills in `DEFAULT_SETTINGS` for
-missing keys. Reading settings on the site is `getSettings()` (cached
-15 s). The admin writes them via `saveSettings()`.
+`SiteSettings` (`app/lib/cms/types.ts`) merges `cms_site` (title,
+tagline, url) with `cms_settings` rows; `cms_settings` wins. The site
+reads it with `getSettings()` (cached 15 s, `invalidateSettings()` to
+clear); the admin writes one row per key with the `upsertSetting` query
+(`saveSettings()` in `app/admin/api.ts`).
 
 ## Don'ts
 
-- Don't rename `cms_*` tables or columns that mirror WordPress; the
-  importer depends on them.
-- Don't make the admin visible on the published site; `isAdminShell()`
-  gates it and must stay.
-- Don't bypass `cms_fields` when adding editable columns — the admin
-  won't render them otherwise.
+- Don't hand-edit `.bolt/admin.json` or `0001_bolt_cms_schema.sql`;
+  both are generated.
