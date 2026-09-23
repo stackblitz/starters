@@ -1,0 +1,40 @@
+/*
+  Theme: classic
+  The familiar blog look: white canvas, serif headings, blue accent, a
+  banner-style header with the site title and tagline.
+*/
+html[data-site-theme='classic'] {
+  --theme-bg: #ffffff;
+  --theme-bg-alt: #f6f7f9;
+  --theme-fg: #1a1a1a;
+  --theme-muted: #6b6f76;
+  --theme-accent: #1e5eff;
+  --theme-accent-fg: #ffffff;
+  --theme-border: #e3e5e8;
+  --theme-font-heading: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --theme-font-body: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --theme-radius: 6px;
+  --theme-radius-lg: 12px;
+  --theme-measure: 42rem;
+  --theme-wide: 72rem;
+  --theme-heading-weight: 600;
+  --theme-heading-tracking: -0.01em;
+  --theme-body-size: 1.0625rem;
+  --theme-body-leading: 1.7;
+}
+
+html[data-site-theme='classic'] .site-header {
+  border-bottom: 1px solid var(--theme-border);
+}
+html[data-site-theme='classic'] .site-branding {
+  padding-block: 2.5rem 1.5rem;
+  text-align: center;
+}
+html[data-site-theme='classic'] .site-title {
+  font-size: clamp(2rem, 4vw, 2.75rem);
+}
+html[data-site-theme='classic'] .site-nav {
+  justify-content: center;
+  border-top: 1px solid var(--theme-border);
+  padding-block: 0.75rem;
+}

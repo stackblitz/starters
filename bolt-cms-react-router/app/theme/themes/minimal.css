@@ -1,0 +1,55 @@
+/*
+  Theme: minimal
+  Quiet and modern: white, sans-serif throughout, near-black accent, tight
+  measure, header collapsed into a single line.
+*/
+html[data-site-theme='minimal'] {
+  --theme-bg: #ffffff;
+  --theme-bg-alt: #f4f4f5;
+  --theme-fg: #111111;
+  --theme-muted: #71717a;
+  --theme-accent: #111111;
+  --theme-accent-fg: #ffffff;
+  --theme-border: #e4e4e7;
+  --theme-font-heading: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --theme-font-body: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --theme-radius: 8px;
+  --theme-radius-lg: 16px;
+  --theme-measure: 38rem;
+  --theme-wide: 64rem;
+  --theme-heading-weight: 700;
+  --theme-heading-tracking: -0.03em;
+  --theme-body-size: 1rem;
+  --theme-body-leading: 1.65;
+}
+
+html[data-site-theme='minimal'] .site-header {
+  border-bottom: 1px solid var(--theme-border);
+}
+html[data-site-theme='minimal'] .site-branding {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-block: 1rem;
+}
+html[data-site-theme='minimal'] .site-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+html[data-site-theme='minimal'] .site-tagline {
+  display: none;
+}
+html[data-site-theme='minimal'] .site-nav {
+  padding: 0;
+  border: 0;
+  font-size: 0.9375rem;
+}
+html[data-site-theme='minimal'] .site-header .site-shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+html[data-site-theme='minimal'] .site-header .site-branding {
+  flex: 0 0 auto;
+}

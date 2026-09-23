@@ -1,0 +1,148 @@
+/**
+ * Vendored from @blitz/design-system (tokens/tailwind/v4.css).
+ * Bolt design tokens for the /admin UI. Do not edit; re-vendor to update.
+ * Dark mode: add class `dark` to <html> (the admin follows the Bolt host).
+ */
+
+@theme {
+  /* Brand */
+  --color-bolt-ds-brand: #2ba6ff;
+  --color-bolt-ds-brandHover: #1488fc;
+  --color-bolt-ds-onBrand: #ffffff;
+  --color-bolt-ds-brandBgSubtle: #2ba6ff0d;
+  --color-bolt-ds-brandBgSubtleHover: #2ba6ff1a;
+  --color-bolt-ds-onBrandBgSubtle: #122f59;
+  --color-bolt-ds-brandBorderSubtle: #2ba6ff33;
+  /* Surface */
+  --color-bolt-ds-bg: #fffefe;
+  --color-bolt-ds-bgHover: #f9f6f9;
+  --color-bolt-ds-bgAlt: #fffefe;
+  --color-bolt-ds-bgAltHover: #f9f6f9;
+  --color-bolt-ds-bgSecondary: #f9f6f9;
+  --color-bolt-ds-bgSecondaryHover: #f3f0f5;
+  --color-bolt-ds-bgSecondaryAlt: #f9f6f9;
+  --color-bolt-ds-bgSecondaryAltHover: #f3f0f5;
+  --color-bolt-ds-bgTertiary: #f3f0f5;
+  --color-bolt-ds-bgTertiaryHover: #efedf3;
+  --color-bolt-ds-bgTertiaryAlt: #f9f6f9;
+  --color-bolt-ds-bgTertiaryAltHover: #f3f0f5;
+  --color-bolt-ds-inverseBg: #111114;
+  --color-bolt-ds-inverseBgHover: #171719;
+  --color-bolt-ds-onInverseBg: #fffefe;
+  --color-bolt-ds-utilHover: #1111140a;
+  /* Text & Icons */
+  --color-bolt-ds-textPrimary: #0c0c0f;
+  --color-bolt-ds-textSecondary: #525258;
+  --color-bolt-ds-textTertiary: #73737b;
+  --color-bolt-ds-iconPrimary: #0c0c0f;
+  --color-bolt-ds-iconSecondary: #525258;
+  --color-bolt-ds-iconTertiary: #a4a3ac;
+  /* Borders */
+  --color-bolt-ds-borderPrimary: #d6d5de;
+  --color-bolt-ds-borderSecondary: #efedf3;
+  --color-bolt-ds-divider: #d6d5de;
+  /* Success */
+  --color-bolt-ds-success: #22c55e;
+  --color-bolt-ds-successHover: #16a34a;
+  --color-bolt-ds-onSuccess: #f0fdf4;
+  --color-bolt-ds-successBgSubtle: #22c55e0d;
+  --color-bolt-ds-successBgSubtleHover: #22c55e1a;
+  --color-bolt-ds-onSuccessBgSubtle: #052e16;
+  --color-bolt-ds-successBorderSubtle: #22c55e33;
+  /* Warning */
+  --color-bolt-ds-warning: #f79009;
+  --color-bolt-ds-warningHover: #dc6803;
+  --color-bolt-ds-onWarning: #ffffff;
+  --color-bolt-ds-warningBgSubtle: #f790090d;
+  --color-bolt-ds-warningBgSubtleHover: #f790091a;
+  --color-bolt-ds-onWarningBgSubtle: #4e1d09;
+  --color-bolt-ds-warningBorderSubtle: #f7900933;
+  /* Danger */
+  --color-bolt-ds-danger: #ef4444;
+  --color-bolt-ds-dangerHover: #f87171;
+  --color-bolt-ds-onDanger: #ffffff;
+  --color-bolt-ds-dangerBgSubtle: #ef44440d;
+  --color-bolt-ds-dangerBgSubtleHover: #ef44441a;
+  --color-bolt-ds-onDangerBgSubtle: #450a0a;
+  --color-bolt-ds-dangerBorderSubtle: #ef444433;
+  /* Neutral */
+  --color-bolt-ds-neutral: #73737b;
+  --color-bolt-ds-neutralHover: #525258;
+  --color-bolt-ds-onNeutral: #fffefe;
+  --color-bolt-ds-neutralBgSubtle: #73737b0d;
+  --color-bolt-ds-neutralBgSubtleHover: #73737b1a;
+  --color-bolt-ds-onNeutralBgSubtle: #171719;
+  --color-bolt-ds-neutralBorderSubtle: #73737b33;
+}
+
+.dark,
+:root[data-theme='dark'] {
+  /* Brand */
+  --color-bolt-ds-brand: #1488fc;
+  --color-bolt-ds-brandHover: #2ba6ff;
+  --color-bolt-ds-onBrand: #eef9ff;
+  --color-bolt-ds-brandBgSubtle: #2ba6ff1a;
+  --color-bolt-ds-brandBgSubtleHover: #2ba6ff33;
+  --color-bolt-ds-onBrandBgSubtle: #2ba6ff;
+  --color-bolt-ds-brandBorderSubtle: #2ba6ff1a;
+  /* Surface */
+  --color-bolt-ds-bg: #111114;
+  --color-bolt-ds-bgHover: #171719;
+  --color-bolt-ds-bgAlt: #171719;
+  --color-bolt-ds-bgAltHover: #1e1e21;
+  --color-bolt-ds-bgSecondary: #171719;
+  --color-bolt-ds-bgSecondaryHover: #1e1e21;
+  --color-bolt-ds-bgSecondaryAlt: #111114;
+  --color-bolt-ds-bgSecondaryAltHover: #171719;
+  --color-bolt-ds-bgTertiary: #1e1e21;
+  --color-bolt-ds-bgTertiaryHover: #2c2c30;
+  --color-bolt-ds-bgTertiaryAlt: #1e1e21;
+  --color-bolt-ds-bgTertiaryAltHover: #2c2c30;
+  --color-bolt-ds-inverseBg: #fffefe;
+  --color-bolt-ds-inverseBgHover: #f9f6f9;
+  --color-bolt-ds-onInverseBg: #111114;
+  --color-bolt-ds-utilHover: #fffefe0a;
+  /* Text & Icons */
+  --color-bolt-ds-textPrimary: #f9f6f9;
+  --color-bolt-ds-textSecondary: #d6d5de;
+  --color-bolt-ds-textTertiary: #a4a3ac;
+  --color-bolt-ds-iconPrimary: #f9f6f9;
+  --color-bolt-ds-iconSecondary: #a4a3ac;
+  --color-bolt-ds-iconTertiary: #73737b;
+  /* Borders */
+  --color-bolt-ds-borderPrimary: #2c2c30;
+  --color-bolt-ds-borderSecondary: #1e1e21;
+  --color-bolt-ds-divider: #2c2c30;
+  /* Success */
+  --color-bolt-ds-success: #16a34a;
+  --color-bolt-ds-successHover: #4ade80;
+  --color-bolt-ds-onSuccess: #f0fdf4;
+  --color-bolt-ds-successBgSubtle: #22c55e1a;
+  --color-bolt-ds-successBgSubtleHover: #22c55e33;
+  --color-bolt-ds-onSuccessBgSubtle: #22c55e;
+  --color-bolt-ds-successBorderSubtle: #22c55e1a;
+  /* Warning */
+  --color-bolt-ds-warning: #f79009;
+  --color-bolt-ds-warningHover: #fdb022;
+  --color-bolt-ds-onWarning: #fffaeb;
+  --color-bolt-ds-warningBgSubtle: #f790091a;
+  --color-bolt-ds-warningBgSubtleHover: #f7900933;
+  --color-bolt-ds-onWarningBgSubtle: #f79009;
+  --color-bolt-ds-warningBorderSubtle: #f790091a;
+  /* Danger */
+  --color-bolt-ds-danger: #ef4444;
+  --color-bolt-ds-dangerHover: #dc2626;
+  --color-bolt-ds-onDanger: #fef2f2;
+  --color-bolt-ds-dangerBgSubtle: #ef44441a;
+  --color-bolt-ds-dangerBgSubtleHover: #ef444433;
+  --color-bolt-ds-onDangerBgSubtle: #f87171;
+  --color-bolt-ds-dangerBorderSubtle: #ef44441a;
+  /* Neutral */
+  --color-bolt-ds-neutral: #73737b;
+  --color-bolt-ds-neutralHover: #a4a3ac;
+  --color-bolt-ds-onNeutral: #f9f6f9;
+  --color-bolt-ds-neutralBgSubtle: #73737b1a;
+  --color-bolt-ds-neutralBgSubtleHover: #73737b33;
+  --color-bolt-ds-onNeutralBgSubtle: #73737b;
+  --color-bolt-ds-neutralBorderSubtle: #73737b1a;
+}
