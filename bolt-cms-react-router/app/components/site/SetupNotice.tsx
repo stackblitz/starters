@@ -10,10 +10,9 @@ export function SetupNotice({
       <div className="site-shell py-3 text-sm">
         {!configured ? (
           <>
-            <strong>Supabase is not configured.</strong> Connect a Bolt
-            Database (or import a WordPress site) and add{' '}
-            <code>VITE_SUPABASE_URL</code> / <code>VITE_SUPABASE_ANON_KEY</code>{' '}
-            to <code>.env</code>.
+            <strong>Supabase is not configured.</strong> Connect a Bolt Database
+            (or import a WordPress site) and add <code>VITE_SUPABASE_URL</code>{' '}
+            / <code>VITE_SUPABASE_ANON_KEY</code> to <code>.env</code>.
           </>
         ) : (
           <>

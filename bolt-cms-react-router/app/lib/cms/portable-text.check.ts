@@ -1,7 +1,11 @@
 /** `npm run check` — asserts the Portable Text converters round-trip editor output. */
 import assert from 'node:assert/strict';
 
-import { portableTextToHtml, proseMirrorToPortableText, type PortableTextTextBlock } from './portable-text.ts';
+import {
+  portableTextToHtml,
+  proseMirrorToPortableText,
+  type PortableTextTextBlock,
+} from './portable-text.ts';
 
 const toHtml = (node: { type?: string }) => `<${node.type}-html>`;
 
@@ -10,13 +14,21 @@ const blocks = proseMirrorToPortableText(
   {
     type: 'doc',
     content: [
-      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Title' }] },
+      {
+        type: 'heading',
+        attrs: { level: 2 },
+        content: [{ type: 'text', text: 'Title' }],
+      },
       {
         type: 'paragraph',
         content: [
           { type: 'text', text: 'Hello ' },
           { type: 'text', text: 'bold', marks: [{ type: 'bold' }] },
-          { type: 'text', text: ' link', marks: [{ type: 'link', attrs: { href: 'https://example.com' } }] },
+          {
+            type: 'text',
+            text: ' link',
+            marks: [{ type: 'link', attrs: { href: 'https://example.com' } }],
+          },
         ],
       },
       {
@@ -29,10 +41,13 @@ const blocks = proseMirrorToPortableText(
       { type: 'image', attrs: { src: 'https://example.com/a.jpg', alt: 'A' } },
     ],
   },
-  toHtml,
+  toHtml
 );
 
-const [heading, paragraph, first, second] = blocks.slice(0, 4) as PortableTextTextBlock[];
+const [heading, paragraph, first, second] = blocks.slice(
+  0,
+  4
+) as PortableTextTextBlock[];
 assert.equal(blocks.length, 5);
 assert.equal(heading.style, 'h2');
 assert.deepEqual(paragraph.children[1].marks, ['strong']);
@@ -52,7 +67,10 @@ assert.match(html, /<ul><li>one<\/li><li>two<\/li><\/ul>/);
 assert.match(html, /<figure><img src="https:\/\/example.com\/a.jpg" alt="A">/);
 
 // (b) unknown block nodes go through the injected serializer
-const [table] = proseMirrorToPortableText({ type: 'doc', content: [{ type: 'table', content: [] }] }, toHtml);
+const [table] = proseMirrorToPortableText(
+  { type: 'doc', content: [{ type: 'table', content: [] }] },
+  toHtml
+);
 assert.ok(table._type === 'html' && table.html === '<table-html>');
 
 // (c) span text is escaped
@@ -62,7 +80,14 @@ const escaped = portableTextToHtml([
     _key: 'k',
     style: 'normal',
     markDefs: [],
-    children: [{ _type: 'span', _key: 's', text: '<script>alert(1)</script>', marks: [] }],
+    children: [
+      {
+        _type: 'span',
+        _key: 's',
+        text: '<script>alert(1)</script>',
+        marks: [],
+      },
+    ],
   },
 ]);
 assert.equal(escaped, '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>');

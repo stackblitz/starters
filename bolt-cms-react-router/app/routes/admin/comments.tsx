@@ -14,7 +14,12 @@ import {
   Th,
   useToast,
 } from '@/admin/components/ui';
-import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
+import {
+  errorMessage,
+  isRejectedByUser,
+  useAsync,
+  useCanEdit,
+} from '@/admin/hooks';
 import { formatDateTime, portableTextToHtml } from '@/lib/cms';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -27,7 +32,8 @@ export default function Comments() {
   const canEdit = useCanEdit();
 
   const list = useAsync(
-    () => Promise.all([listComments({ page, perPage: PER_PAGE }), countComments()]),
+    () =>
+      Promise.all([listComments({ page, perPage: PER_PAGE }), countComments()]),
     [page]
   );
   const comments = list.data?.[0] ?? [];
@@ -45,7 +51,10 @@ export default function Comments() {
 
   return (
     <>
-      <PageHeader title="Comments" description="Comments imported from WordPress. They are shown read-only on the site." />
+      <PageHeader
+        title="Comments"
+        description="Comments imported from WordPress. They are shown read-only on the site."
+      />
       {list.error && <ErrorNote message={list.error} />}
       {list.loading && !list.data ? (
         <Spinner />
@@ -66,13 +75,21 @@ export default function Comments() {
               {comments.map((comment) => (
                 <tr key={comment.id} className="group hover:bg-bolt-ds-bgHover">
                   <Td>
-                    <p className="m-0 font-medium">{comment.author_name ?? 'Anonymous'}</p>
+                    <p className="m-0 font-medium">
+                      {comment.author_name ?? 'Anonymous'}
+                    </p>
                   </Td>
                   <Td>
-                    <p className="m-0 text-xs text-bolt-ds-textTertiary">{formatDateTime(comment.created_at)}</p>
+                    <p className="m-0 text-xs text-bolt-ds-textTertiary">
+                      {formatDateTime(comment.created_at)}
+                    </p>
                     <div
                       className="entry-content mt-1 line-clamp-3 text-sm [&_p]:m-0"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(portableTextToHtml(comment.body ?? [])) }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(
+                          portableTextToHtml(comment.body ?? [])
+                        ),
+                      }}
                     />
                   </Td>
                   <Td>

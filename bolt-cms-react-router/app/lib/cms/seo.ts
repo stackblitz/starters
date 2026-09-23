@@ -59,9 +59,15 @@ export function postMeta(
 
   if (kind === 'post') {
     if (post.published_at)
-      meta.push({ property: 'article:published_time', content: post.published_at });
+      meta.push({
+        property: 'article:published_time',
+        content: post.published_at,
+      });
     if (post.modified_at)
-      meta.push({ property: 'article:modified_time', content: post.modified_at });
+      meta.push({
+        property: 'article:modified_time',
+        content: post.modified_at,
+      });
     if (post.authorRow)
       meta.push({ property: 'article:author', content: post.authorRow.name });
   }

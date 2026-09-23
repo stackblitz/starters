@@ -15,12 +15,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
 import { hello, isInsideBolt } from '@/admin/bridge/client';
-import {
-  cx,
-  ErrorNote,
-  Spinner,
-  ToastProvider,
-} from '@/admin/components/ui';
+import { cx, ErrorNote, Spinner, ToastProvider } from '@/admin/components/ui';
 import { AdminContext, errorMessage } from '@/admin/hooks';
 
 export function meta() {
@@ -69,7 +64,9 @@ export default function AdminLayout() {
   if (!inside)
     return (
       <div className="flex min-h-screen items-center justify-center bg-bolt-ds-bg px-6 text-bolt-ds-textSecondary">
-        <p className="m-0 text-sm">Open this page from the Admin tab in Bolt.</p>
+        <p className="m-0 text-sm">
+          Open this page from the Admin tab in Bolt.
+        </p>
       </div>
     );
 
@@ -123,10 +120,7 @@ function Sidebar() {
         </SideLink>
 
         <SectionLabel>Organize</SectionLabel>
-        <SideLink
-          to="/bolt-admin/collection/author"
-          icon={<Users size={15} />}
-        >
+        <SideLink to="/bolt-admin/collection/author" icon={<Users size={15} />}>
           Authors
         </SideLink>
         <SideLink

@@ -1,8 +1,20 @@
 import { useEffect, useState } from 'react';
 
 import { updateAsset } from '@/admin/api';
-import { AssetBrowser, MEDIA_NOTE, MediaThumb } from '@/admin/components/MediaPicker';
-import { Button, Dialog, Field, Input, PageHeader, Textarea, useToast } from '@/admin/components/ui';
+import {
+  AssetBrowser,
+  MEDIA_NOTE,
+  MediaThumb,
+} from '@/admin/components/MediaPicker';
+import {
+  Button,
+  Dialog,
+  Field,
+  Input,
+  PageHeader,
+  Textarea,
+  useToast,
+} from '@/admin/components/ui';
 import { errorMessage, isRejectedByUser, useCanEdit } from '@/admin/hooks';
 import { assetUrl, type Asset } from '@/lib/cms';
 
@@ -13,7 +25,11 @@ export default function MediaLibrary() {
   return (
     <>
       <PageHeader title="Media" description={MEDIA_NOTE} />
-      <AssetBrowser onSelect={setSelected} selectedId={selected?.id} version={version} />
+      <AssetBrowser
+        onSelect={setSelected}
+        selectedId={selected?.id}
+        version={version}
+      />
       <MediaDetails
         asset={selected}
         onClose={() => setSelected(null)}
@@ -38,7 +54,11 @@ function MediaDetails({
   const toast = useToast();
 
   useEffect(() => {
-    setMeta({ title: asset?.title ?? '', alt: asset?.alt ?? '', caption: asset?.caption ?? '' });
+    setMeta({
+      title: asset?.title ?? '',
+      alt: asset?.alt ?? '',
+      caption: asset?.caption ?? '',
+    });
   }, [asset]);
 
   async function save() {
@@ -69,7 +89,12 @@ function MediaDetails({
       title="Attachment details"
       wide
       footer={
-        <Button variant="primary" loading={saving} disabled={!canEdit} onClick={save}>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!canEdit}
+          onClick={save}
+        >
           Save
         </Button>
       }
@@ -106,14 +131,18 @@ function MediaDetails({
               <Input
                 value={meta.title}
                 disabled={!canEdit}
-                onChange={(e) => setMeta((m) => ({ ...m, title: e.target.value }))}
+                onChange={(e) =>
+                  setMeta((m) => ({ ...m, title: e.target.value }))
+                }
               />
             </Field>
             <Field label="Alternative text">
               <Input
                 value={meta.alt}
                 disabled={!canEdit}
-                onChange={(e) => setMeta((m) => ({ ...m, alt: e.target.value }))}
+                onChange={(e) =>
+                  setMeta((m) => ({ ...m, alt: e.target.value }))
+                }
               />
             </Field>
             <Field label="Caption">
@@ -121,7 +150,9 @@ function MediaDetails({
                 rows={3}
                 value={meta.caption}
                 disabled={!canEdit}
-                onChange={(e) => setMeta((m) => ({ ...m, caption: e.target.value }))}
+                onChange={(e) =>
+                  setMeta((m) => ({ ...m, caption: e.target.value }))
+                }
               />
             </Field>
           </div>

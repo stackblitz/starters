@@ -207,7 +207,8 @@ export function mergeSettings(
     imported_from: site?.source === 'wordpress' ? site.url : null,
   };
   for (const row of rows) {
-    if (row.value !== null && row.value !== undefined) merged[row.key] = row.value;
+    if (row.value !== null && row.value !== undefined)
+      merged[row.key] = row.value;
   }
   return merged as unknown as SiteSettings;
 }

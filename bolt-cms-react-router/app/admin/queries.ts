@@ -15,11 +15,19 @@ export interface AdminQuery {
 }
 
 /** trims and collapses whitespace so SQL can be written as indented template literals */
-export function sql(strings: TemplateStringsArray, ...values: string[]): string {
-  return String.raw(strings, ...values).replace(/\s+/g, ' ').trim();
+export function sql(
+  strings: TemplateStringsArray,
+  ...values: string[]
+): string {
+  return String.raw(strings, ...values)
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-export function contentQueries(table: 'cms_posts' | 'cms_pages', word: 'post' | 'page') {
+export function contentQueries(
+  table: 'cms_posts' | 'cms_pages',
+  word: 'post' | 'page'
+) {
   return {
     list: {
       sql: sql`
@@ -75,7 +83,8 @@ export function contentQueries(table: 'cms_posts' | 'cms_pages', word: 'post' | 
 const posts = contentQueries('cms_posts', 'post');
 const pages = contentQueries('cms_pages', 'page');
 
-const ASSET_COLUMNS = 'id, kind, mime_type, filename, title, alt, caption, width, height, original_url, public_url, upload_error';
+const ASSET_COLUMNS =
+  'id, kind, mime_type, filename, title, alt, caption, width, height, original_url, public_url, upload_error';
 
 export const ADMIN_QUERIES = {
   listPosts: posts.list,
@@ -116,7 +125,8 @@ export const ADMIN_QUERIES = {
     readOnly: false,
     confirm: true,
     preview: sql`select name from public.cms_authors where id = $1::bigint`,
-    description: 'Delete the author "{name}" (their posts stay, without an author)',
+    description:
+      'Delete the author "{name}" (their posts stay, without an author)',
     sql: sql`delete from public.cms_authors where id = $1::bigint returning id`,
   },
 
@@ -140,7 +150,8 @@ export const ADMIN_QUERIES = {
     readOnly: false,
     confirm: true,
     preview: sql`select name from public.cms_categories where id = $1::bigint`,
-    description: 'Delete the category "{name}" (posts keep their other categories)',
+    description:
+      'Delete the category "{name}" (posts keep their other categories)',
     sql: sql`delete from public.cms_categories where id = $1::bigint returning id`,
   },
 
@@ -178,7 +189,9 @@ export const ADMIN_QUERIES = {
       order by c.created_at desc nulls last, c.id desc
       limit $1::int offset $2::int`,
   },
-  countComments: { sql: sql`select count(*)::int as count from public.cms_comments` },
+  countComments: {
+    sql: sql`select count(*)::int as count from public.cms_comments`,
+  },
   deleteComment: {
     readOnly: false,
     confirm: true,
@@ -199,14 +212,18 @@ export const ADMIN_QUERIES = {
       select count(*)::int as count from public.cms_assets
       where $1::text = '' or filename ilike '%' || $1::text || '%' or title ilike '%' || $1::text || '%'`,
   },
-  getAsset: { sql: sql`select ${ASSET_COLUMNS} from public.cms_assets where id = $1::text` },
+  getAsset: {
+    sql: sql`select ${ASSET_COLUMNS} from public.cms_assets where id = $1::text`,
+  },
   updateAsset: {
     readOnly: false,
     sql: sql`update public.cms_assets set title = $2::text, alt = $3::text, caption = $4::text where id = $1::text returning id`,
   },
 
   listSettings: { sql: sql`select key, value from public.cms_settings` },
-  getSite: { sql: sql`select name, description, url, home_url, source from public.cms_site where id = 1` },
+  getSite: {
+    sql: sql`select name, description, url, home_url, source from public.cms_site where id = 1`,
+  },
   upsertSetting: {
     readOnly: false,
     sql: sql`
@@ -215,7 +232,9 @@ export const ADMIN_QUERIES = {
       returning key`,
   },
 
-  listMenus: { sql: sql`select id, slug, name, location from public.cms_menus order by name` },
+  listMenus: {
+    sql: sql`select id, slug, name, location from public.cms_menus order by name`,
+  },
   insertMenu: {
     readOnly: false,
     sql: sql`insert into public.cms_menus (name, slug, location) values ($1::text, $2::text, $3::text) returning *`,

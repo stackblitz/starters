@@ -32,7 +32,12 @@ import {
   Spinner,
   useToast,
 } from '@/admin/components/ui';
-import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
+import {
+  errorMessage,
+  isRejectedByUser,
+  useAsync,
+  useCanEdit,
+} from '@/admin/hooks';
 import { slugify } from '@/lib/cms/format';
 import type { MenuItem } from '@/lib/cms/types';
 
@@ -72,8 +77,14 @@ export default function Menus() {
   }, [menu]);
 
   // listContent, not listContentOptions: menu items store the URL, so we need the slug
-  const pages = useAsync(() => listContent('page', { status: 'publish', perPage: 200 }), []);
-  const posts = useAsync(() => listContent('post', { status: 'publish', perPage: 50 }), []);
+  const pages = useAsync(
+    () => listContent('page', { status: 'publish', perPage: 200 }),
+    []
+  );
+  const posts = useAsync(
+    () => listContent('post', { status: 'publish', perPage: 50 }),
+    []
+  );
   const categories = useAsync(() => listCollection('category'), []);
 
   function mutate(next: MenuItem[]) {
@@ -140,28 +151,38 @@ export default function Menus() {
     try {
       const original = new Map((loaded.data ?? []).map((i) => [i.id, i]));
       const kept = new Set(items.map((i) => i.id));
-      for (const id of original.keys()) if (!kept.has(id)) await deleteMenuItem(id);
+      for (const id of original.keys())
+        if (!kept.has(id)) await deleteMenuItem(id);
 
       // Insert new items first to obtain real ids, then remap parents.
       const idMap = new Map<number, number>();
       for (const [position, item] of items.entries()) {
         if (item.id >= 0) continue;
         const { id, ...rest } = item;
-        idMap.set(id, (await insertMenuItem({ ...rest, parent_id: null, position })).id);
+        idMap.set(
+          id,
+          (await insertMenuItem({ ...rest, parent_id: null, position })).id
+        );
       }
       for (const [position, item] of items.entries()) {
         const next: MenuItem = {
           ...item,
           id: idMap.get(item.id) ?? item.id,
-          parent_id: item.parent_id === null ? null : (idMap.get(item.parent_id) ?? item.parent_id),
+          parent_id:
+            item.parent_id === null
+              ? null
+              : idMap.get(item.parent_id) ?? item.parent_id,
           position,
         };
         const changed =
-          item.id < 0 ? next.parent_id !== null : JSON.stringify(next) !== JSON.stringify(original.get(item.id));
+          item.id < 0
+            ? next.parent_id !== null
+            : JSON.stringify(next) !== JSON.stringify(original.get(item.id));
         if (changed) await updateMenuItem(next);
       }
 
-      if (location !== (menu.location ?? '')) await updateMenuLocation(menu.id, location || null);
+      if (location !== (menu.location ?? ''))
+        await updateMenuLocation(menu.id, location || null);
 
       toast('Menu saved');
     } catch (e) {
@@ -177,7 +198,11 @@ export default function Menus() {
     const name = newName?.trim();
     if (!name) return;
     try {
-      const created = await insertMenu({ name, slug: slugify(name), location: null });
+      const created = await insertMenu({
+        name,
+        slug: slugify(name),
+        location: null,
+      });
       setNewName(null);
       await menus.refetch();
       setMenuId(created.id);
@@ -211,7 +236,11 @@ export default function Menus() {
 
   const newMenuForm =
     newName === null ? (
-      <Button icon={<Plus size={14} />} disabled={!canEdit} onClick={() => setNewName('')}>
+      <Button
+        icon={<Plus size={14} />}
+        disabled={!canEdit}
+        onClick={() => setNewName('')}
+      >
         New menu
       </Button>
     ) : (
@@ -249,7 +278,9 @@ export default function Menus() {
             <Button
               variant="primary"
               loading={saving}
-              disabled={!canEdit || (!dirty && location === (menu?.location ?? ''))}
+              disabled={
+                !canEdit || (!dirty && location === (menu?.location ?? ''))
+              }
               onClick={save}
             >
               Save menu

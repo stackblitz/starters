@@ -31,15 +31,24 @@ export function isInsideBolt() {
   return window.parent !== window;
 }
 
-export function boltRequest<T = unknown>(method: string, params?: unknown): Promise<T> {
+export function boltRequest<T = unknown>(
+  method: string,
+  params?: unknown
+): Promise<T> {
   const id = crypto.randomUUID();
 
   return new Promise((resolve, reject) => {
     const onMessage = (event: MessageEvent) => {
       const data = event.data;
-      if (event.source !== window.parent || data?.source !== HOST_SOURCE || data.id !== id) return;
+      if (
+        event.source !== window.parent ||
+        data?.source !== HOST_SOURCE ||
+        data.id !== id
+      )
+        return;
       window.removeEventListener('message', onMessage);
-      if ('error' in data) reject(new BoltBridgeError(data.error.message, data.error.code));
+      if ('error' in data)
+        reject(new BoltBridgeError(data.error.message, data.error.code));
       else resolve(data.result as T);
     };
     window.addEventListener('message', onMessage);
@@ -47,8 +56,13 @@ export function boltRequest<T = unknown>(method: string, params?: unknown): Prom
   });
 }
 
-export function runQuery<Row = Record<string, unknown>>(name: AdminQueryName, parameters: unknown[] = []) {
-  return boltRequest<{ rows: Row[] }>('db.run', { name, parameters }).then((r) => r.rows);
+export function runQuery<Row = Record<string, unknown>>(
+  name: AdminQueryName,
+  parameters: unknown[] = []
+) {
+  return boltRequest<{ rows: Row[] }>('db.run', { name, parameters }).then(
+    (r) => r.rows
+  );
 }
 
 export function hello() {

@@ -144,13 +144,22 @@ export async function attachRelations(
     ...new Set(posts.flatMap(pick)),
   ];
   const [authors, assets, categories, tags] = await Promise.all([
-    byId<Author>('cms_authors', distinct((p) => (p.author ? [p.author] : []))),
+    byId<Author>(
+      'cms_authors',
+      distinct((p) => (p.author ? [p.author] : []))
+    ),
     byId<Asset>(
       'cms_assets',
       distinct((p) => (p.featured_image ? [p.featured_image] : []))
     ),
-    byId<Term>(TERM_TABLE.category, distinct((p) => p.categories)),
-    byId<Term>(TERM_TABLE.tag, distinct((p) => p.tags)),
+    byId<Term>(
+      TERM_TABLE.category,
+      distinct((p) => p.categories)
+    ),
+    byId<Term>(
+      TERM_TABLE.tag,
+      distinct((p) => p.tags)
+    ),
   ]);
   return posts.map((p) => ({
     ...p,

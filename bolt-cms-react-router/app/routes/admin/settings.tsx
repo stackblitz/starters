@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
-import { getAdminSettings, listContentOptions, saveSettings } from '@/admin/api';
+import {
+  getAdminSettings,
+  listContentOptions,
+  saveSettings,
+} from '@/admin/api';
 import {
   Button,
   Card,
@@ -16,7 +20,12 @@ import {
   Toggle,
   useToast,
 } from '@/admin/components/ui';
-import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
+import {
+  errorMessage,
+  isRejectedByUser,
+  useAsync,
+  useCanEdit,
+} from '@/admin/hooks';
 import { invalidateSettings, type SiteSettings } from '@/lib/cms';
 
 type Tab = 'general' | 'reading' | 'seo';
@@ -140,7 +149,10 @@ export default function Settings() {
                     />
                   </Field>
                 </div>
-                <Field label="Date format" hint="PHP-style, as in WordPress (e.g. F j, Y).">
+                <Field
+                  label="Date format"
+                  hint="PHP-style, as in WordPress (e.g. F j, Y)."
+                >
                   <Input
                     value={draft.date_format}
                     onChange={(e) => set('date_format', e.target.value)}
@@ -256,7 +268,10 @@ export default function Settings() {
                     type="url"
                     value={draft.seo.og_image ?? ''}
                     onChange={(e) =>
-                      set('seo', { ...draft.seo, og_image: e.target.value || null })
+                      set('seo', {
+                        ...draft.seo,
+                        og_image: e.target.value || null,
+                      })
                     }
                     placeholder="https://"
                   />

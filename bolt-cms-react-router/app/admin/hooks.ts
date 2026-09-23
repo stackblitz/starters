@@ -1,9 +1,18 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { BoltBridgeError } from './bridge/client';
 
 /** Set by the admin layout from `bolt.hello` before any screen renders. */
-export const AdminContext = createContext<{ canEdit: boolean }>({ canEdit: false });
+export const AdminContext = createContext<{ canEdit: boolean }>({
+  canEdit: false,
+});
 
 export function useCanEdit() {
   return useContext(AdminContext).canEdit;

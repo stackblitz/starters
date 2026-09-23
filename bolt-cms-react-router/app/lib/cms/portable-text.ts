@@ -18,7 +18,15 @@ export interface PortableTextLinkMarkDef {
   href: string;
 }
 
-export type PortableTextStyle = 'normal' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'blockquote';
+export type PortableTextStyle =
+  | 'normal'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'h5'
+  | 'h6'
+  | 'blockquote';
 
 export interface PortableTextTextBlock {
   _type: 'block';
@@ -51,10 +59,18 @@ export interface PortableTextHtml {
   html: string;
 }
 
-export type PortableTextBlock = PortableTextTextBlock | PortableTextImage | PortableTextEmbed | PortableTextHtml;
+export type PortableTextBlock =
+  | PortableTextTextBlock
+  | PortableTextImage
+  | PortableTextEmbed
+  | PortableTextHtml;
 
 const escape = (value: string) =>
-  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 const SIMPLE_MARKS: Record<string, string> = {
   strong: 'strong',
@@ -74,7 +90,9 @@ function spansToHtml(block: PortableTextTextBlock) {
           html = `<${tag}>${html}</${tag}>`;
           continue;
         }
-        const link = block.markDefs.find((def) => def._key === mark && def._type === 'link');
+        const link = block.markDefs.find(
+          (def) => def._key === mark && def._type === 'link'
+        );
         if (link) html = `<a href="${escape(link.href)}">${html}</a>`;
       }
       return html;
@@ -107,18 +125,29 @@ export function portableTextToHtml(blocks: PortableTextBlock[]): string {
     switch (block._type) {
       case 'block': {
         const inner = spansToHtml(block);
-        if (block.style === 'blockquote') out.push(`<blockquote><p>${inner}</p></blockquote>`);
+        if (block.style === 'blockquote')
+          out.push(`<blockquote><p>${inner}</p></blockquote>`);
         else if (block.style === 'normal') out.push(`<p>${inner}</p>`);
         else out.push(`<${block.style}>${inner}</${block.style}>`);
         break;
       }
       case 'image': {
-        const caption = block.caption ? `<figcaption>${escape(block.caption)}</figcaption>` : '';
-        out.push(`<figure><img src="${escape(block.url)}" alt="${escape(block.alt ?? '')}">${caption}</figure>`);
+        const caption = block.caption
+          ? `<figcaption>${escape(block.caption)}</figcaption>`
+          : '';
+        out.push(
+          `<figure><img src="${escape(block.url)}" alt="${escape(
+            block.alt ?? ''
+          )}">${caption}</figure>`
+        );
         break;
       }
       case 'embed':
-        out.push(`<iframe src="${escape(block.url)}" allowfullscreen loading="lazy"></iframe>`);
+        out.push(
+          `<iframe src="${escape(
+            block.url
+          )}" allowfullscreen loading="lazy"></iframe>`
+        );
         break;
       case 'html':
         // sanitized downstream (PostContent)
@@ -144,15 +173,28 @@ const PM_MARKS: Record<string, string> = {
 function textBlock(
   node: JSONContent,
   style: PortableTextStyle,
-  extra: Pick<PortableTextTextBlock, 'listItem' | 'level'> = {},
+  extra: Pick<PortableTextTextBlock, 'listItem' | 'level'> = {}
 ): PortableTextTextBlock {
-  const block: PortableTextTextBlock = { _type: 'block', _key: newKey(), style, children: [], markDefs: [], ...extra };
+  const block: PortableTextTextBlock = {
+    _type: 'block',
+    _key: newKey(),
+    style,
+    children: [],
+    markDefs: [],
+    ...extra,
+  };
 
   for (const child of node.content ?? []) {
     if (child.type === 'hardBreak') {
       const last = block.children.at(-1);
       if (last) last.text += '\n';
-      else block.children.push({ _type: 'span', _key: newKey(), text: '\n', marks: [] });
+      else
+        block.children.push({
+          _type: 'span',
+          _key: newKey(),
+          text: '\n',
+          marks: [],
+        });
       continue;
     }
     if (child.type !== 'text') continue;
@@ -171,22 +213,33 @@ function textBlock(
         marks.push(PM_MARKS[mark.type]);
       }
     }
-    block.children.push({ _type: 'span', _key: newKey(), text: child.text ?? '', marks });
+    block.children.push({
+      _type: 'span',
+      _key: newKey(),
+      text: child.text ?? '',
+      marks,
+    });
   }
 
   return block;
 }
 
 const plainText = (node: JSONContent): string =>
-  node.type === 'text' ? (node.text ?? '') : (node.content ?? []).map(plainText).join('');
+  node.type === 'text'
+    ? node.text ?? ''
+    : (node.content ?? []).map(plainText).join('');
 
 export function proseMirrorToPortableText(
   doc: JSONContent,
-  toHtml: (node: JSONContent) => string,
+  toHtml: (node: JSONContent) => string
 ): PortableTextBlock[] {
   const blocks: PortableTextBlock[] = [];
 
-  const list = (node: JSONContent, listItem: 'bullet' | 'number', level: number) => {
+  const list = (
+    node: JSONContent,
+    listItem: 'bullet' | 'number',
+    level: number
+  ) => {
     for (const item of node.content ?? []) {
       for (const child of item.content ?? []) {
         if (child.type === 'bulletList') list(child, 'bullet', level + 1);
@@ -202,10 +255,13 @@ export function proseMirrorToPortableText(
         blocks.push(textBlock(node, 'normal'));
         break;
       case 'heading':
-        blocks.push(textBlock(node, `h${node.attrs?.level ?? 2}` as PortableTextStyle));
+        blocks.push(
+          textBlock(node, `h${node.attrs?.level ?? 2}` as PortableTextStyle)
+        );
         break;
       case 'blockquote':
-        for (const child of node.content ?? []) blocks.push(textBlock(child, 'blockquote'));
+        for (const child of node.content ?? [])
+          blocks.push(textBlock(child, 'blockquote'));
         break;
       case 'bulletList':
         list(node, 'bullet', 1);
@@ -219,7 +275,14 @@ export function proseMirrorToPortableText(
           _key: newKey(),
           style: 'normal',
           markDefs: [],
-          children: [{ _type: 'span', _key: newKey(), text: plainText(node), marks: ['code'] }],
+          children: [
+            {
+              _type: 'span',
+              _key: newKey(),
+              text: plainText(node),
+              marks: ['code'],
+            },
+          ],
         });
         break;
       case 'image':
@@ -232,7 +295,11 @@ export function proseMirrorToPortableText(
         });
         break;
       case 'youtube':
-        blocks.push({ _type: 'embed', _key: newKey(), url: String(node.attrs?.src ?? '') });
+        blocks.push({
+          _type: 'embed',
+          _key: newKey(),
+          url: String(node.attrs?.src ?? ''),
+        });
         break;
       case 'horizontalRule':
         blocks.push({ _type: 'html', _key: newKey(), html: '<hr>' });

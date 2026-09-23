@@ -11,7 +11,12 @@ import {
   Spinner,
   useToast,
 } from '@/admin/components/ui';
-import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
+import {
+  errorMessage,
+  isRejectedByUser,
+  useAsync,
+  useCanEdit,
+} from '@/admin/hooks';
 import { invalidateSettings, type ThemeName } from '@/lib/cms';
 import { THEMES } from '@/theme/themes';
 

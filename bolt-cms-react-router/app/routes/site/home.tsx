@@ -38,7 +38,8 @@ export async function clientLoader({
   // WordPress "Your homepage displays: A static page".
   if (settings.show_on_front === 'page' && settings.page_on_front) {
     const post = await getPageById(settings.page_on_front);
-    if (post) return { kind: 'page', post, comments: await getComments(post.id) };
+    if (post)
+      return { kind: 'page', post, comments: await getComments(post.id) };
   }
 
   const page = Number(url.searchParams.get('page') ?? '1') || 1;

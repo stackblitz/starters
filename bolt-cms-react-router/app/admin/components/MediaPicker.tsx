@@ -26,7 +26,11 @@ export function AssetBrowser({
   const debounced = useDebounced(search);
   const [page, setPage] = useState(1);
   const assets = useAsync(
-    () => Promise.all([listAssets({ search: debounced, page, perPage: PER_PAGE }), countAssets(debounced)]),
+    () =>
+      Promise.all([
+        listAssets({ search: debounced, page, perPage: PER_PAGE }),
+        countAssets(debounced),
+      ]),
     [debounced, page, version]
   );
   const items = assets.data?.[0] ?? [];
@@ -52,8 +56,17 @@ export function AssetBrowser({
         <EmptyState title="No media" description={MEDIA_NOTE} />
       ) : (
         <>
-          <MediaGrid items={items} onSelect={onSelect} selectedId={selectedId} />
-          <Pager page={page} pages={Math.max(1, Math.ceil(total / PER_PAGE))} total={total} onChange={setPage} />
+          <MediaGrid
+            items={items}
+            onSelect={onSelect}
+            selectedId={selectedId}
+          />
+          <Pager
+            page={page}
+            pages={Math.max(1, Math.ceil(total / PER_PAGE))}
+            total={total}
+            onChange={setPage}
+          />
         </>
       )}
     </>
@@ -111,7 +124,13 @@ export function MediaGrid({
   );
 }
 
-export function MediaThumb({ asset, className }: { asset: Asset; className?: string }) {
+export function MediaThumb({
+  asset,
+  className,
+}: {
+  asset: Asset;
+  className?: string;
+}) {
   const url = assetUrl(asset);
   if (asset.kind === 'image' && url) {
     return (

@@ -183,7 +183,12 @@ function Toolbar({
     } else if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
     } else {
-      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange('link')
+        .setLink({ href: url })
+        .run();
     }
   };
 
@@ -310,66 +315,73 @@ function Toolbar({
 
   return (
     <>
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary px-2 py-1">
-      {items.map((item, i) =>
-        item === 'sep' ? (
-          <span
-            key={`sep-${i}`}
-            className="mx-1 h-4 w-px bg-bolt-ds-borderPrimary"
-          />
-        ) : (
-          <button
-            key={item.label}
-            type="button"
-            title={item.label}
-            aria-label={item.label}
-            disabled={disabled}
-            onClick={item.run}
-            className={cx(
-              'inline-flex h-7 w-7 items-center justify-center rounded text-bolt-ds-iconSecondary hover:bg-bolt-ds-utilHover hover:text-bolt-ds-textPrimary disabled:opacity-40',
-              item.active && 'bg-bolt-ds-bgTertiary text-bolt-ds-textPrimary'
-            )}
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary px-2 py-1">
+        {items.map((item, i) =>
+          item === 'sep' ? (
+            <span
+              key={`sep-${i}`}
+              className="mx-1 h-4 w-px bg-bolt-ds-borderPrimary"
+            />
+          ) : (
+            <button
+              key={item.label}
+              type="button"
+              title={item.label}
+              aria-label={item.label}
+              disabled={disabled}
+              onClick={item.run}
+              className={cx(
+                'inline-flex h-7 w-7 items-center justify-center rounded text-bolt-ds-iconSecondary hover:bg-bolt-ds-utilHover hover:text-bolt-ds-textPrimary disabled:opacity-40',
+                item.active && 'bg-bolt-ds-bgTertiary text-bolt-ds-textPrimary'
+              )}
+            >
+              {item.icon}
+            </button>
+          )
+        )}
+        <div className="ml-auto flex items-center gap-0.5 text-xs">
+          <ModeButton
+            active={mode === 'visual'}
+            onClick={() => onMode('visual')}
           >
-            {item.icon}
-          </button>
-        )
-      )}
-      <div className="ml-auto flex items-center gap-0.5 text-xs">
-        <ModeButton active={mode === 'visual'} onClick={() => onMode('visual')}>
-          Visual
-        </ModeButton>
-        <ModeButton active={mode === 'html'} onClick={() => onMode('html')}>
-          HTML
-        </ModeButton>
+            Visual
+          </ModeButton>
+          <ModeButton active={mode === 'html'} onClick={() => onMode('html')}>
+            HTML
+          </ModeButton>
+        </div>
       </div>
-    </div>
-    {draft && (
-      <div className="flex items-center gap-2 border-b border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary px-2 py-1.5">
-        <Input
-          autoFocus
-          value={draft.url}
-          placeholder={draft.kind === 'link' ? 'https://… (empty removes the link)' : 'YouTube URL'}
-          aria-label={draft.kind === 'link' ? 'Link URL' : 'YouTube URL'}
-          className="h-7 py-1 text-xs"
-          onChange={(e) => setDraft({ ...draft, url: e.target.value })}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              applyDraft();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              setDraft(null);
+      {draft && (
+        <div className="flex items-center gap-2 border-b border-bolt-ds-borderSecondary bg-bolt-ds-bgSecondary px-2 py-1.5">
+          <Input
+            autoFocus
+            value={draft.url}
+            placeholder={
+              draft.kind === 'link'
+                ? 'https://… (empty removes the link)'
+                : 'YouTube URL'
             }
-          }}
-        />
-        <Button size="sm" variant="primary" onClick={applyDraft}>
-          Apply
-        </Button>
-        <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>
-          Cancel
-        </Button>
-      </div>
-    )}
+            aria-label={draft.kind === 'link' ? 'Link URL' : 'YouTube URL'}
+            className="h-7 py-1 text-xs"
+            onChange={(e) => setDraft({ ...draft, url: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                applyDraft();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setDraft(null);
+              }
+            }}
+          />
+          <Button size="sm" variant="primary" onClick={applyDraft}>
+            Apply
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>
+            Cancel
+          </Button>
+        </div>
+      )}
     </>
   );
 }

@@ -25,7 +25,12 @@ import {
   Th,
   useToast,
 } from '@/admin/components/ui';
-import { errorMessage, isRejectedByUser, useAsync, useCanEdit } from '@/admin/hooks';
+import {
+  errorMessage,
+  isRejectedByUser,
+  useAsync,
+  useCanEdit,
+} from '@/admin/hooks';
 import { slugify } from '@/lib/cms/format';
 import type { Author, Term } from '@/lib/cms/types';
 
@@ -43,14 +48,16 @@ function CollectionScreen({ kind }: { kind: CollectionKind }) {
   const toast = useToast();
   const canEdit = useCanEdit();
 
-  const items = useAsync<Array<Author | Term>>(() => listCollection(kind), [kind]);
-  const fields = useAsync(
-    async () => {
-      const all = await getFields(config.typeName);
-      return config.columns.flatMap((c) => all.filter((f) => f.column_name === c));
-    },
+  const items = useAsync<Array<Author | Term>>(
+    () => listCollection(kind),
     [kind]
   );
+  const fields = useAsync(async () => {
+    const all = await getFields(config.typeName);
+    return config.columns.flatMap((c) =>
+      all.filter((f) => f.column_name === c)
+    );
+  }, [kind]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [row, setRow] = useState<Row>({});
   const [saving, setSaving] = useState(false);
@@ -65,7 +72,11 @@ function CollectionScreen({ kind }: { kind: CollectionKind }) {
     if (!name) return;
     setSaving(true);
     try {
-      const values = { ...row, name, slug: String(row.slug ?? '').trim() || slugify(name) };
+      const values = {
+        ...row,
+        name,
+        slug: String(row.slug ?? '').trim() || slugify(name),
+      };
       if (editingId === null) await insertCollection(kind, values);
       else await updateCollection(kind, editingId, values);
       toast(editingId === null ? 'Added' : 'Updated');
@@ -96,7 +107,11 @@ function CollectionScreen({ kind }: { kind: CollectionKind }) {
     <>
       <PageHeader title={config.label} />
       <div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
-        <Card title={editingId === null ? `Add new ${singular}` : `Edit ${singular}`}>
+        <Card
+          title={
+            editingId === null ? `Add new ${singular}` : `Edit ${singular}`
+          }
+        >
           {fields.error && <ErrorNote message={fields.error} />}
           {fields.loading ? (
             <Spinner />
@@ -108,8 +123,14 @@ function CollectionScreen({ kind }: { kind: CollectionKind }) {
                   key={f.column_name}
                   field={f}
                   value={row[f.column_name] ?? null}
-                  onChange={(v) => setRow((r) => ({ ...r, [f.column_name]: v }))}
-                  context={{ row, typeName: config.typeName, slugSource: 'name' }}
+                  onChange={(v) =>
+                    setRow((r) => ({ ...r, [f.column_name]: v }))
+                  }
+                  context={{
+                    row,
+                    typeName: config.typeName,
+                    slugSource: 'name',
+                  }}
                   disabled={!canEdit}
                 />
               ))}
@@ -149,7 +170,8 @@ function CollectionScreen({ kind }: { kind: CollectionKind }) {
               </thead>
               <tbody>
                 {items.data.map((t) => {
-                  const parent = 'parent' in t && t.parent ? byId.get(t.parent) : undefined;
+                  const parent =
+                    'parent' in t && t.parent ? byId.get(t.parent) : undefined;
                   const detail = 'bio' in t ? t.bio : t.description;
                   const edit = () => {
                     setEditingId(t.id);
@@ -158,16 +180,32 @@ function CollectionScreen({ kind }: { kind: CollectionKind }) {
                   return (
                     <tr key={t.id} className="group hover:bg-bolt-ds-bgHover">
                       <Td>
-                        <button type="button" onClick={edit} className="font-medium hover:text-bolt-ds-brand">
+                        <button
+                          type="button"
+                          onClick={edit}
+                          className="font-medium hover:text-bolt-ds-brand"
+                        >
                           {parent ? `${parent.name} › ` : ''}
                           {t.name}
                         </button>
-                        {detail && <p className="m-0 mt-0.5 text-xs text-bolt-ds-textTertiary">{detail}</p>}
+                        {detail && (
+                          <p className="m-0 mt-0.5 text-xs text-bolt-ds-textTertiary">
+                            {detail}
+                          </p>
+                        )}
                       </Td>
-                      <Td className="font-mono text-xs text-bolt-ds-textTertiary">{t.slug}</Td>
+                      <Td className="font-mono text-xs text-bolt-ds-textTertiary">
+                        {t.slug}
+                      </Td>
                       <Td>
                         <div className="flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                          <Button size="sm" variant="ghost" icon={<Pencil size={14} />} title="Edit" onClick={edit} />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<Pencil size={14} />}
+                            title="Edit"
+                            onClick={edit}
+                          />
                           <Button
                             size="sm"
                             variant="ghost"

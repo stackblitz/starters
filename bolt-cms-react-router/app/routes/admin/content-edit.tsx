@@ -161,10 +161,16 @@ function ContentEditor({
     />
   );
 
-  const mainFields = fieldsIn(FIELD_LAYOUT.main.filter((n) => n !== 'title' && n !== 'body'));
-  const sidebarFields = fieldsIn(FIELD_LAYOUT.sidebar.filter((n) => n !== 'status'));
+  const mainFields = fieldsIn(
+    FIELD_LAYOUT.main.filter((n) => n !== 'title' && n !== 'body')
+  );
+  const sidebarFields = fieldsIn(
+    FIELD_LAYOUT.sidebar.filter((n) => n !== 'status')
+  );
   // imported rows may carry other WordPress statuses (future, private): keep them selectable
-  const statusOptions: string[] = (STATUSES as readonly string[]).includes(form.status)
+  const statusOptions: string[] = (STATUSES as readonly string[]).includes(
+    form.status
+  )
     ? [...STATUSES]
     : [form.status, ...STATUSES];
 
@@ -306,7 +312,9 @@ function ContentEditor({
             </div>
           </Card>
           {/* category/tag arrays render as their own TermsPanel cards */}
-          {sidebarFields.filter((f) => f.primitive === 'array').map(renderField)}
+          {sidebarFields
+            .filter((f) => f.primitive === 'array')
+            .map(renderField)}
         </aside>
       </div>
     </>

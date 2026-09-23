@@ -156,13 +156,20 @@ export function FieldInput({
             to={to ?? ''}
             value={value === null || value === undefined ? null : Number(value)}
             onChange={onChange}
-            excludeId={to === context.typeName ? (context.row.id as number | null) : null}
+            excludeId={
+              to === context.typeName ? (context.row.id as number | null) : null
+            }
             disabled={disabled}
           />
         );
       default:
         return (
-          <JsonInput id={id} value={value} onChange={onChange} disabled={disabled} />
+          <JsonInput
+            id={id}
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+          />
         );
     }
   })();
@@ -262,14 +269,22 @@ export function ReferenceSelect({
 }) {
   const options = useAsync(async () => {
     if (isCollectionKind(to))
-      return (await listCollection(to)).map((r) => ({ id: r.id, label: r.name }));
+      return (await listCollection(to)).map((r) => ({
+        id: r.id,
+        label: r.name,
+      }));
     if (isContentType(to))
-      return (await listContentOptions(to)).map((r) => ({ id: r.id, label: r.title }));
+      return (await listContentOptions(to)).map((r) => ({
+        id: r.id,
+        label: r.title,
+      }));
     return null;
   }, [to]);
 
   if (!isCollectionKind(to) && !isContentType(to))
-    return <Input value={value === null ? '' : String(value)} disabled readOnly />;
+    return (
+      <Input value={value === null ? '' : String(value)} disabled readOnly />
+    );
 
   return (
     <Select

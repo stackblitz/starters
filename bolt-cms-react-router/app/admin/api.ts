@@ -30,11 +30,24 @@ import type { AdminQueryName } from './queries';
 
 export type ContentType = 'post' | 'page';
 
-type ContentQuery = 'list' | 'count' | 'get' | 'insert' | 'update' | 'setStatus' | 'remove' | 'options';
+type ContentQuery =
+  | 'list'
+  | 'count'
+  | 'get'
+  | 'insert'
+  | 'update'
+  | 'setStatus'
+  | 'remove'
+  | 'options';
 
 export const CONTENT_TYPES: Record<
   ContentType,
-  { label: string; singular: string; table: ContentTable; queries: Record<ContentQuery, AdminQueryName> }
+  {
+    label: string;
+    singular: string;
+    table: ContentTable;
+    queries: Record<ContentQuery, AdminQueryName>;
+  }
 > = {
   post: {
     label: 'Posts',
@@ -93,7 +106,14 @@ export interface ContentInput {
 
 export type ContentListRow = Pick<
   Post,
-  'id' | 'title' | 'slug' | 'status' | 'author' | 'featured_image' | 'published_at' | 'modified_at'
+  | 'id'
+  | 'title'
+  | 'slug'
+  | 'status'
+  | 'author'
+  | 'featured_image'
+  | 'published_at'
+  | 'modified_at'
 >;
 
 export interface ContentOption {
@@ -126,33 +146,70 @@ function contentParams(input: ContentInput) {
 
 export function listContent(
   type: ContentType,
-  { status = 'all', search = '', page = 1, perPage = 20 }: { status?: string; search?: string; page?: number; perPage?: number } = {}
+  {
+    status = 'all',
+    search = '',
+    page = 1,
+    perPage = 20,
+  }: { status?: string; search?: string; page?: number; perPage?: number } = {}
 ) {
-  return runQuery<ContentListRow>(CONTENT_TYPES[type].queries.list, [status, search, perPage, (page - 1) * perPage]);
+  return runQuery<ContentListRow>(CONTENT_TYPES[type].queries.list, [
+    status,
+    search,
+    perPage,
+    (page - 1) * perPage,
+  ]);
 }
 
-export async function countContent(type: ContentType): Promise<Record<string, number>> {
-  const rows = await runQuery<{ status: string; count: number }>(CONTENT_TYPES[type].queries.count);
+export async function countContent(
+  type: ContentType
+): Promise<Record<string, number>> {
+  const rows = await runQuery<{ status: string; count: number }>(
+    CONTENT_TYPES[type].queries.count
+  );
   return Object.fromEntries(rows.map((r) => [r.status, r.count]));
 }
 
-export async function getContent(type: ContentType, id: number): Promise<Post | null> {
+export async function getContent(
+  type: ContentType,
+  id: number
+): Promise<Post | null> {
   const [row] = await runQuery<Post>(CONTENT_TYPES[type].queries.get, [id]);
   return row ? normalizePost(row) : null;
 }
 
-export async function insertContent(type: ContentType, input: ContentInput): Promise<Post> {
-  const [row] = await runQuery<Post>(CONTENT_TYPES[type].queries.insert, contentParams(input));
+export async function insertContent(
+  type: ContentType,
+  input: ContentInput
+): Promise<Post> {
+  const [row] = await runQuery<Post>(
+    CONTENT_TYPES[type].queries.insert,
+    contentParams(input)
+  );
   return normalizePost(row);
 }
 
-export async function updateContent(type: ContentType, id: number, input: ContentInput): Promise<Post> {
-  const [row] = await runQuery<Post>(CONTENT_TYPES[type].queries.update, [id, ...contentParams(input)]);
+export async function updateContent(
+  type: ContentType,
+  id: number,
+  input: ContentInput
+): Promise<Post> {
+  const [row] = await runQuery<Post>(CONTENT_TYPES[type].queries.update, [
+    id,
+    ...contentParams(input),
+  ]);
   return normalizePost(row);
 }
 
-export function setContentStatus(type: ContentType, id: number, status: string) {
-  return runQuery<{ id: number; status: string }>(CONTENT_TYPES[type].queries.setStatus, [id, status]);
+export function setContentStatus(
+  type: ContentType,
+  id: number,
+  status: string
+) {
+  return runQuery<{ id: number; status: string }>(
+    CONTENT_TYPES[type].queries.setStatus,
+    [id, status]
+  );
 }
 
 export function deleteContent(type: ContentType, id: number) {
@@ -186,7 +243,12 @@ export const COLLECTIONS: Record<
     typeName: 'author',
     hierarchical: false,
     columns: ['name', 'slug', 'bio', 'avatar_url', 'url'],
-    queries: { list: 'listAuthors', insert: 'insertAuthor', update: 'updateAuthor', remove: 'deleteAuthor' },
+    queries: {
+      list: 'listAuthors',
+      insert: 'insertAuthor',
+      update: 'updateAuthor',
+      remove: 'deleteAuthor',
+    },
   },
   category: {
     label: 'Categories',
@@ -194,7 +256,12 @@ export const COLLECTIONS: Record<
     typeName: 'category',
     hierarchical: true,
     columns: ['name', 'slug', 'description', 'parent'],
-    queries: { list: 'listCategories', insert: 'insertCategory', update: 'updateCategory', remove: 'deleteCategory' },
+    queries: {
+      list: 'listCategories',
+      insert: 'insertCategory',
+      update: 'updateCategory',
+      remove: 'deleteCategory',
+    },
   },
   tag: {
     label: 'Tags',
@@ -202,15 +269,24 @@ export const COLLECTIONS: Record<
     typeName: 'tag',
     hierarchical: false,
     columns: ['name', 'slug', 'description'],
-    queries: { list: 'listTags', insert: 'insertTag', update: 'updateTag', remove: 'deleteTag' },
+    queries: {
+      list: 'listTags',
+      insert: 'insertTag',
+      update: 'updateTag',
+      remove: 'deleteTag',
+    },
   },
 };
 
-export function isCollectionKind(value: string | undefined): value is CollectionKind {
+export function isCollectionKind(
+  value: string | undefined
+): value is CollectionKind {
   return value === 'author' || value === 'category' || value === 'tag';
 }
 
-export type CollectionRow<K extends CollectionKind> = K extends 'author' ? Author : Term;
+export type CollectionRow<K extends CollectionKind> = K extends 'author'
+  ? Author
+  : Term;
 
 export type CollectionValues = Record<string, unknown>;
 
@@ -221,16 +297,26 @@ export function listCollection<K extends CollectionKind>(kind: K) {
   return runQuery<CollectionRow<K>>(COLLECTIONS[kind].queries.list);
 }
 
-export async function insertCollection<K extends CollectionKind>(kind: K, values: CollectionValues) {
-  const [row] = await runQuery<CollectionRow<K>>(COLLECTIONS[kind].queries.insert, collectionParams(kind, values));
+export async function insertCollection<K extends CollectionKind>(
+  kind: K,
+  values: CollectionValues
+) {
+  const [row] = await runQuery<CollectionRow<K>>(
+    COLLECTIONS[kind].queries.insert,
+    collectionParams(kind, values)
+  );
   return row;
 }
 
-export async function updateCollection<K extends CollectionKind>(kind: K, id: number, values: CollectionValues) {
-  const [row] = await runQuery<CollectionRow<K>>(COLLECTIONS[kind].queries.update, [
-    id,
-    ...collectionParams(kind, values),
-  ]);
+export async function updateCollection<K extends CollectionKind>(
+  kind: K,
+  id: number,
+  values: CollectionValues
+) {
+  const [row] = await runQuery<CollectionRow<K>>(
+    COLLECTIONS[kind].queries.update,
+    [id, ...collectionParams(kind, values)]
+  );
   return row;
 }
 
@@ -247,8 +333,14 @@ export interface AdminComment extends Omit<Comment, 'link'> {
   post_slug: string | null;
 }
 
-export function listComments({ page = 1, perPage = 20 }: { page?: number; perPage?: number } = {}) {
-  return runQuery<AdminComment>('listComments', [perPage, (page - 1) * perPage]);
+export function listComments({
+  page = 1,
+  perPage = 20,
+}: { page?: number; perPage?: number } = {}) {
+  return runQuery<AdminComment>('listComments', [
+    perPage,
+    (page - 1) * perPage,
+  ]);
 }
 
 export async function countComments(): Promise<number> {
@@ -264,7 +356,11 @@ export function deleteComment(id: number) {
 /* Media (`cms_assets`: read + metadata only)                                */
 /* ------------------------------------------------------------------------ */
 
-export function listAssets({ search = '', page = 1, perPage = 40 }: { search?: string; page?: number; perPage?: number } = {}) {
+export function listAssets({
+  search = '',
+  page = 1,
+  perPage = 40,
+}: { search?: string; page?: number; perPage?: number } = {}) {
   return runQuery<Asset>('listAssets', [search, perPage, (page - 1) * perPage]);
 }
 
@@ -278,8 +374,16 @@ export async function getAsset(id: string): Promise<Asset | null> {
   return row ?? null;
 }
 
-export function updateAsset(id: string, values: { title: string | null; alt: string | null; caption: string | null }) {
-  return runQuery<{ id: string }>('updateAsset', [id, values.title, values.alt, values.caption]);
+export function updateAsset(
+  id: string,
+  values: { title: string | null; alt: string | null; caption: string | null }
+) {
+  return runQuery<{ id: string }>('updateAsset', [
+    id,
+    values.title,
+    values.alt,
+    values.caption,
+  ]);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -294,7 +398,9 @@ export async function getAdminSettings(): Promise<SiteSettings> {
   return mergeSettings(rows, site ?? null);
 }
 
-export async function saveSettings(values: Partial<Record<keyof SiteSettings, unknown>>) {
+export async function saveSettings(
+  values: Partial<Record<keyof SiteSettings, unknown>>
+) {
   for (const [key, value] of Object.entries(values)) {
     await runQuery('upsertSetting', [key, JSON.stringify(value ?? null)]);
   }
@@ -308,8 +414,16 @@ export function listMenus() {
   return runQuery<Menu>('listMenus');
 }
 
-export async function insertMenu(menu: { name: string; slug: string; location: string | null }): Promise<Menu> {
-  const [row] = await runQuery<Menu>('insertMenu', [menu.name, menu.slug, menu.location]);
+export async function insertMenu(menu: {
+  name: string;
+  slug: string;
+  location: string | null;
+}): Promise<Menu> {
+  const [row] = await runQuery<Menu>('insertMenu', [
+    menu.name,
+    menu.slug,
+    menu.location,
+  ]);
   return row;
 }
 
@@ -337,13 +451,21 @@ const menuItemParams = (item: Omit<MenuItem, 'id' | 'menu_id'>) => [
   item.description,
 ];
 
-export async function insertMenuItem(item: Omit<MenuItem, 'id'>): Promise<MenuItem> {
-  const [row] = await runQuery<MenuItem>('insertMenuItem', [item.menu_id, ...menuItemParams(item)]);
+export async function insertMenuItem(
+  item: Omit<MenuItem, 'id'>
+): Promise<MenuItem> {
+  const [row] = await runQuery<MenuItem>('insertMenuItem', [
+    item.menu_id,
+    ...menuItemParams(item),
+  ]);
   return row;
 }
 
 export async function updateMenuItem(item: MenuItem): Promise<MenuItem> {
-  const [row] = await runQuery<MenuItem>('updateMenuItem', [item.id, ...menuItemParams(item)]);
+  const [row] = await runQuery<MenuItem>('updateMenuItem', [
+    item.id,
+    ...menuItemParams(item),
+  ]);
   return row;
 }
 
