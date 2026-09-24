@@ -6,6 +6,7 @@
 **/.nuxt
 **/.output
 **/.svelte-kit
+**/.react-router
 
 # Prettier formatting of HTML is questionable, let's skip it for now
 **/*.html

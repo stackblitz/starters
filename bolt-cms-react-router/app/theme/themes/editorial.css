@@ -1,0 +1,49 @@
+/*
+  Theme: editorial
+  Magazine feel: warm paper background, display serif headings, oxblood
+  accent, generous measure, compact single-row header.
+*/
+html[data-site-theme='editorial'] {
+  --theme-bg: #faf6ef;
+  --theme-bg-alt: #f1ebdf;
+  --theme-fg: #1f1a17;
+  --theme-muted: #6f655c;
+  --theme-accent: #8b1e2d;
+  --theme-accent-fg: #fff8f0;
+  --theme-border: #e2d9c8;
+  --theme-font-heading: 'Playfair Display', 'Iowan Old Style', Georgia, serif;
+  --theme-font-body: 'Source Serif 4', Georgia, serif;
+  --theme-radius: 2px;
+  --theme-radius-lg: 4px;
+  --theme-measure: 40rem;
+  --theme-wide: 68rem;
+  --theme-heading-weight: 600;
+  --theme-heading-tracking: -0.02em;
+  --theme-body-size: 1.125rem;
+  --theme-body-leading: 1.75;
+}
+
+html[data-site-theme='editorial'] .site-header {
+  border-bottom: 3px double var(--theme-border);
+}
+html[data-site-theme='editorial'] .site-branding {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-block: 1.25rem;
+}
+html[data-site-theme='editorial'] .site-title {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-style: italic;
+}
+html[data-site-theme='editorial'] .site-nav {
+  padding-block: 0.6rem;
+  border-top: 1px solid var(--theme-border);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8125rem;
+}
+html[data-site-theme='editorial'] .post-card-title {
+  font-size: 1.75rem;
+}

@@ -1,0 +1,7 @@
+{
+  "template": "bolt-cms-react-router",
+  "build": {
+    "command": "npm run build",
+    "output": "build/client"
+  }
+}
