@@ -92,7 +92,11 @@ size. Measure against the stage, not the window:
 - **Height is the scarce axis.** Tie vertical sizes to `cqh` or fixed
   values, not `cqw`: a stage can be much wider than 16:9 but never
   shorter than 900 at reference, so width-driven heights are what push
-  content out of view when a window gets wider.
+  content out of view when a window gets wider. That includes anything
+  whose height follows its width — an SVG with only `width: 100%`, an
+  `aspect-ratio` box, an image without `max-height`. Give each a height
+  in `cqh` or a `max-height`, and give a column that stacks a chart or
+  image over text a fixed split (`grid-template-rows: 55cqh auto`).
 - **Check narrow and wide.** Before you finish, look at ~390px wide and at
   ~1600px. The rail and grid render the real component, so they show
   breakage too.
@@ -150,11 +154,14 @@ between the thing that matters and everything else.
 - **The number is the hero.** A KPI slide leads with the figure at
   headline size (8–14cqw) and one line of meaning; supporting numbers are
   a clear second tier, not a row of chips.
-- **Charts are drawn for the room.** Inline SVG with a `viewBox` and
-  `width: 100%` so it scales with the stage; strokes, ticks and labels
-  sized to read from the back (labels ≥ 1.1cqw). A chart takes real area
-  (half the stage or more) — never a widget inside a card inside the
-  slide.
+- **Charts are drawn for the room.** Inline SVG with a `viewBox`, sized
+  by **height** (`height: 45cqh; width: 100%`, and `preserveAspectRatio=
+  "none"` or `xMidYMid meet`) so a wider stage cannot make the chart
+  taller and push what's below it out of view. Strokes, ticks and labels
+  sized to read from the back (labels ≥ 1.1cqw); labels stay inside the
+  `viewBox` (pad the last point, or anchor end labels with
+  `text-anchor="end"`). A chart takes real area (half the stage or more)
+  — never a widget inside a card inside the slide.
 - **Labels never live inside data-sized shapes.** Funnel steps, bars and
   bubbles shrink with their values; text does not. Put labels and values
   beside or above the shape on a fixed grid, and never let a word wrap
