@@ -16,8 +16,8 @@ import { RenderSlide } from './registry';
 import {
   DEFAULT_STAGE,
   FALLBACK,
-  NARROW_STAGE_WIDTH,
   StageCtx,
+  describeStage,
   stageUpscale,
   type StageSize,
 } from './stage';
@@ -106,7 +106,7 @@ function useStageUpscale<T extends HTMLElement>() {
       setStage((prev) =>
         prev.width === w && prev.height === h && prev.upscale === upscale
           ? prev
-          : { width: w, height: h, upscale, narrow: w < NARROW_STAGE_WIDTH }
+          : describeStage(w, h, upscale)
       );
     };
 

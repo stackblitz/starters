@@ -55,36 +55,44 @@ size. Measure against the stage, not the window:
   `font-size: clamp(28px, 5cqw, 72px)`, `gap: 3cqh`. Viewport units
   measure the window and are wrong in thumbnails, in the PDF and on
   scaled stages.
-- **Phones reflow, they don't shrink.** Below ~700px of stage width the
-  slide is a different layout, like a responsive website — one column,
-  the hero first, secondary material dropped or shortened, charts and
-  images given their own full-width row — never the desktop composition
-  scaled down. Proportional `cqw` sizing alone produces a tiny desktop
-  slide; that is the failure. Restack with `@container slide
-  (max-width: 700px) { … }` in a `<style>` block, or in JSX with
-  `const { narrow } = useStage()` from `@/slide/stage` (also gives
-  `width`/`height` of the stage in your CSS pixels) to reorder, hide or
-  swap elements. Container queries and `useStage()` react to the stage;
-  media queries react to the window and are wrong here.
+- **Phones and tablets reflow, they don't shrink.** Like a responsive
+  website, the slide has tiers, and each is a layout — never the desktop
+  composition scaled down (proportional `cqw` sizing alone produces a tiny
+  desktop slide; that is the failure):
+  - **Phone** (stage < 700px wide): one column, the hero first, secondary
+    material dropped or shortened, charts and images on their own
+    full-width row.
+  - **Tablet / small window** (< 1100px wide — iPad portrait is 820,
+    landscape 1180): two columns only when each gets ≥ 20rem; otherwise
+    stack. Three-up grids become two-up.
+  - **Portrait** (taller than wide — any iPad held upright, every phone):
+    anything side by side stacks; height is plentiful, width is not.
+  Restack with `@container slide (max-width: 700px)` / `(max-width:
+  1100px)` / `(orientation: portrait)` in a `<style>` block, or in JSX
+  with `const { narrow, compact, portrait, width, height } = useStage()`
+  from `@/slide/stage` to reorder, hide or swap elements. Container
+  queries and `useStage()` react to the stage; media queries react to the
+  window and are wrong here.
   The canonical case — text beside a chart or image on a wide stage — is
   a single column on a phone, with the visual on its own full-width row
   at a fixed height and the type at reading size:
 
   ```tsx
-  const { narrow } = useStage();
+  const { narrow, portrait } = useStage();
+  const stack = narrow || portrait;
   <section
     style={{
       display: 'grid',
-      gridTemplateColumns: narrow ? '1fr' : 'minmax(20rem, 45%) 1fr',
-      gridTemplateRows: narrow ? 'auto 40cqh' : '1fr',
-      gap: narrow ? '4cqh' : '4cqw',
+      gridTemplateColumns: stack ? '1fr' : 'minmax(20rem, 45%) 1fr',
+      gridTemplateRows: stack ? 'auto 40cqh' : '1fr',
+      gap: stack ? '4cqh' : '4cqw',
       alignItems: 'center',
       height: '100%',
       padding: 'clamp(24px, 6cqw, 96px)',
     }}
   >
     <div>…kicker, headline, body…</div>
-    <Chart style={{ width: '100%', height: narrow ? '100%' : '55cqh' }} />
+    <Chart style={{ width: '100%', height: stack ? '100%' : '55cqh' }} />
   </section>
   ```
 
@@ -132,10 +140,12 @@ size. Measure against the stage, not the window:
   `aspect-ratio` box, an image without `max-height`. Give each a height
   in `cqh` or a `max-height`, and give a column that stacks a chart or
   image over text a fixed split (`grid-template-rows: 55cqh auto`).
-- **Check narrow and wide.** Before you finish, look at ~390px wide and at
-  ~1600px. At 390 the slide must read like a phone page (one column,
-  readable type, nothing out of view), not a miniature of the wide one.
-  The rail and grid render the real component, so they show breakage too.
+- **Check four stages.** Before you finish, look at 390×844 (phone),
+  820×1180 (iPad portrait), 1180×820 (iPad landscape) and 1600×900. The
+  phone and portrait iPad must read like a page (one column, readable
+  type, nothing out of view); landscape iPad is a smaller desktop with
+  fewer columns. The rail and grid render the real component, so they
+  show breakage too.
 
 ## Design it — for this deck
 
@@ -262,7 +272,8 @@ export default Opening;
   `Build at={n}` (hidden until the n-th click on that slide; advancing
   reveals builds, then moves on), `useInView` from `@/deck/useInView`
   (draw-in on view), `useStage()` from `@/slide/stage` (`{ width,
-  height, narrow }` of the stage the component is laid out in).
+  height, narrow, compact, portrait }` of the stage the component is laid
+  out in).
 - In-place text editing in the studio works for text rendered with
   `<T path="title" />` from `@/copy/DeckText`, which reads
   `slide.props.title` (rich markers: `==accent==`, `**bold**`,
