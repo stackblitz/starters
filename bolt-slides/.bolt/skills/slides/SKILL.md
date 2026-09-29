@@ -1,82 +1,116 @@
 ---
 name: slides
 description: >-
-  Author a premium slide deck in Bolt Slides. Slides live in repo-root
-  deck.json; the studio lets the user reorder, duplicate, delete,
-  edit speaker notes, Present, and download PDF/JSON. Use this whenever
-  the user asks for a deck, a pitch, slides, or a presentation in this
-  project.
+  Author a slide deck in Bolt Slides. Each slide is a React component you
+  write in src/slides/, listed in repo-root deck.json; the studio handles
+  reorder, duplicate, delete, speaker notes, Present, speaker view and
+  PDF / JSON download. Use this whenever the user asks for a deck, a
+  pitch, slides, or a presentation in this project.
 ---
 
-# Slides — prompt decks into a presentable app
+# Slides — write the slides, the studio does the rest
 
-This repo is a complete slide **studio**. Author content into it.
+This repo is a complete slide **studio**. You author the slides into it.
 
-- `/` — in the Bolt preview iframe (and local Vite): studio. Side panel
-  (S) and grid (G) reorder / duplicate / delete; the dock holds notes,
-  Download (PDF or JSON), Speaker view, and Present. Present opens a new
-  tab (`/?present=1`); the studio stays put. Grid selection is the
-  start slide. The published site at `/` is the audience deck (notes
-  stripped). **P** opens speaker view in a new tab.
-- `/?presenter=1` — speaker view (current slide, up next, notes
-  read-only, timer, note text size). `/present` is the same route.
+- `/` — in the Bolt preview iframe (and local Vite): the studio. Side panel
+  (S) and grid (G) reorder / duplicate / delete and pick the start slide;
+  the dock holds speaker notes, Download (PDF or JSON), Speaker view (P)
+  and Present. Present opens a new tab (`/?present=1`); the studio stays
+  put. The published site at `/` is the audience deck (notes stripped).
+- `/?presenter=1` — speaker view: current slide, up next, notes, timer.
 
-**Your job is CONTENT.** A deck is `deck.json`. Write that file (and
-`src/styles/tokens.css` when theming). Layout `props` follow
-`src/data/layoutProps.ts`.
+**Your job is the slides.** Three files matter:
 
-## Hard rules
+1. `src/slides/<name>.tsx` — one React component per slide (default
+   export). Free-form: any markup, inline styles, a `<style>` block, SVG,
+   motion. No new npm dependencies.
+2. `deck.json` — the ordered list of slides. Each entry's `layout` is the
+   component's filename without `.tsx`.
+3. `src/styles/tokens.css` — the theme (optional; see Theming).
 
-1. **Write `deck.json` and `src/styles/tokens.css`.** Those are the
-   authoring files. Colors, fonts, sizes, spacing in a deck request mean
-   deck `accent` / `font` or `tokens.css` `:root` values. If they want a
-   studio or engine change, say so and wait.
-2. **Author from the user's REAL input.** Topic, brand, facts, numbers.
-   Never invent a placeholder company for a real subject. Brand given →
-   derive theme colors/fonts from it (fetch the site or use its known
-   palette) and say what you used.
-3. **One solid accent.** `--accent` is a hex, never a gradient. Use it
-   sparingly.
-4. **`layout` is an exact `LayoutName`.** Pick a camelCase key from
-   `LAYOUT_NAMES` in `src/data/layoutProps.ts` (`cover`, `bigNumber`,
-   `statGrid`, …) and put it on the `layout` field.
-5. **Homonym keys follow that layout's `*Props` type.** Chart
-   `kind: "line"` `points` is a pipe string of numbers
-   (`"12 | 18 | 26"`). Insight takeaways `points` are
-   `{label, body}[]`. Insight line series is `points_line`. Contrast
-   bullets are `string[]` on `left.points` / `right.points`. Logos
-   `items` is one pipe string (`"Acme | Globex"`); every other
-   layout's `items` is an object array.
+Everything else is the shell — `src/deck`, `src/studio`, `src/present`,
+`src/export`, `src/copy`, `src/data`, `src/slide`, `src/styles/base.css`,
+`src/styles/chrome*.css`, `vite.config.ts`. Leave it alone. If the user
+asks for a studio or engine change, say so and wait.
 
-## Step 0 · bootstrap (mandatory, first)
+## The one design rule: every slide is responsive
 
-Read `deck.json`. If `boltSlidesId` is missing or null, set it to a new
-uuid (`crypto.randomUUID()` or equivalent) and write the file. Keep
-`boltSlidesVersion` at `1`. Then patch content.
+A slide is a full-viewport web layout, not a fixed canvas. The same
+component renders at phone width, in the thumbnail rail and grid, on a
+laptop, on a projector, and at 1280×720 in the PDF export. It must look
+right at all of them.
 
-## Workflow
+- **Fluid sizing.** `clamp()`, `%`, `vw`/`vh`, `rem`, `min()`/`max()`.
+  No fixed pixel widths or heights on content. Media may be the only
+  fixed-ratio box (`aspect-ratio` + `max-height`, `object-fit: cover`).
+- **Grids wrap.** `repeat(auto-fit, minmax(min(240px, 100%), 1fr))`,
+  `flex-wrap`, or the `.cols` utility. A hardcoded column count needs a
+  narrow-viewport fallback (`@media (max-width: 900px)`).
+- **Nothing overflows or scrolls.** A paged slide cannot scroll; what
+  doesn't fit is cut off. Size each slide's content to one screen at every
+  viewport, and let long text wrap (`max-width` in `ch`, no `nowrap`).
+- **Check narrow and wide.** Before you finish, look at ~390px wide and
+  at ≥1440px. The rail and grid render the real component, so they show
+  breakage too.
 
-1. Theme only if needed: `:root` values in `src/styles/tokens.css`.
-2. Read `deck.json` so you keep studio-side reorder / duplicate / delete.
-3. Patch when they already have slides; replace `slides` only for a new
-   deck. Keep `boltSlidesId` once it exists.
+Content, structure, hierarchy, color, type, imagery and motion are yours to
+design for *this* deck and *this* brand. Nothing in the shell constrains
+them.
 
-`props` follow **Layout props** below; other slide fields follow **Deck JSON**.
-`position` is 0-based. Always set `background` on every slide (never omit).
-Default: `background` `{"type":"color","color":"var(--bg)"}`,
-`animation` `cascade`, `status` `none`, `transition` `null`, `nav`
-`null`, `notes` `""`.
+## Slide component contract
 
-4. Ask the user to look at the studio to see the result: side panel
-   or grid to reorder / duplicate / delete, notes, Present, Download.
+```tsx
+// src/slides/problem.tsx
+import Slide from '@/deck/Slide';
+import Reveal from '@/deck/Reveal';
+import Build from '@/deck/Build';
+import type { SlideComponent } from '@/slide/registry';
 
-Read first. Replacing all of `props` drops keys you omit; change one
-field by patching that key. Empty `notes` erases what was there. Replace
-the `slides` array only when replacing the whole deck.
+const Problem: SlideComponent = ({ slide }) => (
+  <Slide>
+    <Reveal>
+      <div className="kicker">The problem</div>
+      <h2 className="headline">Forty dashboards, zero answers.</h2>
+    </Reveal>
+    <Build at={1}>
+      <p className="lead">Analysts spend the week answering the same question.</p>
+    </Build>
+  </Slide>
+);
 
-## Deck JSON
+export default Problem;
+```
 
-Repo-root `deck.json`:
+- The component is rendered inside a box that fills the slide (100% ×
+  100% of the stage). `<Slide>` from `@/deck/Slide` is an optional root
+  that applies the theme gutters, `center` (centered stack) and `full`
+  (edge-to-edge, no padding). Any root element that fills the box works.
+- `slide` is the deck.json entry. `slide.props` is free-form JSON you may
+  put data in (copy, numbers, image URLs) when you want it outside the
+  component — for example to reuse one component across two slides.
+  Ignore it when you don't need it.
+- Engine helpers, all optional: `Reveal` (entrance when the slide shows),
+  `Build at={n}` (hidden until the n-th click on that slide; advancing
+  reveals builds, then moves on), `useInView` from `@/deck/useInView`
+  (draw-in on view), the theme tokens (`var(--bg)`, `--fg`, `--fg-muted`,
+  `--accent`, `--surface`, `--hair`, `--radius`, `--font-head`,
+  `--font-body`, `--gutter`), and the fluid type atoms in `base.css`
+  (`.display .headline .lead .subhead .kicker .foot .figure .accent-text`)
+  plus `.cols` (equal columns that wrap).
+- In-place text editing in the studio works for text rendered with
+  `<T path="title" />` from `@/copy/DeckText`, which reads
+  `slide.props.title` (rich markers: `==accent==`, `**bold**`,
+  `_italic_`). Optional.
+- Motion (`motion/react`) is already a dependency. Respect
+  `prefers-reduced-motion` for anything that loops.
+
+Duplicate in the studio creates a second deck.json entry pointing at the
+same component. When the copy should differ, give it its own component
+(or drive both from `slide.props`). Deleting an entry does not delete the
+file; unused files in `src/slides/` are harmless — remove the seed
+`welcome.tsx` when the real deck replaces it.
+
+## deck.json
 
 ```jsonc
 {
@@ -85,105 +119,73 @@ Repo-root `deck.json`:
   "deck": {
     "title": "Acme — Series A",
     "transition": "fade",        // deck default: fade | slide | rise | zoom | none
-    "font": "inter",             // inter | space | sora | manrope | dm | outfit | playfair | fraunces
-    "accent": "#1688FC"          // optional — deck-wide accent (solid hex); omit for the tokens.css default
+    "font": "inter",             // optional: inter | space | sora | manrope | dm | outfit | playfair | fraunces
+    "accent": "#1688FC"          // optional deck-wide accent (a solid color)
   },
   "slides": [
     {
       "id": "s1",                // stable string; new slides get a new id
-      "position": 0,
-      "layout": "cover",         // LayoutName from src/data/layoutProps.ts
-      "props": { ... },          // that layout's *Props type in the same file
-                                 // every layout also accepts "scale": "lg" | "xl"
+      "position": 0,             // 0-based order
+      "layout": "cover",         // src/slides/cover.tsx
+      "props": {},               // free-form data for the component (may be empty)
       "animation": "cascade",    // cascade | rise | fade | zoom | none
-      "transition": "zoom",      // optional per-slide override (or null to inherit)
+      "transition": null,        // optional per-slide override of deck.transition
       "background": { "type": "color", "color": "var(--bg)" },
-      "nav": null,
+      "nav": null,               // optional short label for the rail / presenter
       "notes": "Open with the hook.",   // speaker notes (presenter console)
-      "status": "draft"          // optional review state: none (default) |
-                                 // draft | in-progress | review | approved
+      "status": "none"           // none | draft | in-progress | review | approved
     }
   ]
 }
 ```
 
-**Rich text** in any text prop: `==accent==` renders in the accent color,
-`**bold**` bold, `_italic_` italic, `{c:#ff6b6b}text{/c}` a specific text
-color (`{c:accent}` works too), `{s:1.4}text{/s}` font size as an em
-multiplier (0.4–4 — stays responsive), `\n` line break. A whole field can
-override its alignment with a `{a:l}` / `{a:c}` / `{a:r}` prefix (rarely
-needed — layouts already align deliberately). Markers nest across types. Discipline: `==` on the one or two words that carry each headline;
-custom colors and sizes are for rare, deliberate moments — the theme does the
-typography.
+- **Always set `background`** on every slide. `{"type":"color","color":"var(--bg)"}`
+  is the theme surface; `{"type":"color","color":"#0b1020"}`,
+  `{"type":"gradient","from":"#…","to":"#…","angle":160}` and
+  `{"type":"image","url":"https://…","dim":0.45}` (a dark scrim; engine
+  floors `dim` at 0.4) are the alternatives. The background is painted
+  under your component; the component decides what goes on top.
+- `animation`: `cascade` lets the component's own `Reveal` / `Build`
+  choreography run; `rise` / `fade` / `zoom` replace it with one entrance
+  for the whole slide; `none` shows it instantly.
+- Every slide also accepts `"props": { "scale": "lg" | "xl" }` to enlarge
+  the whole slide 15 % / 30 %.
 
-**Backgrounds** — always set on every slide (studio, thumbs, and present share
-the same opaque surface; never leave the field off):
-`{"type":"color","color":"var(--bg)"}` (default — theme surface; follows
-`tokens.css`),
-`{"type":"color","color":"#0b1020"}`,
-`{"type":"gradient","from":"#…","to":"#…","angle":160}`,
-`{"type":"image","url":"https://…","dim":0.45}` (omit dim for 0.45; engine floors below 0.4),
-`{"type":"none"}` (legacy alias for the theme surface — prefer `color` +
-`var(--bg)` in new decks). Most slides use `var(--bg)`; save gradient / image
-for moments (a section break, a photo cover). Photos:
-`https://images.unsplash.com/...?w=1600&q=80`.
+### Bootstrap (mandatory, first)
 
-**Animation** is per-slide and user-changeable later — pick deliberately:
-`cascade` (default — the layout's designed staggers) for almost everything;
-`fade` for quotes/statements you want to land quietly; `rise` or `zoom` as an
-occasional emphasis beat; `none` only for dense reference slides.
-**Transitions**: set ONE deck default (usually `fade`); override per-slide
-sparingly (`zoom` into section dividers works well).
+Read `deck.json`. If `boltSlidesId` is missing or null, set it to a new
+uuid (`crypto.randomUUID()` or equivalent) and write the file. Keep
+`boltSlidesVersion` at `1`.
 
-**Numbers animate themselves**: any figure-like string (`"$3T"`, `"48%"`,
-`"1,200+"`) counts up on reveal automatically. Just write the string.
+### Editing an existing deck
 
-## Layout props
+Read `deck.json` first so you keep the user's studio-side reorder /
+duplicate / delete / notes. Patch entries in place; replace the `slides`
+array only when replacing the whole deck. Empty `notes` erases what was
+there.
 
-Open `src/data/layoutProps.ts`. `layout` is a `LayoutName`. `props` is the
-type of the same name (`cover` → `CoverProps`, `insight` → `InsightProps`).
-Use that type. Homonym keys (`points`, `items`, `values`) are hard
-rule 5 — each layout's type is the shape.
+## Workflow
 
-Pick by purpose:
+1. Ground the deck in the user's real input — topic, brand, facts,
+   numbers. Never invent a placeholder company for a real subject. Brand
+   given → derive colors / fonts from it and say what you used.
+2. Bootstrap `boltSlidesId` (above).
+3. Theme if needed (`deck.accent` / `deck.font`, or `tokens.css`).
+4. Write one component per slide into `src/slides/`, then the matching
+   `deck.json` entries, with speaker `notes` where they help.
+5. `npm run typecheck` and `npm run build` must pass. Then tell the user
+   to look at the studio: drag to reorder, ••• or right-click a thumbnail
+   to duplicate / delete, grid (G) to pick a slide, notes and Download on
+   the dock, Present for the audience view.
 
-- **Rhythm** — `cover` (opener / closing CTA), `section` (chapter divider),
-  `statement` (one thought), `bigNumber` (drama beat), `manifesto`
-  (editorial breather; empty lower half is the layout), `quote`.
-- **Structure** — `agenda`, `steps`, `pillars` (focus areas, not a process),
-  `timeline`, `contrast` (before / after), `comparison`, `table` (real data;
-  ≤5 cols, ≤7 rows), `tabs`, `accordion` (interactive FAQ), `qa` (flat FAQ),
-  `pricing` (highlight exactly one tier), `team`, `logos`.
-- **Visual** — `bento` (feature grid), `statGrid`, `figures` (editorial
-  numbers), `poster`, `story`, `speaker`, `persona`, `chart`, `insight`
-  (chart + takeaways), `chat`, `code`.
+## Theming (`src/styles/tokens.css`)
 
-## Deck design discipline
-
-- **10–16 slides.** Arc: hook → problem → shift → product proof → numbers →
-  plan → team/ask. Alternate dense layouts with statement-scale beats.
-- Titles ≤ 8 words, benefit-first. Bodies ≤ 2 sentences. If a slide needs a
-  paragraph, it's two slides.
-- Every deck: one `bigNumber`, one `contrast` or `comparison`, and section
-  dividers every 4–6 slides. Never two dense grids back-to-back.
-- The editorial set — `manifesto`, `poster`, `story`, `speaker`, `persona`,
-  `figures`, `pillars`, large `qa` — is what makes a deck feel designed
-  rather than generated: use two or three of them for texture, and let their
-  empty space breathe (it's part of the layout, not waste).
-- Write `notes` for the presenter on every content slide — one or two lines of
-  what to SAY, not a repeat of the slide.
-- After writing, tell the user to look at the studio: drag to reorder,
-  ••• or right-click a thumbnail to duplicate/delete, grid (G) to pick a
-  slide then Present, notes and Download on the dock.
-
-## Theming (`tokens.css` `:root`)
-
-Prefer the deck-level `accent` and `font` (Deck JSON above) over editing
-tokens. For deeper theming: all color/type/radius/motion live in
-`src/styles/tokens.css`. Change VALUES, never names. `--accent` =
-`--primary` = one solid hex. `--bg-grad-1`, `--bg-grad-2`, and `--glow`
-must stay `color-mix` of `--accent` so atmosphere follows the deck accent.
-Dark default; for a light deck set `--bg` /
-`--fg` in tokens.css. Fonts: set the deck-level `font` pairing (Google Fonts,
-loaded automatically; `playfair`/`fraunces` for editorial serifs, `space`/
-`sora`/`outfit` for technical, `manrope`/`dm` for friendly).
+Prefer the deck-level `accent` and `font` over editing tokens. For deeper
+theming, every `:root` value in `tokens.css` is yours to change — colors,
+surfaces, radius, shadows, fonts, motion, gutters. Change values, not
+variable names: the shell reads them (dock, thumbnails, atmosphere).
+`--accent` must be a color value (the atmosphere derives washes from it
+with `color-mix`). Dark is the default; for a light deck set `--bg` /
+`--fg` and `html { color-scheme: light }` in `base.css`. Deck-level
+`font` loads Google Fonts pairings automatically; for any other font, add
+its `@import` to `base.css` and set `--font-head` / `--font-body`.

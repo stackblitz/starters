@@ -5,7 +5,7 @@ import type { Background, SlideData } from '../data/types';
 import { effectiveImageDim, slideHasImage } from '../data/imageDim';
 import { DeckCtx, useDeck } from '../deck/DeckContext';
 import { SlideScope } from '../copy/SlideScope';
-import { RenderLayout } from '../layouts/registry';
+import { RenderSlide } from './registry';
 
 function BackgroundLayer({ bg }: { bg: Background | undefined }) {
   const base = { position: 'absolute', inset: 0, zIndex: 0 } as const;
@@ -130,7 +130,7 @@ export default function SlideView({
     slide.props?.scale === 'xl' ? 1.3 : slide.props?.scale === 'lg' ? 1.15 : 1;
   let content: ReactNode = (
     <SlideBoundary>
-      <RenderLayout slide={slide} />
+      <RenderSlide slide={slide} />
     </SlideBoundary>
   );
 
