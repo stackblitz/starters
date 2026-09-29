@@ -13,6 +13,7 @@ import { effectiveImageDim, slideHasImage } from '../data/imageDim';
 import { DeckCtx, useDeck } from '../deck/DeckContext';
 import { SlideScope } from '../copy/SlideScope';
 import { RenderSlide } from './registry';
+import { FALLBACK, stageUpscale } from './stage';
 
 function BackgroundLayer({ bg }: { bg: Background | undefined }) {
   const base = { position: 'absolute', inset: 0, zIndex: 0 } as const;
@@ -81,11 +82,6 @@ function BackgroundLayer({ bg }: { bg: Background | undefined }) {
 
 const STATIC_CTX = { clicks: 9999, isStatic: true };
 
-/* Reference stage width. Up to here a slide reflows responsively; on wider
-   stages the whole slide is scaled up proportionally, so a 2900px screen
-   shows the 1600px composition larger instead of stretched thin. */
-export const STAGE_REF_WIDTH = 1600;
-
 function useStageUpscale<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [upscale, setUpscale] = useState(1);
@@ -95,15 +91,16 @@ function useStageUpscale<T extends HTMLElement>() {
 
     if (!el) return;
 
-    const apply = (width: number) =>
-      setUpscale(width > STAGE_REF_WIDTH ? width / STAGE_REF_WIDTH : 1);
+    const apply = (width: number, height: number) =>
+      setUpscale(stageUpscale(width, height));
 
-    apply(el.clientWidth);
+    apply(el.clientWidth, el.clientHeight);
 
     if (typeof ResizeObserver === 'undefined') return;
 
     const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) apply(entry.contentRect.width);
+      for (const entry of entries)
+        apply(entry.contentRect.width, entry.contentRect.height);
     });
 
     ro.observe(el);
@@ -114,12 +111,6 @@ function useStageUpscale<T extends HTMLElement>() {
   return { ref, upscale };
 }
 
-/* Shell fallback text (error / missing component) — deliberately plain. */
-export const FALLBACK = {
-  fontFamily: 'system-ui, sans-serif',
-  fontSize: 'clamp(14px, 1.6vw, 18px)',
-  lineHeight: 1.5,
-} as const;
 
 class SlideBoundary extends Component<
   { children: RN },

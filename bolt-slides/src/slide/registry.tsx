@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import type { SlideData } from '../data/types';
-import { FALLBACK } from './SlideView';
+import { FALLBACK } from './stage';
 
 /** A slide component: `src/slides/<name>.tsx`, default export. */
 export type SlideComponent = ComponentType<{ slide: SlideData }>;

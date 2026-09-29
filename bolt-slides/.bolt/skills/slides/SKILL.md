@@ -42,11 +42,13 @@ laptop, on a projector, and at 1280×720 in the PDF export. It must hold
 up at all of them.
 
 **The stage.** Your component fills a box called the stage. From phone
-width up to **1600px wide the stage is the window and the slide reflows**.
-Above 1600px the shell **scales the whole slide up proportionally** (a
-2900px screen shows the 1600px composition at 1.8×), so you never design
-for ultrawide — you design for 390→1600 and fill the stage at 1600.
-Measure against the stage, not the window:
+width up to **1600×900 the stage is the window and the slide reflows**.
+Beyond that the shell **scales the whole slide up** by the smaller of the
+width and height ratios, so the stage you lay out in is never narrower
+than 1600 or shorter than 900 — it only ever gets wider (a 2400×900 window
+is a 2400×900 stage; a 2900×1300 window is a 2013×900 stage at 1.44×).
+Design for 390→1600 wide at 900 tall, and let extra width be room, not
+size. Measure against the stage, not the window:
 
 - **Stage units, not viewport units.** Use `cqw` / `cqh` (the stage is
   the container named `slide`) wherever you would write `vw` / `vh`:
@@ -80,13 +82,17 @@ Measure against the stage, not the window:
   (`minmax(min(20rem, 100%), 1fr)` or `clamp(20rem, 45%, 40rem)`),
   and a lone text block sits on a wide measure, not a sliver. Narrow
   text is a deliberate choice on one slide, never the default.
-- **Fill the stage at 1600.** Because larger screens only magnify the
-  1600px layout, what looks sparse at 1600 looks sparse everywhere. Size
-  type, spacing and media so the composition uses the stage at 1600×900
-  (headlines in the 5–8cqw range, media that takes real area), and
-  distribute or center content across the height. A headline pinned
-  top-left, a row of small tiles far below and a void between them is the
-  failure. Not too wide either: a single text column stays ≤ ~75ch.
+- **Fill the stage at 1600×900.** Larger screens magnify that layout,
+  so what looks sparse there looks sparse everywhere. Size type, spacing
+  and media so the composition uses the stage (headlines in the 5–8cqw
+  range, media that takes real area), and distribute or center content
+  across the height. A headline pinned top-left, a row of small tiles far
+  below and a void between them is the failure. Not too wide either: a
+  single text column stays ≤ ~75ch.
+- **Height is the scarce axis.** Tie vertical sizes to `cqh` or fixed
+  values, not `cqw`: a stage can be much wider than 16:9 but never
+  shorter than 900 at reference, so width-driven heights are what push
+  content out of view when a window gets wider.
 - **Check narrow and wide.** Before you finish, look at ~390px wide and at
   ~1600px. The rail and grid render the real component, so they show
   breakage too.
