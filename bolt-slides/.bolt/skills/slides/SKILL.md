@@ -63,9 +63,17 @@ Measure against the stage, not the window:
 - **Grids wrap.** `repeat(auto-fit, minmax(min(240px, 100%), 1fr))`,
   `flex-wrap`, or the `.cols` utility. A hardcoded column count needs a
   narrow-stage fallback (`@container slide (max-width: 900px)`).
-- **Nothing overflows or scrolls.** A paged slide cannot scroll; what
-  doesn't fit is cut off. Size each slide's content to one screen at every
-  viewport, and let long text wrap (`max-width` in `ch`, no `nowrap`).
+- **Nothing out of view — ever.** A paged slide cannot scroll; anything
+  past the stage edge is simply not shown, and the audience never knows
+  it existed. In dev the shell measures every live slide and logs
+  `[bolt-slides] Slide "…" has content out of view …` as a console
+  **error**. Treat it like a failed build: fix the slide before you're
+  done. Tactics, in order: cut copy; split into two slides; use the
+  width (two balanced columns instead of one long one); shrink media
+  before text. Never fix it with `overflow: hidden`, `nowrap` or text
+  below the legibility floor. Budget the slide for its shortest stage:
+  1600×900 *and* a phone in portrait; footers, sources and page numbers
+  count against the budget.
 - **Text gets room.** A cramped text column is the most common failure.
   Body copy runs 45–75ch wide, headlines up to ~20–28ch; a text column
   next to an image or panel takes at least ~40% of the stage at 1600
@@ -168,10 +176,11 @@ between the thing that matters and everything else.
 ### Legibility floor — check every slide before you're done
 
 At 1600×900 no text is smaller than 16px (~1cqw), and at 390 wide none is
-smaller than 12px. Nothing wraps mid-word, nothing is clipped, no label is
-larger than the shape it sits in, and the composition occupies at least
-~60% of the stage height. If a slide fails any of these, fix the slide —
-don't shrink the text.
+smaller than 12px. Nothing wraps mid-word, nothing is clipped, nothing is
+out of view (no `[bolt-slides] … out of view` console errors), no label
+is larger than the shape it sits in, and the composition occupies at
+least ~60% of the stage height. If a slide fails any of these, fix the
+slide — don't shrink the text.
 
 ## Slide component contract
 

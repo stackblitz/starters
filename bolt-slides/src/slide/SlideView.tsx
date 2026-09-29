@@ -1,4 +1,11 @@
-import { Component, useLayoutEffect, useRef, useState, type ReactNode as RN } from 'react';
+import {
+  Component,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode as RN,
+} from 'react';
 import { motion, type Variants } from 'motion/react';
 import type { ReactNode } from 'react';
 import type { Background, SlideData } from '../data/types';
@@ -154,6 +161,107 @@ const ENTRANCES: Record<string, Variants> = {
   },
 };
 
+/* Dev-only guard: a paged slide cannot scroll, so any content that leaves
+   the stage is simply not shown. Measure the live slide after its entrance
+   settles and report offenders on the console, where Bolt's agent sees
+   them. Decorative elements (no text, no media) are ignored so off-stage
+   washes and blobs do not trip it. */
+const OUT_OF_VIEW_TOLERANCE = 2;
+
+function hasContent(el: Element): boolean {
+  const tag = el.tagName;
+
+  if (tag === 'IMG' || tag === 'VIDEO' || tag === 'svg' || tag === 'CANVAS')
+    return true;
+
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim())
+      return true;
+  }
+
+  return false;
+}
+
+function measureOutOfView(stage: HTMLElement) {
+  const box = stage.getBoundingClientRect();
+  let count = 0;
+  let bottom = 0;
+  let right = 0;
+  let top = 0;
+  let left = 0;
+
+  for (const el of stage.querySelectorAll('*')) {
+    if (!(el instanceof HTMLElement || el instanceof SVGElement)) continue;
+    if (!hasContent(el)) continue;
+
+    const r = el.getBoundingClientRect();
+
+    if (r.width === 0 || r.height === 0) continue;
+
+    const dBottom = r.bottom - box.bottom;
+    const dRight = r.right - box.right;
+    const dTop = box.top - r.top;
+    const dLeft = box.left - r.left;
+
+    if (
+      dBottom > OUT_OF_VIEW_TOLERANCE ||
+      dRight > OUT_OF_VIEW_TOLERANCE ||
+      dTop > OUT_OF_VIEW_TOLERANCE ||
+      dLeft > OUT_OF_VIEW_TOLERANCE
+    ) {
+      count++;
+      bottom = Math.max(bottom, dBottom);
+      right = Math.max(right, dRight);
+      top = Math.max(top, dTop);
+      left = Math.max(left, dLeft);
+    }
+  }
+
+  return { count, bottom, right, top, left, box };
+}
+
+function useOutOfViewGuard(
+  ref: React.RefObject<HTMLElement | null>,
+  slide: SlideData,
+  enabled: boolean,
+  upscale: number
+) {
+  useEffect(() => {
+    if (!enabled || !import.meta.env.DEV) return;
+
+    const stage = ref.current;
+
+    if (!stage) return;
+
+    const timer = window.setTimeout(() => {
+      const m = measureOutOfView(stage);
+
+      if (!m.count) return;
+
+      const sides = [
+        m.bottom > OUT_OF_VIEW_TOLERANCE && `${Math.round(m.bottom / upscale)}px below`,
+        m.right > OUT_OF_VIEW_TOLERANCE && `${Math.round(m.right / upscale)}px past the right edge`,
+        m.top > OUT_OF_VIEW_TOLERANCE && `${Math.round(m.top / upscale)}px above`,
+        m.left > OUT_OF_VIEW_TOLERANCE && `${Math.round(m.left / upscale)}px past the left edge`,
+      ]
+        .filter(Boolean)
+        .join(', ');
+      const w = Math.round(m.box.width / upscale);
+      const h = Math.round(m.box.height / upscale);
+
+      console.error(
+        `[bolt-slides] Slide "${slide.id}" (src/slides/${slide.layout}.tsx) ` +
+          `has content out of view: ${m.count} element${m.count === 1 ? '' : 's'} ` +
+          `${sides} on a ${w}×${h} stage. A slide cannot scroll — anything ` +
+          `outside the stage is not shown. Split the slide or resize its ` +
+          `content; do not hide the overflow.`
+      );
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, [ref, slide, enabled, upscale]);
+}
+
 export default function SlideView({
   slide,
 }: {
@@ -165,6 +273,8 @@ export default function SlideView({
   const live = !parent.isStatic;
   const mode = slide.animation ?? 'cascade';
   const { ref: stageRef, upscale } = useStageUpscale<HTMLDivElement>();
+
+  useOutOfViewGuard(stageRef, slide, live, upscale);
   const textScale =
     slide.props?.scale === 'xl' ? 1.3 : slide.props?.scale === 'lg' ? 1.15 : 1;
   const zoom = textScale * upscale;
