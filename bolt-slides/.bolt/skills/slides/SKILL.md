@@ -101,6 +101,39 @@ Ground it in the user's real input: topic, brand, facts, numbers, assets.
 Never invent a placeholder company for a real subject. Brand given →
 derive colors, fonts and imagery from it and say what you used.
 
+### Not this — the generic-AI look
+
+These read as template output. Don't use them unless the brief asks:
+
+- A card with a colored **left (or top) border** as its accent.
+- A **row of identical cards**, each with a mono `01 / 02 / 03` index, a
+  bold title and a grey paragraph — the same for feature grids of
+  icon + title + paragraph.
+- Everything boxed: rounded white cards with soft shadows on every
+  element, cards inside cards, a card around a single sentence.
+- Decorative **status pills / tag chips**, gradient text, one rainbow
+  color per list item.
+- Small type and small tiles floating in a large empty stage.
+
+Instead: hierarchy from type scale and space; rules, columns and
+alignment instead of boxes; one strong element per slide (a figure, an
+image, a chart, a sentence); asymmetry; real imagery; contrast in scale
+between the thing that matters and everything else.
+
+### Alignment — it's a stage
+
+- **Vertically centered by default.** The composition sits in the middle
+  of the stage (or is distributed across its full height); top-anchor
+  only when the slide is genuinely full (a dense table, a full-bleed
+  image with a caption). A headline at the top with the bottom half empty
+  is wrong on every screen size.
+- **One grid.** Kicker, headline, body and blocks share left edges (or a
+  common center); one gutter value per deck; nothing floats between the
+  edges. Two columns align at the top *and* balance in height.
+- **Left-anchored text needs a counterweight** — an image, a figure, a
+  chart on the other side. A text-only slide is centered, or set on a
+  deliberate wide measure with the space used on purpose.
+
 ## Slide component contract
 
 ```tsx
