@@ -50,6 +50,12 @@ up at all of them.
 - **Nothing overflows or scrolls.** A paged slide cannot scroll; what
   doesn't fit is cut off. Size each slide's content to one screen at every
   viewport, and let long text wrap (`max-width` in `ch`, no `nowrap`).
+- **Text gets room.** A cramped text column is the most common failure.
+  Body copy runs 45–75ch wide, headlines up to ~20–28ch; a text column
+  next to an image or panel takes at least ~40% of the slide on wide
+  viewports (`minmax(min(20rem, 100%), 1fr)` or `clamp(20rem, 45%, 40rem)`),
+  and a lone text block sits on a wide measure, not a sliver. Narrow
+  text is a deliberate choice on one slide, never the default.
 - **Check narrow and wide.** Before you finish, look at ~390px wide and
   at ≥1440px. The rail and grid render the real component, so they show
   breakage too.
@@ -71,9 +77,13 @@ the right one. Build a visual identity for the subject and brand:
   screenshots, illustration, inline SVG, diagrams, charts drawn in SVG,
   device or browser mocks. Full-bleed images under a scrim, split panels,
   image grids — whatever the story needs.
-- **Composition and motion** — asymmetry, overlap, edge-to-edge, big
-  numbers, timelines, maps, whatever fits. `motion/react` is available.
-  Respect `prefers-reduced-motion` for anything that loops.
+- **Composition** — asymmetry, overlap, edge-to-edge, big numbers,
+  timelines, maps, whatever fits.
+- **Motion, on by default.** Unless the user asks for a static deck, every
+  slide animates in smoothly: staggered entrances with `Reveal` (or
+  `motion/react` with an ease-out curve, ~0.5–0.8s, small offsets) and
+  `Build` for the beats worth a click. Calm and consistent across the deck,
+  never a circus; respect `prefers-reduced-motion` for anything that loops.
 
 Ground it in the user's real input: topic, brand, facts, numbers, assets.
 Never invent a placeholder company for a real subject. Brand given →
