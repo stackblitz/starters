@@ -56,9 +56,21 @@ up at all of them.
   viewports (`minmax(min(20rem, 100%), 1fr)` or `clamp(20rem, 45%, 40rem)`),
   and a lone text block sits on a wide measure, not a sliver. Narrow
   text is a deliberate choice on one slide, never the default.
-- **Check narrow and wide.** Before you finish, look at ~390px wide and
-  at ≥1440px. The rail and grid render the real component, so they show
-  breakage too.
+- **Large screens too — scale, don't just stop.** The deck is also shown
+  on 27" monitors, ultrawides and projectors at 2000px+ wide. Content must
+  grow with the stage, not hit a cap and float in a void: size type,
+  spacing, cards and media in viewport terms (`clamp()` whose middle term
+  is `vw`/`vh` and whose upper bound keeps growing, or `min(Xvw, Yvh)` for
+  things tied to the stage), and compose the whole stage — distribute
+  content across the height, let grids and media fill, or center one
+  composed block. A headline pinned top-left, a row of small tiles far
+  below, and empty space between them is the failure. Not too wide either:
+  a single text column stays ≤ ~75ch, and a composition keeps proportions
+  (e.g. a centered frame at `min(100%, 88vw)`, tiles that grow taller as
+  they grow wider) instead of stretching a thin row edge to edge.
+- **Check narrow and wide.** Before you finish, look at ~390px wide, at
+  ~1440px, and at ≥2400px. The rail and grid render the real component, so
+  they show breakage too.
 
 ## Design it — for this deck
 
