@@ -66,6 +66,30 @@ size. Measure against the stage, not the window:
   `width`/`height` of the stage in your CSS pixels) to reorder, hide or
   swap elements. Container queries and `useStage()` react to the stage;
   media queries react to the window and are wrong here.
+  The canonical case — text beside a chart or image on a wide stage — is
+  a single column on a phone, with the visual on its own full-width row
+  at a fixed height and the type at reading size:
+
+  ```tsx
+  const { narrow } = useStage();
+  <section
+    style={{
+      display: 'grid',
+      gridTemplateColumns: narrow ? '1fr' : 'minmax(20rem, 45%) 1fr',
+      gridTemplateRows: narrow ? 'auto 40cqh' : '1fr',
+      gap: narrow ? '4cqh' : '4cqw',
+      alignItems: 'center',
+      height: '100%',
+      padding: 'clamp(24px, 6cqw, 96px)',
+    }}
+  >
+    <div>…kicker, headline, body…</div>
+    <Chart style={{ width: '100%', height: narrow ? '100%' : '55cqh' }} />
+  </section>
+  ```
+
+  Side by side at 390px wide — a 160px text column next to a 160px chart
+  with 6px axis labels — is the failure.
 - **Type has a floor, not just a ratio.** The first value of every
   `clamp()` is the phone size, and it is a real reading size: body
   16–18px, headlines 28–36px, figures 40px+. `cqw` shapes the middle;
