@@ -13,7 +13,14 @@ import { effectiveImageDim, slideHasImage } from '../data/imageDim';
 import { DeckCtx, useDeck } from '../deck/DeckContext';
 import { SlideScope } from '../copy/SlideScope';
 import { RenderSlide } from './registry';
-import { FALLBACK, stageUpscale } from './stage';
+import {
+  DEFAULT_STAGE,
+  FALLBACK,
+  NARROW_STAGE_WIDTH,
+  StageCtx,
+  stageUpscale,
+  type StageSize,
+} from './stage';
 
 function BackgroundLayer({ bg }: { bg: Background | undefined }) {
   const base = { position: 'absolute', inset: 0, zIndex: 0 } as const;
@@ -84,15 +91,24 @@ const STATIC_CTX = { clicks: 9999, isStatic: true };
 
 function useStageUpscale<T extends HTMLElement>() {
   const ref = useRef<T>(null);
-  const [upscale, setUpscale] = useState(1);
+  const [stage, setStage] = useState<StageSize>(DEFAULT_STAGE);
 
   useLayoutEffect(() => {
     const el = ref.current;
 
     if (!el) return;
 
-    const apply = (width: number, height: number) =>
-      setUpscale(stageUpscale(width, height));
+    const apply = (width: number, height: number) => {
+      const upscale = stageUpscale(width, height);
+      const w = Math.round(width / upscale);
+      const h = Math.round(height / upscale);
+
+      setStage((prev) =>
+        prev.width === w && prev.height === h && prev.upscale === upscale
+          ? prev
+          : { width: w, height: h, upscale, narrow: w < NARROW_STAGE_WIDTH }
+      );
+    };
 
     apply(el.clientWidth, el.clientHeight);
 
@@ -108,7 +124,7 @@ function useStageUpscale<T extends HTMLElement>() {
     return () => ro.disconnect();
   }, []);
 
-  return { ref, upscale };
+  return { ref, stage };
 }
 
 
@@ -263,7 +279,8 @@ export default function SlideView({
   const parent = useDeck();
   const live = !parent.isStatic;
   const mode = slide.animation ?? 'cascade';
-  const { ref: stageRef, upscale } = useStageUpscale<HTMLDivElement>();
+  const { ref: stageRef, stage } = useStageUpscale<HTMLDivElement>();
+  const upscale = stage.upscale;
 
   useOutOfViewGuard(stageRef, slide, live, upscale);
   const textScale =
@@ -323,7 +340,7 @@ export default function SlideView({
             containerName: 'slide',
           }}
         >
-          {content}
+          <StageCtx.Provider value={stage}>{content}</StageCtx.Provider>
         </div>
       </div>
     </SlideScope.Provider>

@@ -55,10 +55,21 @@ size. Measure against the stage, not the window:
   `font-size: clamp(28px, 5cqw, 72px)`, `gap: 3cqh`. Viewport units
   measure the window and are wrong in thumbnails, in the PDF and on
   scaled stages.
-- **Container queries, not media queries.** `@container slide (max-width:
-  900px) { … }` for narrow layouts — in a `<style>` block in the
-  component, or via a small `useContainerWidth` you write. Media queries
-  react to the window, not the stage.
+- **Phones reflow, they don't shrink.** Below ~700px of stage width the
+  slide is a different layout, like a responsive website — one column,
+  the hero first, secondary material dropped or shortened, charts and
+  images given their own full-width row — never the desktop composition
+  scaled down. Proportional `cqw` sizing alone produces a tiny desktop
+  slide; that is the failure. Restack with `@container slide
+  (max-width: 700px) { … }` in a `<style>` block, or in JSX with
+  `const { narrow } = useStage()` from `@/slide/stage` (also gives
+  `width`/`height` of the stage in your CSS pixels) to reorder, hide or
+  swap elements. Container queries and `useStage()` react to the stage;
+  media queries react to the window and are wrong here.
+- **Type has a floor, not just a ratio.** The first value of every
+  `clamp()` is the phone size, and it is a real reading size: body
+  16–18px, headlines 28–36px, figures 40px+. `cqw` shapes the middle;
+  it never takes text below the floor.
 - **Fluid sizing.** `clamp()`, `%`, `cqw`/`cqh`, `rem`, `min()`/`max()`.
   No fixed pixel widths or heights on content. Media may be the only
   fixed-ratio box (`aspect-ratio` + `max-height`, `object-fit: cover`).
@@ -98,8 +109,9 @@ size. Measure against the stage, not the window:
   in `cqh` or a `max-height`, and give a column that stacks a chart or
   image over text a fixed split (`grid-template-rows: 55cqh auto`).
 - **Check narrow and wide.** Before you finish, look at ~390px wide and at
-  ~1600px. The rail and grid render the real component, so they show
-  breakage too.
+  ~1600px. At 390 the slide must read like a phone page (one column,
+  readable type, nothing out of view), not a miniature of the wide one.
+  The rail and grid render the real component, so they show breakage too.
 
 ## Design it — for this deck
 
@@ -225,7 +237,8 @@ export default Opening;
 - Engine helpers, all optional: `Reveal` (entrance when the slide shows),
   `Build at={n}` (hidden until the n-th click on that slide; advancing
   reveals builds, then moves on), `useInView` from `@/deck/useInView`
-  (draw-in on view).
+  (draw-in on view), `useStage()` from `@/slide/stage` (`{ width,
+  height, narrow }` of the stage the component is laid out in).
 - In-place text editing in the studio works for text rendered with
   `<T path="title" />` from `@/copy/DeckText`, which reads
   `slide.props.title` (rich markers: `==accent==`, `**bold**`,
