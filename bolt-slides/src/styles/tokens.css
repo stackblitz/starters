@@ -19,6 +19,6 @@
 
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 
-  --gutter: clamp(24px, 6vw, 96px);
-  --gutter-y: clamp(24px, 6vh, 72px);
+  --gutter: clamp(24px, 6cqw, 96px);
+  --gutter-y: clamp(24px, 6cqh, 72px);
 }

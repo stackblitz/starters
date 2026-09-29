@@ -36,41 +36,52 @@ change, say so and wait.
 
 ## The one rule: every slide is responsive
 
-A slide is a full-viewport web layout, not a fixed canvas. The same
+A slide is a responsive web layout, not a fixed canvas. The same
 component renders at phone width, in the thumbnail rail and grid, on a
 laptop, on a projector, and at 1280×720 in the PDF export. It must hold
 up at all of them.
 
-- **Fluid sizing.** `clamp()`, `%`, `vw`/`vh`, `rem`, `min()`/`max()`.
+**The stage.** Your component fills a box called the stage. From phone
+width up to **1600px wide the stage is the window and the slide reflows**.
+Above 1600px the shell **scales the whole slide up proportionally** (a
+2900px screen shows the 1600px composition at 1.8×), so you never design
+for ultrawide — you design for 390→1600 and fill the stage at 1600.
+Measure against the stage, not the window:
+
+- **Stage units, not viewport units.** Use `cqw` / `cqh` (the stage is
+  the container named `slide`) wherever you would write `vw` / `vh`:
+  `font-size: clamp(28px, 5cqw, 72px)`, `gap: 3cqh`. Viewport units
+  measure the window and are wrong in thumbnails, in the PDF and on
+  scaled stages.
+- **Container queries, not media queries.** `@container slide (max-width:
+  900px) { … }` for narrow layouts — in a `<style>` block in the
+  component, or via a small `useContainerWidth` you write. Media queries
+  react to the window, not the stage.
+- **Fluid sizing.** `clamp()`, `%`, `cqw`/`cqh`, `rem`, `min()`/`max()`.
   No fixed pixel widths or heights on content. Media may be the only
   fixed-ratio box (`aspect-ratio` + `max-height`, `object-fit: cover`).
 - **Grids wrap.** `repeat(auto-fit, minmax(min(240px, 100%), 1fr))`,
   `flex-wrap`, or the `.cols` utility. A hardcoded column count needs a
-  narrow-viewport fallback (`@media (max-width: 900px)`).
+  narrow-stage fallback (`@container slide (max-width: 900px)`).
 - **Nothing overflows or scrolls.** A paged slide cannot scroll; what
   doesn't fit is cut off. Size each slide's content to one screen at every
   viewport, and let long text wrap (`max-width` in `ch`, no `nowrap`).
 - **Text gets room.** A cramped text column is the most common failure.
   Body copy runs 45–75ch wide, headlines up to ~20–28ch; a text column
-  next to an image or panel takes at least ~40% of the slide on wide
-  viewports (`minmax(min(20rem, 100%), 1fr)` or `clamp(20rem, 45%, 40rem)`),
+  next to an image or panel takes at least ~40% of the stage at 1600
+  (`minmax(min(20rem, 100%), 1fr)` or `clamp(20rem, 45%, 40rem)`),
   and a lone text block sits on a wide measure, not a sliver. Narrow
   text is a deliberate choice on one slide, never the default.
-- **Large screens too — scale, don't just stop.** The deck is also shown
-  on 27" monitors, ultrawides and projectors at 2000px+ wide. Content must
-  grow with the stage, not hit a cap and float in a void: size type,
-  spacing, cards and media in viewport terms (`clamp()` whose middle term
-  is `vw`/`vh` and whose upper bound keeps growing, or `min(Xvw, Yvh)` for
-  things tied to the stage), and compose the whole stage — distribute
-  content across the height, let grids and media fill, or center one
-  composed block. A headline pinned top-left, a row of small tiles far
-  below, and empty space between them is the failure. Not too wide either:
-  a single text column stays ≤ ~75ch, and a composition keeps proportions
-  (e.g. a centered frame at `min(100%, 88vw)`, tiles that grow taller as
-  they grow wider) instead of stretching a thin row edge to edge.
-- **Check narrow and wide.** Before you finish, look at ~390px wide, at
-  ~1440px, and at ≥2400px. The rail and grid render the real component, so
-  they show breakage too.
+- **Fill the stage at 1600.** Because larger screens only magnify the
+  1600px layout, what looks sparse at 1600 looks sparse everywhere. Size
+  type, spacing and media so the composition uses the stage at 1600×900
+  (headlines in the 5–8cqw range, media that takes real area), and
+  distribute or center content across the height. A headline pinned
+  top-left, a row of small tiles far below and a void between them is the
+  failure. Not too wide either: a single text column stays ≤ ~75ch.
+- **Check narrow and wide.** Before you finish, look at ~390px wide and at
+  ~1600px. The rail and grid render the real component, so they show
+  breakage too.
 
 ## Design it — for this deck
 
@@ -120,6 +131,24 @@ alignment instead of boxes; one strong element per slide (a figure, an
 image, a chart, a sentence); asymmetry; real imagery; contrast in scale
 between the thing that matters and everything else.
 
+### Data, charts and figures — presentation scale, not dashboard scale
+
+- **The number is the hero.** A KPI slide leads with the figure at
+  headline size (8–14cqw) and one line of meaning; supporting numbers are
+  a clear second tier, not a row of chips.
+- **Charts are drawn for the room.** Inline SVG with a `viewBox` and
+  `width: 100%` so it scales with the stage; strokes, ticks and labels
+  sized to read from the back (labels ≥ 1.1cqw). A chart takes real area
+  (half the stage or more) — never a widget inside a card inside the
+  slide.
+- **Labels never live inside data-sized shapes.** Funnel steps, bars and
+  bubbles shrink with their values; text does not. Put labels and values
+  beside or above the shape on a fixed grid, and never let a word wrap
+  mid-word or a label outgrow its box.
+- **No dashboard furniture.** No card borders around a single chart, no
+  legend chips, no "widget title" captions in 11px. Title, chart, one
+  takeaway.
+
 ### Alignment — it's a stage
 
 - **Vertically centered by default.** The composition sits in the middle
@@ -133,6 +162,16 @@ between the thing that matters and everything else.
 - **Left-anchored text needs a counterweight** — an image, a figure, a
   chart on the other side. A text-only slide is centered, or set on a
   deliberate wide measure with the space used on purpose.
+- **Kicker above headline, never beside it.** Small label, then the
+  headline, sharing a left edge (or both centered).
+
+### Legibility floor — check every slide before you're done
+
+At 1600×900 no text is smaller than 16px (~1cqw), and at 390 wide none is
+smaller than 12px. Nothing wraps mid-word, nothing is clipped, no label is
+larger than the shape it sits in, and the composition occupies at least
+~60% of the stage height. If a slide fails any of these, fix the slide —
+don't shrink the text.
 
 ## Slide component contract
 
@@ -152,7 +191,8 @@ const Opening: SlideComponent = ({ slide }) => (
 export default Opening;
 ```
 
-- The component fills the slide box (100% × 100% of the stage). Any root
+- The component fills the stage (100% × 100%; a CSS container named
+  `slide`, so `cqw`/`cqh` and `@container slide (…)` measure it). Any root
   element works. `<Slide>` from `@/deck/Slide` is an optional root that
   pads with the `--gutter` tokens, centers with `center`, or goes
   edge-to-edge with `full` — use it or not.

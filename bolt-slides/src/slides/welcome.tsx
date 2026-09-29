@@ -9,19 +9,19 @@ const Welcome: SlideComponent = () => (
       height: '100%',
       display: 'grid',
       placeItems: 'center',
-      padding: 'clamp(24px, 6vw, 96px)',
+      padding: 'clamp(24px, 6cqw, 96px)',
       textAlign: 'center',
       fontFamily: 'system-ui, sans-serif',
     }}
   >
     <div>
-      <h1 style={{ fontSize: 'clamp(28px, 5vw, 64px)', fontWeight: 600 }}>
+      <h1 style={{ fontSize: 'clamp(28px, 5cqw, 64px)', fontWeight: 600 }}>
         Your deck starts here.
       </h1>
       <p
         style={{
           marginTop: '1em',
-          fontSize: 'clamp(15px, 1.8vw, 22px)',
+          fontSize: 'clamp(15px, 1.8cqw, 22px)',
           opacity: 0.7,
           maxWidth: '40ch',
           marginInline: 'auto',

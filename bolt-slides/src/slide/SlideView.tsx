@@ -1,4 +1,4 @@
-import { Component, type ReactNode as RN } from 'react';
+import { Component, useLayoutEffect, useRef, useState, type ReactNode as RN } from 'react';
 import { motion, type Variants } from 'motion/react';
 import type { ReactNode } from 'react';
 import type { Background, SlideData } from '../data/types';
@@ -74,6 +74,39 @@ function BackgroundLayer({ bg }: { bg: Background | undefined }) {
 
 const STATIC_CTX = { clicks: 9999, isStatic: true };
 
+/* Reference stage width. Up to here a slide reflows responsively; on wider
+   stages the whole slide is scaled up proportionally, so a 2900px screen
+   shows the 1600px composition larger instead of stretched thin. */
+export const STAGE_REF_WIDTH = 1600;
+
+function useStageUpscale<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [upscale, setUpscale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+
+    if (!el) return;
+
+    const apply = (width: number) =>
+      setUpscale(width > STAGE_REF_WIDTH ? width / STAGE_REF_WIDTH : 1);
+
+    apply(el.clientWidth);
+
+    if (typeof ResizeObserver === 'undefined') return;
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) apply(entry.contentRect.width);
+    });
+
+    ro.observe(el);
+
+    return () => ro.disconnect();
+  }, []);
+
+  return { ref, upscale };
+}
+
 /* Shell fallback text (error / missing component) — deliberately plain. */
 export const FALLBACK = {
   fontFamily: 'system-ui, sans-serif',
@@ -131,8 +164,10 @@ export default function SlideView({
   const parent = useDeck();
   const live = !parent.isStatic;
   const mode = slide.animation ?? 'cascade';
-  const zoom =
+  const { ref: stageRef, upscale } = useStageUpscale<HTMLDivElement>();
+  const textScale =
     slide.props?.scale === 'xl' ? 1.3 : slide.props?.scale === 'lg' ? 1.15 : 1;
+  const zoom = textScale * upscale;
   let content: ReactNode = (
     <SlideBoundary>
       <RenderSlide slide={slide} />
@@ -162,9 +197,15 @@ export default function SlideView({
   return (
     <SlideScope.Provider value={{ slideId: slide.id, slide }}>
       <div
+        ref={stageRef}
         className={'slide-view' + (slideHasImage(slide) ? ' has-image' : '')}
         data-deck-slide={slide.id}
-        style={{ position: 'relative', width: '100%', height: '100%' }}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+        }}
       >
         <BackgroundLayer bg={slide.background} />
         <div
@@ -175,6 +216,10 @@ export default function SlideView({
             height: `${100 / zoom}%`,
             transform: zoom !== 1 ? `scale(${zoom})` : undefined,
             transformOrigin: 'top left',
+            /* `cqw` / `cqh` and @container queries in slide components
+               measure this box — the slide's own stage, not the window. */
+            containerType: 'size',
+            containerName: 'slide',
           }}
         >
           {content}
