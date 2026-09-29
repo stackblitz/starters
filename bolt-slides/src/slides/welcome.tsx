@@ -1,23 +1,37 @@
-import Slide from '@/deck/Slide';
-import Reveal from '@/deck/Reveal';
 import type { SlideComponent } from '@/slide/registry';
 
-/* Seed slide. Delete this file once the deck has its own slides. */
+/* Seed slide. It has no design on purpose — delete it once the deck has
+   its own slides. */
 const Welcome: SlideComponent = () => (
-  <Slide center>
-    <Reveal>
-      <div className="kicker" style={{ marginBottom: 'clamp(12px, 2vh, 20px)' }}>
-        Bolt Slides
-      </div>
-      <h1 className="display">
-        Your deck <span className="accent-text">starts here.</span>
+  <div
+    style={{
+      width: '100%',
+      height: '100%',
+      display: 'grid',
+      placeItems: 'center',
+      padding: 'clamp(24px, 6vw, 96px)',
+      textAlign: 'center',
+      fontFamily: 'system-ui, sans-serif',
+    }}
+  >
+    <div>
+      <h1 style={{ fontSize: 'clamp(28px, 5vw, 64px)', fontWeight: 600 }}>
+        Your deck starts here.
       </h1>
-      <p className="subhead" style={{ marginTop: 'clamp(14px, 2.5vh, 24px)' }}>
+      <p
+        style={{
+          marginTop: '1em',
+          fontSize: 'clamp(15px, 1.8vw, 22px)',
+          opacity: 0.7,
+          maxWidth: '40ch',
+          marginInline: 'auto',
+        }}
+      >
         Ask Bolt for a deck. Every slide becomes a React component in
         src/slides/, listed in deck.json.
       </p>
-    </Reveal>
-  </Slide>
+    </div>
+  </div>
 );
 
 export default Welcome;

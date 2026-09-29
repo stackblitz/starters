@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import type { SlideData } from '../data/types';
+import { FALLBACK } from './SlideView';
 
 /** A slide component: `src/slides/<name>.tsx`, default export. */
 export type SlideComponent = ComponentType<{ slide: SlideData }>;
@@ -35,12 +36,14 @@ export function RenderSlide({ slide }: { slide: SlideData }) {
 
   if (!Component) {
     return (
-      <div className="slide center">
-        <div className="kicker" style={{ marginBottom: 12 }}>
+      <div className="slide center" style={FALLBACK}>
+        <div style={{ opacity: 0.6, marginBottom: 12 }}>
           Missing slide component
         </div>
-        <h2 className="headline">“{name || '(empty)'}”</h2>
-        <p className="subhead" style={{ marginTop: 16 }}>
+        <h2 style={{ fontSize: '2em', fontWeight: 600 }}>
+          “{name || '(empty)'}”
+        </h2>
+        <p style={{ marginTop: 16, maxWidth: '46ch' }}>
           Add <code>src/slides/{name || 'name'}.tsx</code> with a default
           export, or point this deck.json entry at an existing file.
         </p>

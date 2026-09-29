@@ -4,9 +4,11 @@ A Pitch-style slide studio for [Bolt](https://bolt.new): prompt a deck,
 refine it in the studio, present in a new tab, and download PDF or JSON.
 
 Each slide is a React component in `src/slides/`, listed in `deck.json`.
-There is no layout catalog: the agent designs every slide for the deck at
-hand. The one rule is that every slide is responsive — it renders at phone
-width, in the thumbnail rail, on a projector and at 1280×720 in the PDF.
+There is no layout catalog and no house style — no theme, type scale,
+palette or imagery is imposed; the agent designs every slide for the deck
+at hand. The one rule is that every slide is responsive — it renders at
+phone width, in the thumbnail rail, on a projector and at 1280×720 in the
+PDF.
 
 The prompt skill (`.bolt/skills/slides/SKILL.md`) covers bootstrap (mint
 `boltSlidesId` on first write), the slide component contract, the
@@ -48,7 +50,9 @@ Collaborate by sharing the Bolt project.
 - `deck.json` — the ordered slides. `layout` is the component filename
   (without `.tsx`); `background`, `animation`, `transition`, `nav`,
   `notes` and `status` are read by the studio, presenter and export.
-- `src/styles/tokens.css` — the theme (`:root` values).
+- `src/styles/tokens.css` — the few CSS variables the shell reads
+  (`--bg`, `--fg`, `--accent`, fonts, gutters). Neutral fallbacks; set
+  them per deck or ignore them.
 
 ## Architecture
 
@@ -62,11 +66,12 @@ src/studio/             studio chrome
 src/present/            audience / speaker routes
 src/export/             PDF export
 src/copy/               rich text + in-place text edit persist
-src/styles/tokens.css   theme: edit :root values only
+src/styles/tokens.css   shell fallbacks (--bg, --fg, --accent, fonts, gutters)
 ```
 
 ## Theming
 
-Everything the shell paints derives from the `:root` tokens in
-`src/styles/tokens.css`. `--accent` must stay a color value (the
-atmosphere mixes from it).
+There is none built in. Slide components carry their own design. The
+`:root` variables in `src/styles/tokens.css` are only the fallbacks the
+shell reads (slide surface, inherited text color, the `==accent==` marker
+color, deck-level font pairing, `<Slide>` gutters).

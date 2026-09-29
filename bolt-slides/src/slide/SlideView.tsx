@@ -57,7 +57,7 @@ function BackgroundLayer({ bg }: { bg: Background | undefined }) {
           style={{
             width: '100%',
             height: '100%',
-            background: 'var(--surface-2, #15161b)',
+            background: '#15161b',
           }}
         />
       )}
@@ -73,6 +73,13 @@ function BackgroundLayer({ bg }: { bg: Background | undefined }) {
 }
 
 const STATIC_CTX = { clicks: 9999, isStatic: true };
+
+/* Shell fallback text (error / missing component) — deliberately plain. */
+export const FALLBACK = {
+  fontFamily: 'system-ui, sans-serif',
+  fontSize: 'clamp(14px, 1.6vw, 18px)',
+  lineHeight: 1.5,
+} as const;
 
 class SlideBoundary extends Component<
   { children: RN },
@@ -92,13 +99,11 @@ class SlideBoundary extends Component<
   render() {
     if (this.state.err) {
       return (
-        <div className="slide center">
-          <div className="kicker" style={{ marginBottom: 12 }}>
+        <div className="slide center" style={FALLBACK}>
+          <div style={{ opacity: 0.6, marginBottom: 12 }}>
             This slide hit an error
           </div>
-          <p className="subhead" style={{ maxWidth: '46ch' }}>
-            {this.state.err}
-          </p>
+          <p style={{ maxWidth: '46ch' }}>{this.state.err}</p>
         </div>
       );
     }
