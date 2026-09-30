@@ -1,58 +1,24 @@
 /* ===================================================================
-   THEME TOKENS — edit ONLY this :root block to re-theme the whole deck.
-   The SAME token vocabulary as the `slides` (Slidev) and `webdeck` skills,
-   so a brand looks identical across all of them. The values below are a
-   "dark product" default — REPLACE them to match the brief or the brand.
+   DECK TOKENS — the few values the shell reads for a deck.
+   They are fallbacks, not a theme: the slide surface (`--bg`), the text
+   color the slide box inherits (`--fg`), the color the `==accent==` text
+   marker and deck-level `accent` use, the fonts that deck-level `font`
+   swaps, and the gutters `<Slide>` pads with. Set them to the deck's
+   own design, or ignore them and style each slide component directly.
    =================================================================== */
 :root {
-  /* Surfaces — atmosphere / glow mix from --accent so a deck accent
-     override retints washes without rewriting these. */
-  --bg: #06080d;
-  --bg-grad-1: color-mix(in srgb, var(--accent) 10%, transparent);
-  --bg-grad-2: color-mix(in srgb, var(--accent) 6%, transparent);
-  --surface: rgba(255, 255, 255, 0.045);
-  --surface-2: rgba(255, 255, 255, 0.07);
+  --bg: #ffffff;
+  --fg: #111111;
 
-  /* Ink */
-  --fg: #f2f5f9;
-  --fg-muted: #9aa3b2;
-  --fg-faint: #5f6a7b;
+  --accent: #111111;
+  --primary: var(--accent);
 
-  /* Hairlines */
-  --hair: rgba(255, 255, 255, 0.1);
-  --hair-2: rgba(255, 255, 255, 0.06);
+  --font-head: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Accent — ONE accent, SOLID (no gradients). */
-  --primary: #1688fc;
-  --accent: #1688fc;
-  --accent-ink: #ffffff;
-
-  /* Radius */
-  --radius: 22px;
-  --radius-sm: 12px;
-  --radius-lg: 26px;
-
-  /* Depth */
-  --shadow: 0 50px 120px -50px rgba(0, 0, 0, 0.9);
-  --glow: 0 30px 80px -40px color-mix(in srgb, var(--accent) 45%, transparent);
-
-  /* Type */
-  --font-head: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display',
-    sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text',
-    sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-
-  /* Motion */
-  --dur: 0.4s;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Atmosphere */
-  --grain: 0.035;
-  --vignette: rgba(0, 0, 0, 0.22);
-
-  /* Responsive gutter — fluid side / vertical padding */
-  --gutter: clamp(28px, 6vw, 120px);
-  --gutter-y: clamp(40px, 8vh, 96px);
+  --gutter: clamp(24px, 6cqw, 96px);
+  --gutter-y: clamp(24px, 6cqh, 72px);
 }
