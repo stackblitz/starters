@@ -21,9 +21,7 @@ Every visual decision in a deck is yours, made for this brief.
   put. The published site at `/` is the audience deck (notes stripped).
 - `/?presenter=1` — speaker view: current slide, up next, notes, timer.
 
-## Hard rule 0 — never touch the shell unless asked by name
-
-You write exactly two kinds of files:
+**What you write:**
 
 1. `src/slides/<name>.tsx` — one React component per slide (default
    export). Free-form: any markup, inline styles or a `<style>` block, SVG,
@@ -31,26 +29,10 @@ You write exactly two kinds of files:
 2. `deck.json` — the ordered list of slides. Each entry's `layout` is the
    component's filename without `.tsx`.
 
-(`src/styles/tokens.css` and a Google Fonts `<link>` in `index.html` are
-the only other edits a deck may need.)
-
-Everything else is the **shell**: `src/deck`, `src/studio`, `src/present`,
-`src/export`, `src/copy`, `src/data`, `src/slide`, `src/styles/base.css`,
-`src/styles/chrome*.css`, `vite.config.ts`, `package.json`. It is finished
-software. A request for a deck, a pitch, slides, a redesign, more motion,
-better mobile, or a fix to one slide is **never** a request to change it:
-
-- Do not add, remove, move or restyle controls, buttons, menus, keyboard
-  shortcuts, routes, settings, panels or export options.
-- Do not "improve" the dock, rail, grid, presenter, notes or studio, and
-  do not change how slides are loaded, persisted, scaled or exported.
-- If a shell feature seems missing or broken, say so in one line of your
-  reply and carry on with the deck — don't fix it.
-
-Only a request that names a studio / engine / control change ("add a
-timer to the dock", "change the present shortcut") unlocks those files,
-and then change only what was named. On the first prompt of a project the
-shell is never edited.
+Everything else is the shell — `src/deck`, `src/studio`, `src/present`,
+`src/export`, `src/copy`, `src/data`, `src/slide`, `src/styles/`,
+`vite.config.ts`. Leave it alone. If the user asks for a studio or engine
+change, say so and wait.
 
 ## The one rule: every slide is responsive
 
