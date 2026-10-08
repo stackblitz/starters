@@ -21,7 +21,7 @@ test('user can build project', async ({ webcontainer }) => {
   `);
 
   const assets = await webcontainer.readdir('dist/assets');
-  expect(assets.map(removeFileHash)).toMatchInlineSnapshot(`
+  expect(assets.map(removeFileHash).sort()).toMatchInlineSnapshot(`
     [
       "index.css",
       "index.js",
