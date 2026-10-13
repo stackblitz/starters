@@ -1,13 +1,14 @@
 import { test, type TestContext } from '@webcontainer/test';
 import { beforeEach, expect, onTestFinished } from 'vitest';
+import { page } from 'vitest/browser';
 
-import { removeFileHash } from './utils';
+import { removeFileHash, waitForVisible } from './utils';
 
-beforeEach<TestContext>(async ({ setup, webcontainer }) => {
-  await setup(async () => {
-    await webcontainer.mount('bolt-vite-react-ts');
-    await webcontainer.runCommand('npm', ['install']);
-  });
+// Not using `setup()`: restoring its snapshot drops the executable bit from
+// `node_modules/vite/bin/vite.js`, so `npm run dev` fails with `spawn vite EACCES`.
+beforeEach<TestContext>(async ({ webcontainer }) => {
+  await webcontainer.mount('bolt-vite-react-ts');
+  await webcontainer.runCommand('npm', ['install']);
 });
 
 test('user can build project', async ({ webcontainer }) => {
@@ -36,8 +37,10 @@ test('user can start project and see changes in preview', async ({
   const { exit } = webcontainer.runCommand('npm', ['run', 'dev']);
   onTestFinished(exit);
 
-  await preview.getByText(
-    'Start prompting (or editing) to see magic happen :)'
+  const frame = page.frameLocator(preview.locator);
+
+  await waitForVisible(
+    frame.getByText('Start prompting (or editing) to see magic happen :)')
   );
 
   const app = await webcontainer.readFile('src/App.tsx');
@@ -50,5 +53,7 @@ test('user can start project and see changes in preview', async ({
     )
   );
 
-  await preview.getByRole('heading', { level: 1, name: 'File edited' });
+  await waitForVisible(
+    frame.getByRole('heading', { level: 1, name: 'File edited' })
+  );
 });
