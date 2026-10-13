@@ -12,8 +12,6 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
     "@lucide/lab": "^0.1.2",
-    "@react-navigation/bottom-tabs": "^7.2.0",
-    "@react-navigation/native": "^7.0.14",
     "@supabase/supabase-js": "^2.58.0",
     "expo": "^57.0.0",
     "expo-blur": "~57.0.3",
