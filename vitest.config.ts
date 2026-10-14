@@ -11,6 +11,13 @@ export default defineConfig({
     browser: {
       enabled: true,
       provider: playwright(),
+      commands: {
+        async waitForVisible(context, selector: string, timeout: number) {
+          await context.iframe
+            .locator(selector)
+            .waitFor({ state: 'visible', timeout });
+        },
+      },
       instances: [
         {
           browser: 'chromium',
