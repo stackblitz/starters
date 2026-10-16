@@ -1,0 +1,19 @@
+name: Pokemon app
+
+entities:
+  Pokemon:
+    properties:
+      - name
+      - {
+          name: type,
+          type: choice,
+          options: { values: [Fire, Water, Grass, Electric] }
+        }
+      - { name: level, type: number }
+    belongsTo:
+      - Trainer
+
+  Trainer:
+    properties:
+      - name
+      - { name: isChampion, type: boolean }
