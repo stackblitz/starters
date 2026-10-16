@@ -68,8 +68,18 @@ const FONTS: FontPairing[] = [
 ];
 
 export function applyFont(id: string | undefined) {
-  const f = FONTS.find((x) => x.id === id) ?? FONTS[0];
+  const f = FONTS.find((x) => x.id === id);
   let link = document.getElementById('gfont') as HTMLLinkElement | null;
+  const r = document.documentElement.style;
+
+  /* No deck-level pairing: impose nothing — tokens.css / the slide
+     components decide the fonts. */
+  if (!f) {
+    link?.remove();
+    r.removeProperty('--font-head');
+    r.removeProperty('--font-body');
+    return;
+  }
 
   if (f.import) {
     if (!link) {
@@ -83,8 +93,6 @@ export function applyFont(id: string | undefined) {
   } else {
     link?.remove();
   }
-
-  const r = document.documentElement.style;
 
   r.setProperty(
     '--font-head',
