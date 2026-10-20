@@ -25,10 +25,10 @@ export default tseslint.config(
       ],
     },
   },
-  /* Layout catalogs export schema + Render functions, not Fast Refresh
-     boundaries. Same kit as bolt-vite-react-ts otherwise. */
+  /* The slide registry exports the component map next to its renderer,
+     not a Fast Refresh boundary. Same kit as bolt-vite-react-ts otherwise. */
   {
-    files: ['src/layouts/**/*.{ts,tsx}'],
+    files: ['src/slide/registry.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   }
 );
