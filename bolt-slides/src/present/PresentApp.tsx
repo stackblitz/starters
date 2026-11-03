@@ -3,7 +3,7 @@ import Deck from '../deck/Deck';
 import { useStore } from '../data/store';
 import { applyFont, applyAccent } from '../data/fonts';
 import { stripRich } from '../copy/rich';
-import { LAYOUTS, resolveLayoutType } from '../layouts/registry';
+import { slideLabel } from '../slide/registry';
 
 export default function PresentApp({
   embedded,
@@ -80,7 +80,7 @@ export default function PresentApp({
           ? plain.length > 52
             ? plain.slice(0, 52) + '…'
             : plain
-          : LAYOUTS[resolveLayoutType(slide.layout)]?.label;
+          : slide.nav || slideLabel(slide.layout);
       }}
     />
   );

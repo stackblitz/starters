@@ -1,5 +1,3 @@
-export type { LayoutName, LayoutProps, LayoutPropsByName } from './layoutProps';
-
 export type Background =
   | { type: 'none' }
   | { type: 'color'; color: string }
@@ -20,7 +18,9 @@ export type SlideStatus =
 export interface SlideData {
   id: string;
   position: number;
+  /** Slide component: the basename of a file in src/slides/. */
   layout: string;
+  /** Optional free-form data the slide component may read. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props: any;
   background: Background;
