@@ -15,9 +15,8 @@
     "jsx": "react-jsx",
 
     /* Path alias — depth-invariant imports for src (@/foo === src/foo from any file) */
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
 
     /* Linting */
