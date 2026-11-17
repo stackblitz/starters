@@ -1,12 +1,18 @@
 # Bolt Slides
 
-A Pitch-style slide studio for [Bolt](https://bolt.new): prompt a deck into
-`deck.json`, refine it in the studio, present in a new tab, and
-download PDF or JSON.
+A Pitch-style slide studio for [Bolt](https://bolt.new): prompt a deck,
+refine it in the studio, present in a new tab, and download PDF or JSON.
 
-The prompt skill (`.bolt/skills/slides/SKILL.md`) covers bootstrap
-(mint `boltSlidesId` on first write) and authoring. Layout `props`
-shapes live in `src/data/layoutProps.ts`.
+Each slide is a React component in `src/slides/`, listed in `deck.json`.
+There is no layout catalog and no house style — no theme, type scale,
+palette or imagery is imposed; the agent designs every slide for the deck
+at hand. The one rule is that every slide is responsive — it renders at
+phone width, in the thumbnail rail, on a projector and at 1280×720 in the
+PDF.
+
+The prompt skill (`.bolt/skills/slides/SKILL.md`) covers bootstrap (mint
+`boltSlidesId` on first write), the slide component contract, the
+`deck.json` shape and the responsiveness rule.
 
 ## Quick start
 
@@ -17,10 +23,10 @@ npm run lint       # ESLint (same kit as bolt-vite-react-ts)
 npm run typecheck
 ```
 
-Prompt a deck with the `slides` skill, or edit `deck.json` directly.
-In the studio, drag to reorder, use a thumbnail’s ••• menu (or
-right-click) to duplicate or delete, edit speaker notes, then Present
-or Download as PDF / JSON.
+Prompt a deck with the `slides` skill, or write `src/slides/*.tsx` and
+`deck.json` directly. In the studio, drag to reorder, use a thumbnail’s
+••• menu (or right-click) to duplicate or delete, edit speaker notes, then
+Present or Download as PDF / JSON.
 
 ## What's inside
 
@@ -34,26 +40,38 @@ or Download as PDF / JSON.
 
 Collaborate by sharing the Bolt project.
 
-## The skill
+## Authoring
 
-`.bolt/skills/slides/SKILL.md` covers bootstrap (mint `boltSlidesId` on
-first write) and authoring `deck.json` plus `src/styles/tokens.css`.
-Layout `props` shapes live in `src/data/layoutProps.ts`.
+- `src/slides/<name>.tsx` — a slide: default-export a component typed
+  `SlideComponent` (from `@/slide/registry`). It receives the deck.json
+  entry as `slide`; `slide.props` is free-form data it may read.
+  `@/deck/Slide`, `@/deck/Reveal`, `@/deck/Build` and
+  `@/deck/useInView` are optional helpers.
+- `deck.json` — the ordered slides. `layout` is the component filename
+  (without `.tsx`); `background`, `animation`, `transition`, `nav`,
+  `notes` and `status` are read by the studio, presenter and export.
+- `src/styles/tokens.css` — the few CSS variables the shell reads
+  (`--bg`, `--fg`, `--accent`, fonts, gutters). Neutral fallbacks; set
+  them per deck or ignore them.
 
 ## Architecture
 
 ```
-deck.json               canonical deck (envelope + slides)
-src/data/               types, layout props contract, zustand store
-src/layouts/            layout registry
-src/components/         section components
-src/deck/               presentation engine
+deck.json               canonical deck (envelope + slide entries)
+src/slides/             the deck's slide components (authored per deck)
+src/slide/              SlideView + the src/slides registry (import.meta.glob)
+src/data/               types, zustand store, deck.json persistence
+src/deck/               presentation engine + chrome (dock, rail, grid, presenter)
 src/studio/             studio chrome
-src/copy/               stamped deck text + visual-edit persist
-src/styles/tokens.css   theme: edit :root values only
+src/present/            audience / speaker routes
+src/export/             PDF export
+src/copy/               rich text + in-place text edit persist
+src/styles/tokens.css   shell fallbacks (--bg, --fg, --accent, fonts, gutters)
 ```
 
 ## Theming
 
-Everything visual derives from the `:root` tokens in `src/styles/tokens.css`.
-`--accent` must stay a solid color.
+There is none built in. Slide components carry their own design. The
+`:root` variables in `src/styles/tokens.css` are only the fallbacks the
+shell reads (slide surface, inherited text color, the `==accent==` marker
+color, deck-level font pairing, `<Slide>` gutters).
